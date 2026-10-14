@@ -36,3 +36,10 @@ You are **Claude**, the engineering execution arm of the Kipper team. Read this 
 2. Skim the repo structure (`src/`, `docs/`, `tests/`).
 3. Post a Team Updates entry: who you are, that you've completed onboarding, and your understanding of the workflow in 3–4 lines. Also post your onboarding confirmation to #kipper-build on Slack (`✅ DONE: onboarding complete | ➡️ NEXT: Renier — assign first task`).
 4. Wait for your first task — it will come with a spec or a pointer to one.
+
+## Every session: sync before you start
+Notion is the source of truth; your context is a cache. At the start of **every** session (not just the first):
+1. Re-read the current phase spec and open decisions in the project hub.
+2. Read the latest Team Updates entries — anything since your last session.
+3. Skim the Decision log for anything new.
+Never work from a stale session memory alone. **Before opening a PR**, re-check the spec + Team Updates once more for anything that changed while you worked — if the spec moved, reconcile first.
