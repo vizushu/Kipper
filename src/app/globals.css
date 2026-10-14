@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  @apply bg-paper text-ink font-sans;
+}
+
+/* Editorial image treatment: soft, warm, never harsh. */
+.img-frame {
+  @apply overflow-hidden rounded-2xl bg-cream;
+}
+.img-frame img {
+  @apply h-full w-full object-cover;
+}
+
+/* Form controls inherit the body font. */
+input,
+button,
+select,
+textarea {
+  font: inherit;
+}
+
+/* Date inputs: keep the native picker indicator subtle. */
+input[type="date"] {
+  color-scheme: light;
+}
+
+/* Stripe Elements mount point. */
+.StripeElement {
+  width: 100%;
+}
+
+/* Focus visibility for keyboard users. */
+:focus-visible {
+  outline: 2px solid #a8552f;
+  outline-offset: 2px;
+}
+
+/* Smooth anchor scrolling for in-page links. */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Respect reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
