@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — Concept B: Editorial</title>
+<!--
+CONCEPT B THESIS: A premium editorial interpretation — typography leads, photography follows in a photo-essay rhythm ("The house," "The pool," "The details"), with facts woven into the story rather than listed in a spec sheet. It bets that direct-booking guests choose on feeling and narrative, and that a distinctive voice differentiates Kipper from both Airbnb and generic vacation-rental sites. Tradeoff vs A: it abandons the familiar Airbnb scan pattern, so guests must read more to find basics (bed count, rules) — higher risk of "where is the price?" friction. Tradeoff vs C: conversion is slower and softer; the single sticky CTA carries the whole booking burden while the page seduces. If the photography isn't excellent, this concept collapses — it needs the real 13 photos art-directed, not placeholders.
+-->
+<style>
+:root{--paper:#FAF8F5;--ink:#1C1917;--clay:#A8552F;--mut:#8b8680;--line:#ddd6ca;--fill:#e9e4da;--fill2:#dcd6c9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:Georgia,'Times New Roman',serif;-webkit-font-smoothing:antialiased}
+.sans{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}
+.wf-banner{background:var(--ink);color:var(--paper);padding:20px 24px;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}
+.wf-banner .kicker{font-size:11px;letter-spacing:.18em;font-weight:700;opacity:.6}
+.wf-banner h1{font-size:18px;letter-spacing:.04em;margin-top:6px}
+.wf-banner p{font-size:13px;line-height:1.6;opacity:.78;max-width:960px;margin-top:10px}
+.wf-banner .legend{margin-top:10px;font-size:11px;opacity:.6}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:18px 32px;font-family:-apple-system,sans-serif;font-size:13px}
+.nav .wordmark{font-family:Georgia,serif;font-size:20px;font-weight:600}
+.nav .menu{letter-spacing:.14em;font-size:12px}
+.ph{background:repeating-linear-gradient(45deg,var(--fill),var(--fill) 14px,var(--fill2) 14px,var(--fill2) 28px);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:12px;letter-spacing:.1em;color:#6f6a62;padding:28px;position:relative}
+.ph .tag{position:absolute;top:10px;left:12px;font-size:10px;letter-spacing:.14em;font-weight:700;color:#8b8680}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+.narrow{max-width:680px;margin:0 auto}
+/* type-first hero */
+.hero{padding:72px 24px 40px;text-align:center}
+.hero .kicker{font-family:-apple-system,sans-serif;font-size:11px;letter-spacing:.28em;color:#8b8680}
+.hero h2{font-size:76px;font-weight:500;letter-spacing:-.02em;margin:18px 0 8px;line-height:1.02}
+.hero .standfirst{font-size:19px;line-height:1.6;color:#4a453e;max-width:620px;margin:14px auto 0}
+.hero .facts{font-family:-apple-system,sans-serif;font-size:13px;letter-spacing:.14em;margin-top:22px;color:#6f6a62}
+.heroimg{max-width:1280px;margin:0 auto;padding:0 24px}
+.heroimg .ph{height:64vh;min-height:360px}
+/* chapters */
+.chapter{padding:84px 0 0}
+.chapter .kicker{font-family:-apple-system,sans-serif;font-size:11px;letter-spacing:.28em;color:#8b8680;margin-bottom:16px}
+.chapter h3{font-size:44px;font-weight:500;letter-spacing:-.01em;margin-bottom:18px}
+.chapter .lede{font-size:18px;line-height:1.75;color:#3d3831;max-width:640px}
+.chapter .ph{margin:34px 0;height:52vh;min-height:300px}
+.chapter .caption{font-family:-apple-system,sans-serif;font-size:12px;color:#8b8680;margin-top:-22px;letter-spacing:.04em}
+.factline{font-family:-apple-system,sans-serif;font-size:14px;border-top:1px solid var(--line);padding:14px 0;display:flex;justify-content:space-between;max-width:640px}
+.factline span:last-child{color:#4a453e;text-align:right;max-width:60%}
+/* good to know */
+.goodtoknow{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:84px;padding:60px 0}
+.goodtoknow h3{font-size:30px;font-weight:500;margin-bottom:8px}
+.goodtoknow .sub{font-family:-apple-system,sans-serif;font-size:14px;color:#6f6a62;margin-bottom:26px}
+/* annotations */
+.anno{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:12px;line-height:1.6;color:#6f6a62;border-left:3px dashed #b9b2a4;background:#f4f1ea;padding:10px 14px;margin:16px 0}
+.anno .tag{display:block;font-size:10px;letter-spacing:.16em;font-weight:700;color:#a09a8e;margin-bottom:5px}
+/* sticky cta */
+.sticky{position:fixed;bottom:0;left:0;right:0;background:rgba(250,248,245,.96);border-top:1px solid var(--line);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;z-index:30;font-family:-apple-system,sans-serif;backdrop-filter:blur(4px)}
+.sticky .nm{font-family:Georgia,serif;font-size:17px}
+.sticky .go{background:var(--ink);color:#fff;padding:14px 30px;font-size:13px;letter-spacing:.08em;font-weight:700;text-decoration:none}
+body{padding-bottom:78px}
+footer{margin-top:70px;padding:30px 24px;font-family:-apple-system,sans-serif;font-size:12px;color:#8b8680;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;border-top:1px solid var(--line)}
+@media(max-width:700px){
+  .hero{padding:52px 20px 30px}
+  .hero h2{font-size:48px}
+  .hero .standfirst{font-size:17px}
+  .chapter{padding:56px 0 0}
+  .chapter h3{font-size:32px}
+  .chapter .lede{font-size:16px}
+  .nav{padding:14px 20px}
+}
+</style>
+</head>
+<body>
+
+<div class="wf-banner">
+  <div class="kicker">WIREFRAME · LOW FIDELITY · NOT FINAL DESIGN</div>
+  <h1>CONCEPT B — EDITORIAL</h1>
+  <p><strong>Thesis:</strong> Typography leads, photography follows in a photo-essay rhythm. Facts are woven into the story ("The house," "The pool," "The details") instead of listed in a spec sheet — the page seduces, and the single sticky CTA converts. Distinctive and premium; higher risk if guests just want the facts fast.</p>
+  <div class="legend">HATCHED BOX = photo placeholder · [BRACKET TEXT] = UI control · <span style="border-left:3px dashed #b9b2a4;padding-left:8px">NOTE</span> = design annotation (decision + data source)</div>
+</div>
+
+<nav class="nav">
+  <div class="wordmark">Kipper</div>
+  <div class="menu">[ MENU ]</div>
+</nav>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — CHROME</span>Deliberately minimal chrome: wordmark + menu only. No persistent "Check availability" in the nav — the fixed bottom bar (below) is the single CTA, so the top stays quiet and editorial. <strong>Data:</strong> static.</div></div>
+
+<header class="hero">
+  <div class="kicker">KIPPER · SAN DIEGO, CALIFORNIA</div>
+  <h2>Casa Pacifica</h2>
+  <p class="standfirst">The entire downstairs of a San Diego home — three bedrooms, a private heated pool, and room for eight — booked direct with the people who host it.</p>
+  <div class="facts">SLEEPS 8 · 3 BR · 2 BA · HEATED POOL</div>
+</header>
+<div class="heroimg">
+  <div class="ph"><span class="tag">PHOTO</span>[ HERO PHOTO — suggested: pool at dusk, cinematic 16:9 ]</div>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — TYPE-FIRST HERO</span>The inversion of Concept A: the name is the visual event, the photo supports it. This is the "premium editorial" bet — it reads like a magazine, not a marketplace. Risk: guests scanning for price/beds must read. The fact strip (SLEEPS 8 · 3BR · 2BA · HEATED POOL) is the compromise — four facts, no scrolling needed. <strong>Data:</strong> static copy from the brief; photo = art-directed pick from the 13 real photos.</div></div>
+
+<section class="chapter"><div class="wrap"><div class="narrow">
+  <div class="kicker">01 — THE HOUSE</div>
+  <h3>Downstairs is yours. All of it.</h3>
+  <p class="lede">Casa Pacifica is the entire downstairs — bedrooms, living spaces, kitchen — on one level, with its own entrance. Upstairs is a separate residence; you will never share indoor spaces, entrances, or amenities.</p>
+  <div class="ph"><span class="tag">PHOTO</span>[ PHOTO — living room, daylight ]</div>
+  <div class="caption">Living room · queen sleeper sofa sleeps two more</div>
+  <div class="factline"><span>Bedrooms</span><span>3 — king · queen · twin-over-full bunk</span></div>
+  <div class="factline"><span>Bathrooms</span><span>2</span></div>
+  <div class="factline"><span>Sleeps</span><span>8 total (sleeper sofa in living room)</span></div>
+  <div class="anno"><span class="tag">NOTE — CHAPTER 01</span>Leads with the privacy story because it was the #1 pre-stay question in the Airbnb inbox. Facts arrive as quiet ledger lines under the narrative — scannable without breaking the mood. <strong>Data:</strong> brief (downstairs/ADU separation, bed types). Room-to-bed mapping to confirm with founder.</div>
+</div></div></section>
+
+<section class="chapter"><div class="wrap"><div class="narrow">
+  <div class="kicker">02 — THE POOL</div>
+  <h3>Heated. Private. Yours.</h3>
+  <p class="lede">The pool is heated and included — no extra charge, no scheduling, no sharing. The cabana handles the hot afternoons; the game and billiards room handles the evenings.</p>
+  <div class="ph"><span class="tag">PHOTO</span>[ PHOTO — pool + cabana ]</div>
+  <div class="caption">Private pool · heating included · shaded cabana</div>
+  <div class="anno"><span class="tag">NOTE — CHAPTER 02</span>"Heated. Private. Yours." is the three-word version of the two most-asked amenity questions (is the pool heated? is it shared?). Short sentences are a deliberate voice choice — confident, uncluttered. <strong>Data:</strong> brief (heating confirmed included by founder).</div>
+</div></div></section>
+
+<section class="chapter"><div class="wrap"><div class="narrow">
+  <div class="kicker">03 — THE DETAILS</div>
+  <h3>Stay on your schedule.</h3>
+  <p class="lede">Check in from 3 PM, out by 11 AM. The neighborhood is quiet — quiet hours run 10 PM to 8 AM — and you're a short drive from La Jolla and the beaches.</p>
+  <div class="ph"><span class="tag">PHOTO</span>[ PHOTO — exterior / neighborhood feel ]</div>
+  <div class="caption">Mira Mesa, San Diego · near La Jolla &amp; beaches</div>
+  <div class="factline"><span>Check-in / out</span><span>3:00 PM / 11:00 AM</span></div>
+  <div class="factline"><span>Quiet hours</span><span>10:00 PM – 8:00 AM</span></div>
+  <div class="factline"><span>Pets</span><span>$50 per stay · one pet max</span></div>
+  <div class="factline"><span>House rules</span><span>No parties · no smoking · 8 overnight max</span></div>
+  <div class="anno"><span class="tag">NOTE — CHAPTER 03</span>Logistics folded into narrative ("stay on your schedule") rather than a rules table. The fact ledger keeps it honest — a guest can still find check-in time in seconds. <strong>Data:</strong> brief, verbatim.</div>
+</div></div></section>
+
+<section class="goodtoknow"><div class="wrap"><div class="narrow">
+  <h3>Good to know</h3>
+  <div class="sub">The short version of the fine print.</div>
+  <div class="factline"><span>Max occupancy</span><span>8 overnight · 10 total incl. visitors</span></div>
+  <div class="factline"><span>License</span><span>San Diego STRO Tier-2 · STR-13982L</span></div>
+  <div class="factline"><span>Reviews</span><span>None yet on direct booking — omitted, never faked</span></div>
+  <div class="factline"><span>Cancellation</span><span>Firm policy — final wording TBD</span></div>
+  <div class="anno"><span class="tag">NOTE — GOOD TO KNOW</span>The trust ledger: license number (real, public record), honest review status, cancellation honesty ("final wording TBD"). In an editorial concept this section does the credibility work that Concept A spreads across badges and cards. <strong>Founder decisions:</strong> final Firm cancellation wording; whether to show the license number publicly (it's public record, but confirm).</div>
+</div></div></section>
+
+<footer>
+  <div>© Kipper Property Management · San Diego, CA<br>STRO Tier-2 · License STR-13982L</div>
+  <div>Home · Stays · About · Contact · FAQ</div>
+</footer>
+
+<div class="sticky">
+  <div class="nm">Casa Pacifica</div>
+  <a class="go" href="#">[ CHECK AVAILABILITY ]</a>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — THE ONE CTA</span>A single fixed bar, present from the first scroll: property name (orientation) + one button. No price shown here — editorial concept keeps commerce quiet until the guest chooses dates. <strong>Data:</strong> links to the existing booking flow (/properties/casa-pacifica).</div></div>
+
+</body>
+</html>

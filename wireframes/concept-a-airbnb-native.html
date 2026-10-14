@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — Concept A: Airbnb-Native</title>
+<!--
+CONCEPT A THESIS: A strict, faithful translation of the Airbnb listing-page pattern the founder referenced: full-bleed photo, centered title block, fact row, single trust badge, host card, highlight cards, one sticky "Check availability" CTA. It bets that guests already know how to use this layout, so zero learning curve and maximum trust transfer from the Airbnb mental model. Tradeoff vs B: it is deliberately unoriginal — the page will feel like "Airbnb but direct," which is safe but forgettable, and it inherits Airbnb's long-scroll structure. Tradeoff vs C: price and booking urgency are de-emphasized (no price near the top), so it converts on confidence rather than on deal-clarity; guests must scroll to understand cost.
+-->
+<style>
+:root{--paper:#FAF8F5;--ink:#1C1917;--clay:#A8552F;--mut:#8b8680;--line:#ddd6ca;--fill:#e9e4da;--fill2:#dcd6c9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:Georgia,'Times New Roman',serif;-webkit-font-smoothing:antialiased;padding-bottom:0}
+.sans{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}
+/* ---- wireframe banner ---- */
+.wf-banner{background:var(--ink);color:var(--paper);padding:20px 24px;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}
+.wf-banner .kicker{font-size:11px;letter-spacing:.18em;font-weight:700;opacity:.6}
+.wf-banner h1{font-size:18px;letter-spacing:.04em;margin-top:6px}
+.wf-banner p{font-size:13px;line-height:1.6;opacity:.78;max-width:960px;margin-top:10px}
+.wf-banner .legend{margin-top:10px;font-size:11px;opacity:.6}
+/* ---- nav ---- */
+.nav{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;border-bottom:1px solid var(--line);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:13px;position:sticky;top:0;background:var(--paper);z-index:20}
+.nav .links{display:flex;gap:22px;color:#4a453e}
+.nav .cta{border:2px solid var(--ink);padding:8px 18px;font-weight:700;font-size:12px;letter-spacing:.06em}
+/* ---- photo placeholder ---- */
+.ph{background:repeating-linear-gradient(45deg,var(--fill),var(--fill) 14px,var(--fill2) 14px,var(--fill2) 28px);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:12px;letter-spacing:.1em;color:#6f6a62;padding:28px;position:relative}
+.ph .tag{position:absolute;top:10px;left:12px;font-size:10px;letter-spacing:.14em;font-weight:700;color:#8b8680}
+.hero{height:62vh;min-height:380px}
+.floatbtn{position:absolute;background:var(--paper);border:1px solid var(--line);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:14px;font-family:-apple-system,sans-serif}
+.counter{position:absolute;bottom:14px;right:16px;background:rgba(28,25,23,.75);color:#fff;font-family:-apple-system,sans-serif;font-size:12px;padding:5px 12px;border-radius:20px;letter-spacing:.08em}
+/* ---- layout ---- */
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.center{text-align:center}
+.titleblock{padding:40px 24px 8px;max-width:760px;margin:0 auto;text-align:center}
+.titleblock h2{font-size:40px;font-weight:600;letter-spacing:-.01em}
+.titleblock .place{font-family:-apple-system,sans-serif;font-size:15px;color:#5c564d;margin-top:10px}
+.titleblock .facts{font-family:-apple-system,sans-serif;font-size:15px;margin-top:10px;letter-spacing:.02em}
+.badge{max-width:760px;margin:26px auto 0;border:1px solid var(--line);background:#fff;padding:18px 22px;display:flex;gap:16px;align-items:center;font-family:-apple-system,sans-serif}
+.badge .ic{width:44px;height:44px;border:1px solid var(--line);border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--fill)}
+.badge b{font-size:14px}.badge span{display:block;font-size:13px;color:#5c564d;margin-top:3px}
+.hostcard{max-width:760px;margin:22px auto 0;border:1px solid var(--line);background:#fff;padding:20px 22px;display:flex;gap:16px;align-items:center;font-family:-apple-system,sans-serif}
+.hostcard .av{width:52px;height:52px;border-radius:50%;background:var(--fill2);border:1px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.06em;color:#6f6a62}
+.hostcard b{font-size:15px}.hostcard span{display:block;font-size:13px;color:#5c564d;margin-top:3px}
+.highlights{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:960px;margin:34px auto 0}
+.hcard{border:1px solid var(--line);background:#fff;padding:20px;font-family:-apple-system,sans-serif}
+.hcard .ic{font-size:22px;margin-bottom:10px}
+.hcard b{font-size:14px}.hcard p{font-size:13px;color:#5c564d;margin-top:6px;line-height:1.55}
+/* two-col content + sticky rail (desktop) */
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:56px;max-width:1120px;margin:44px auto 0;padding:0 24px;align-items:start}
+.bookcard{position:sticky;top:76px;border:1px solid var(--line);background:#fff;padding:24px;font-family:-apple-system,sans-serif;box-shadow:0 4px 16px rgba(28,25,23,.06)}
+.bookcard .price{font-size:15px}.bookcard .price b{font-size:22px}
+.bookcard .field{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:12px;color:#6f6a62;letter-spacing:.04em}
+.bookcard .btn{display:block;text-align:center;background:var(--ink);color:#fff;padding:15px;font-size:13px;letter-spacing:.1em;font-weight:700;margin-top:14px;text-decoration:none}
+.bookcard .fine{font-size:12px;color:#8b8680;text-align:center;margin-top:10px}
+.sec{padding:30px 0;border-top:1px solid var(--line);margin-top:30px}
+.sec:first-child{border-top:none;margin-top:0;padding-top:0}
+.sec h3{font-size:24px;font-weight:600;margin-bottom:14px}
+.sec p.body{font-family:-apple-system,sans-serif;font-size:15px;line-height:1.7;color:#3d3831;max-width:640px}
+.bedlist{font-family:-apple-system,sans-serif;font-size:14px;margin-top:14px;line-height:2}
+.bedlist b{display:inline-block;min-width:110px}
+.amen{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;font-family:-apple-system,sans-serif;font-size:14px}
+.amen div{border:1px dashed var(--line);padding:12px 14px;color:#4a453e;background:#fff}
+.rules{font-family:-apple-system,sans-serif;font-size:14px;line-height:2.1}
+.rules b{display:inline-block;min-width:150px}
+/* annotations */
+.anno{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:12px;line-height:1.6;color:#6f6a62;border-left:3px dashed #b9b2a4;background:#f4f1ea;padding:10px 14px;margin:14px 0}
+.anno .tag{display:block;font-size:10px;letter-spacing:.16em;font-weight:700;color:#a09a8e;margin-bottom:5px}
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--line);padding:30px 24px;font-family:-apple-system,sans-serif;font-size:12px;color:#8b8680;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+/* mobile sticky bar */
+.mobilebar{display:none}
+@media(max-width:900px){
+  .cols{display:block}
+  .rail{display:none}
+  .highlights{grid-template-columns:1fr}
+  .titleblock h2{font-size:32px}
+  body{padding-bottom:78px}
+  .mobilebar{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 18px;align-items:center;justify-content:space-between;z-index:30;font-family:-apple-system,sans-serif}
+  .mobilebar .st{font-size:13px}.mobilebar .st b{display:block;font-size:14px}
+  .mobilebar .go{background:var(--ink);color:#fff;padding:14px 26px;font-size:13px;letter-spacing:.08em;font-weight:700;text-decoration:none}
+}
+</style>
+</head>
+<body>
+
+<div class="wf-banner">
+  <div class="kicker">WIREFRAME · LOW FIDELITY · NOT FINAL DESIGN</div>
+  <h1>CONCEPT A — AIRBNB-NATIVE</h1>
+  <p><strong>Thesis:</strong> A strict translation of the Airbnb listing pattern the founder referenced — full-bleed photo, centered title block, fact row, single trust badge, host card, highlight cards, one sticky "Check availability" CTA. Guests already know this layout, so trust transfers instantly and nothing needs learning.</p>
+  <div class="legend">HATCHED BOX = photo/asset placeholder · [BRACKET TEXT] = UI control · <span style="border-left:3px dashed #b9b2a4;padding-left:8px">NOTE</span> = design annotation (decision + data source)</div>
+</div>
+
+<nav class="nav sans">
+  <div><strong>Kipper</strong> <span style="color:#8b8680">PROPERTY MGMT</span></div>
+  <div class="links"><span>Home</span><span>Stays</span><span>About</span><span>Contact</span><span>FAQ</span></div>
+  <div class="cta">[ CHECK AVAILABILITY ]</div>
+</nav>
+
+<div class="ph hero">
+  <span class="tag">PHOTO</span>
+  <div class="floatbtn" style="top:16px;left:16px">‹</div>
+  <div class="floatbtn" style="top:16px;right:70px">⤴</div>
+  <div class="floatbtn" style="top:16px;right:16px">♡</div>
+  [ HERO PHOTO — 1 OF 13 · suggested: living room, landscape 16:9 ]<br><span style="font-size:11px">13 real Casa Pacifica photos exist; final selects TBD in Phase 3</span>
+  <div class="counter">1 / 13</div>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — HERO</span>Full-bleed photo = the single biggest decision driver, per the founder's reference. Floating back/share/save mirror Airbnb so the gesture vocabulary is familiar. <strong>Data:</strong> 13 genuine Casa Pacifica photos on file; hero pick TBD (living room or pool at dusk are candidates).</div></div>
+
+<div class="titleblock">
+  <h2>Casa Pacifica</h2>
+  <div class="place">Entire downstairs home in San Diego, California</div>
+  <div class="facts">8 guests · 3 bedrooms · 5 beds · 2 baths</div>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — TITLE BLOCK</span>Centered, four lines of decreasing emphasis — the exact anatomy of the reference. "Entire downstairs home" is the verified product (upstairs is a separate ADU, never shared). Bed count = 5 sleeping surfaces: king, queen, twin-over-full bunk (×2), queen sleeper sofa — <strong>founder to confirm bunk display convention.</strong> Reviews line deliberately omitted: no reviews exist yet; never render a fake rating. Exact street address appears only post-booking (Airbnb convention).</div></div>
+
+<div class="wrap">
+  <div class="badge">
+    <div class="ic">★</div>
+    <div><b>Book direct — best rate, no marketplace fees</b><span>The same stay as the listing sites, booked with your host.</span></div>
+  </div>
+  <div class="anno"><span class="tag">NOTE — TRUST STRIP</span>Exactly one badge, mirroring the reference's single "Luxe" card. This is the value proposition of the whole portfolio site in one line. <strong>Data:</strong> static copy; no backend.</div>
+
+  <div class="hostcard">
+    <div class="av">K</div>
+    <div><b>Hosted by Kipper</b><span>Independent host · San Diego</span></div>
+  </div>
+  <div class="anno"><span class="tag">NOTE — HOST CARD</span>Mirrors the reference's "Hosted by … / Superhost · 11 years" card. Credibility line is intentionally modest — <strong>founder decision:</strong> keep "Independent host · San Diego," or cite the 9-year / 383-stay hosting history from the prior listing? Do not invent Superhost status.</div>
+
+  <div class="highlights">
+    <div class="hcard"><div class="ic">◉</div><b>Private heated pool</b><p>Your own pool with heating included — plus a shaded cabana for afternoons.</p></div>
+    <div class="hcard"><div class="ic">▭</div><b>Sleeps 8, room to gather</b><p>Three bedrooms plus a game and billiards room for evenings together.</p></div>
+    <div class="hcard"><div class="ic">◎</div><b>Near La Jolla &amp; the beaches</b><p>San Diego home base — day-trip distance to the coast.</p></div>
+  </div>
+  <div class="anno"><span class="tag">NOTE — HIGHLIGHT CARDS</span>Icon + bold lead + ≤2 lines of support, per the reference. Each card maps to a verified differentiator (pool heating confirmed included; cabana; game room; location). <strong>Data:</strong> static copy from the property brief.</div>
+</div>
+
+<div class="cols">
+  <main>
+    <div class="sec">
+      <h3>About this home</h3>
+      <p class="body">Casa Pacifica is the entire downstairs of a San Diego home — three bedrooms, two bathrooms, and shared living spaces all on one level, with no shared indoor areas. Days revolve around the private heated pool and cabana; evenings around the game and billiards room.</p>
+      <div class="anno"><span class="tag">NOTE — INTRO COPY</span>Short, factual, no purple prose. "Entire downstairs" + "no shared indoor areas" directly answers the #1 pre-stay question from the Airbnb inbox (upstairs privacy). <strong>Data:</strong> property brief.</div>
+    </div>
+    <div class="sec">
+      <h3>Where you'll sleep</h3>
+      <div class="bedlist">
+        <div><b>Bedroom 1</b> King bed</div>
+        <div><b>Bedroom 2</b> Queen bed</div>
+        <div><b>Bedroom 3</b> Twin-over-full bunk</div>
+        <div><b>Living room</b> Queen sleeper sofa</div>
+      </div>
+      <div class="anno"><span class="tag">NOTE — SLEEPING ARRANGEMENT</span>Real bed types from the brief. Room-to-bed mapping is assumed (king → Bedroom 1, etc.) — <strong>founder to confirm.</strong> <strong>Data:</strong> property brief; feeds the "sleeps 8" fact row.</div>
+    </div>
+    <div class="sec">
+      <h3>Amenities</h3>
+      <div class="amen">
+        <div>Private heated pool</div><div>Cabana</div>
+        <div>Game / billiards room</div><div>Wi-Fi</div>
+        <div>Washer &amp; dryer</div><div>[ +N more — verify ]</div>
+      </div>
+      <div class="anno"><span class="tag">NOTE — AMENITIES</span>Shown items are verified (pool, cabana, game room, Wi-Fi in arrival guide, w/d in garage). The "+N more" tile is honest about incompleteness — <strong>pull the full list from the Airbnb amenity set and verify each before production; never advertise the removed projector or the planned (not built) sauna.</strong></div>
+    </div>
+    <div class="sec">
+      <h3>House rules</h3>
+      <div class="rules">
+        <div><b>Check-in / out</b> 3:00 PM / 11:00 AM</div>
+        <div><b>Overnight max</b> 8 guests · 10 total incl. visitors</div>
+        <div><b>Quiet hours</b> 10:00 PM – 8:00 AM</div>
+        <div><b>Pets</b> $50 per pet per stay · max 1 pet</div>
+        <div><b>Not allowed</b> Parties, events, smoking, vaping</div>
+      </div>
+      <div class="anno"><span class="tag">NOTE — HOUSE RULES</span>Verbatim from the verified brief, condensed for scanability. Full legal text lives behind a "show all" in production. STRO license STR-13982L goes in the footer (shown below).</div>
+    </div>
+    <div class="sec">
+      <h3>Location</h3>
+      <div class="ph" style="height:260px"><span class="tag">MAP</span>[ MAP — San Diego, CA · approximate pin ]<br><span style="font-size:11px">Exact address shared after booking</span></div>
+      <div class="anno"><span class="tag">NOTE — LOCATION</span>Approximate pin only, Airbnb convention. <strong>Data:</strong> static; geocode once in Phase 3.</div>
+    </div>
+  </main>
+  <aside class="rail">
+    <div class="bookcard">
+      <div class="price"><b>$—</b> / night</div>
+      <div class="field">[ CHECK-IN — date picker ]</div>
+      <div class="field">[ CHECK-OUT — date picker ]</div>
+      <div class="field">[ GUESTS — 2 guests ▾ ]</div>
+      <a class="btn" href="#">[ CHECK AVAILABILITY ]</a>
+      <div class="fine">You won't be charged yet · Free cancellation terms apply</div>
+      <div class="anno"><span class="tag">NOTE — STICKY BOOKING CARD</span>Desktop: sticky rail = the one CTA, always visible while scrolling (mirrors Airbnb's reserve card). Price shows "—" until dates are picked, per the reference's "Add dates for prices." <strong>Data:</strong> live availability + server-side quote (already built in the booking engine). Cancellation line must match the final Firm wording — TBD.</div>
+    </div>
+  </aside>
+</div>
+
+<footer class="sans">
+  <div>© Kipper Property Management · San Diego, CA<br>STRO Tier-2 · License STR-13982L</div>
+  <div>Home · Stays · About · Contact · FAQ</div>
+</footer>
+
+<div class="mobilebar">
+  <div class="st"><b>Add dates for prices</b><span style="color:#8b8680">No reviews yet</span></div>
+  <a class="go" href="#">[ CHECK AVAILABILITY ]</a>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — MOBILE STICKY BAR</span>Mobile: fixed bottom bar = price state + single CTA, mirroring the reference exactly. "No reviews yet" is honest placeholder copy — replaced by ★ rating once real reviews exist.</div></div>
+
+</body>
+</html>

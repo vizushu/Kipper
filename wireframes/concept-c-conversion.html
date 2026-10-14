@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — Concept C: Conversion-First</title>
+<!--
+CONCEPT C THESIS: Booking-first and price-transparent — "from $349/night" sits near the top, the CTA is reachable with minimal scroll, and the desktop sticky rail carries a live-feeling price module. Trust signals are grouped into one scannable band (direct-booking benefits, rules summary, license) instead of spread down the page, and the FAQ is collapsed so the page stays short. Tradeoff vs A: it feels more transactional and less atmospheric — closer to a hotel booking engine than a home listing — which may cheapen the premium positioning. Tradeoff vs B: it sacrifices story and distinctiveness for speed; if the guest's main question is "what does it feel like," this answers "what does it cost" instead. Showing the $349 floor early is honest but anchors expectations at the minimum; weekend/holiday reality will be higher.
+-->
+<style>
+:root{--paper:#FAF8F5;--ink:#1C1917;--clay:#A8552F;--mut:#8b8680;--line:#ddd6ca;--fill:#e9e4da;--fill2:#dcd6c9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:Georgia,'Times New Roman',serif;-webkit-font-smoothing:antialiased}
+.sans{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}
+.wf-banner{background:var(--ink);color:var(--paper);padding:20px 24px;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}
+.wf-banner .kicker{font-size:11px;letter-spacing:.18em;font-weight:700;opacity:.6}
+.wf-banner h1{font-size:18px;letter-spacing:.04em;margin-top:6px}
+.wf-banner p{font-size:13px;line-height:1.6;opacity:.78;max-width:960px;margin-top:10px}
+.wf-banner .legend{margin-top:10px;font-size:11px;opacity:.6}
+.nav{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;border-bottom:1px solid var(--line);font-family:-apple-system,sans-serif;font-size:13px;position:sticky;top:0;background:var(--paper);z-index:20}
+.nav .links{display:flex;gap:22px;color:#4a453e}
+.nav .cta{border:2px solid var(--ink);padding:8px 18px;font-weight:700;font-size:12px;letter-spacing:.06em}
+.ph{background:repeating-linear-gradient(45deg,var(--fill),var(--fill) 14px,var(--fill2) 14px,var(--fill2) 28px);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:12px;letter-spacing:.1em;color:#6f6a62;padding:24px;position:relative}
+.ph .tag{position:absolute;top:10px;left:12px;font-size:10px;letter-spacing:.14em;font-weight:700;color:#8b8680}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+/* compact hero: photo + facts + price + cta above the fold */
+.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:0;border-bottom:1px solid var(--line);min-height:66vh}
+.hero .ph{border:none;border-right:1px solid var(--line);min-height:420px}
+.heroinfo{padding:48px 44px;display:flex;flex-direction:column;justify-content:center}
+.heroinfo .place{font-family:-apple-system,sans-serif;font-size:13px;letter-spacing:.14em;color:#8b8680}
+.heroinfo h2{font-size:46px;font-weight:600;margin:12px 0 6px;letter-spacing:-.01em}
+.heroinfo .facts{font-family:-apple-system,sans-serif;font-size:14px;color:#4a453e;margin-top:6px}
+.heroinfo .price{font-family:-apple-system,sans-serif;margin-top:22px}
+.heroinfo .price .from{font-size:13px;color:#8b8680;letter-spacing:.06em}
+.heroinfo .price .amt{font-size:34px;font-weight:700}
+.heroinfo .price .per{font-size:14px;color:#4a453e}
+.heroinfo .btn{display:inline-block;background:var(--ink);color:#fff;padding:16px 34px;font-family:-apple-system,sans-serif;font-size:13px;letter-spacing:.1em;font-weight:700;margin-top:18px;text-decoration:none;text-align:center}
+.heroinfo .micro{font-family:-apple-system,sans-serif;font-size:12px;color:#8b8680;margin-top:10px}
+/* cols */
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:56px;max-width:1120px;margin:40px auto 0;padding:0 24px;align-items:start}
+.railcard{position:sticky;top:76px;border:1px solid var(--line);background:#fff;padding:24px;font-family:-apple-system,sans-serif;box-shadow:0 4px 16px rgba(28,25,23,.08)}
+.railcard .p{font-size:14px}.railcard .p b{font-size:22px}
+.railcard .field{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:12px;color:#6f6a62}
+.railcard .btn{display:block;text-align:center;background:var(--ink);color:#fff;padding:15px;font-size:13px;letter-spacing:.1em;font-weight:700;margin-top:14px;text-decoration:none}
+.railcard .break{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;font-size:13px;line-height:2;color:#4a453e}
+.railcard .break .t{display:flex;justify-content:space-between;font-weight:700;color:var(--ink);border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+.sec{padding:28px 0;border-top:1px solid var(--line)}
+.sec:first-child{border-top:none;padding-top:0}
+.sec h3{font-size:22px;font-weight:600;margin-bottom:12px}
+.sec p{font-family:-apple-system,sans-serif;font-size:14px;line-height:1.7;color:#3d3831;max-width:620px}
+/* trust band */
+.trust{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:6px}
+.tcard{border:1px solid var(--line);background:#fff;padding:18px;font-family:-apple-system,sans-serif}
+.tcard b{font-size:13px;letter-spacing:.04em}
+.tcard p{font-size:13px;color:#5c564d;margin-top:6px;line-height:1.55}
+/* gallery strip */
+.strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:6px}
+.strip .ph{height:150px;font-size:10px}
+/* faq */
+details{border:1px solid var(--line);background:#fff;margin-top:10px;font-family:-apple-system,sans-serif}
+summary{padding:16px 18px;font-size:14px;font-weight:600;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+summary::-webkit-details-marker{display:none}
+summary .pm{color:#8b8680}
+details .a{padding:0 18px 18px;font-size:14px;color:#4a453e;line-height:1.65}
+/* annotations */
+.anno{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:12px;line-height:1.6;color:#6f6a62;border-left:3px dashed #b9b2a4;background:#f4f1ea;padding:10px 14px;margin:14px 0}
+.anno .tag{display:block;font-size:10px;letter-spacing:.16em;font-weight:700;color:#a09a8e;margin-bottom:5px}
+footer{margin-top:56px;border-top:1px solid var(--line);padding:30px 24px;font-family:-apple-system,sans-serif;font-size:12px;color:#8b8680;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.mobilebar{display:none}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;min-height:0}
+  .hero .ph{min-height:300px;border-right:none;border-bottom:1px solid var(--line)}
+  .heroinfo{padding:30px 24px}
+  .heroinfo h2{font-size:34px}
+  .cols{display:block}
+  .railcard{display:none}
+  .trust{grid-template-columns:1fr}
+  .strip{grid-template-columns:repeat(2,1fr)}
+  body{padding-bottom:78px}
+  .mobilebar{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 18px;align-items:center;justify-content:space-between;z-index:30;font-family:-apple-system,sans-serif}
+  .mobilebar .st b{display:block;font-size:15px}
+  .mobilebar .st span{font-size:12px;color:#8b8680}
+  .mobilebar .go{background:var(--ink);color:#fff;padding:14px 26px;font-size:13px;letter-spacing:.08em;font-weight:700;text-decoration:none}
+}
+</style>
+</head>
+<body>
+
+<div class="wf-banner">
+  <div class="kicker">WIREFRAME · LOW FIDELITY · NOT FINAL DESIGN</div>
+  <h1>CONCEPT C — CONVERSION-FIRST</h1>
+  <p><strong>Thesis:</strong> Price-transparent and booking-first — "from $349/night" is visible immediately, the CTA is reachable with almost no scroll, and a prominent sticky rail carries the booking module on desktop. Trust is compressed into one scannable band and the FAQ is collapsed, keeping the page short and decisive.</p>
+  <div class="legend">HATCHED BOX = photo/asset placeholder · [BRACKET TEXT] = UI control · <span style="border-left:3px dashed #b9b2a4;padding-left:8px">NOTE</span> = design annotation (decision + data source)</div>
+</div>
+
+<nav class="nav">
+  <div><strong>Kipper</strong> <span style="color:#8b8680">PROPERTY MGMT</span></div>
+  <div class="links"><span>Home</span><span>Stays</span><span>About</span><span>Contact</span></div>
+  <div class="cta">[ CHECK AVAILABILITY ]</div>
+</nav>
+
+<header class="hero">
+  <div class="ph"><span class="tag">PHOTO</span>[ HERO PHOTO — suggested: exterior or pool, 4:3 ]</div>
+  <div class="heroinfo">
+    <div class="place">SAN DIEGO, CALIFORNIA</div>
+    <h2>Casa Pacifica</h2>
+    <div class="facts">Entire downstairs home · 8 guests · 3 BR · 2 BA · heated pool</div>
+    <div class="price">
+      <div class="from">FROM</div>
+      <div><span class="amt">$349</span> <span class="per">/ night</span></div>
+    </div>
+    <a class="btn" href="#">[ CHECK AVAILABILITY ]</a>
+    <div class="micro">Best rate when you book direct · No marketplace fees</div>
+  </div>
+</header>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — COMPACT HERO</span>Everything a booker needs is above the fold: what, where, key facts, price floor, CTA. The $349 is the real nightly floor from the rate rules ($349–$1,030) — <strong>labeled as "from" so weekend/holiday reality doesn't feel like a bait-and-switch; verify floor before launch.</strong> Tradeoff: leading with price anchors on cost, not on the home. <strong>Data:</strong> rate rules (static floor; live quote in the booking engine).</div></div>
+
+<div class="cols">
+  <main>
+    <div class="sec">
+      <h3>The essentials</h3>
+      <p>Casa Pacifica is the entire downstairs of a San Diego home — three bedrooms (king, queen, twin-over-full bunk, plus a queen sleeper sofa), two bathrooms, a private heated pool with cabana, and a game and billiards room. Upstairs is a separate residence; nothing is shared.</p>
+      <div class="strip">
+        <div class="ph"><span class="tag">PHOTO</span>[ bedroom ]</div>
+        <div class="ph"><span class="tag">PHOTO</span>[ pool ]</div>
+        <div class="ph"><span class="tag">PHOTO</span>[ game room ]</div>
+        <div class="ph"><span class="tag">PHOTO</span>[ cabana ]</div>
+      </div>
+      <div class="anno"><span class="tag">NOTE — ESSENTIALS + STRIP</span>One paragraph does the work of Concept A's whole "about" section; the 4-photo strip gives visual proof without a gallery deep-dive (full gallery behind a "view all photos" control in production). <strong>Data:</strong> brief; photos from the 13 real assets.</div>
+    </div>
+
+    <div class="sec">
+      <h3>Why book direct</h3>
+      <div class="trust">
+        <div class="tcard"><b>No marketplace fees</b><p>The same stay as the listing sites, minus the guest service fees.</p></div>
+        <div class="tcard"><b>Talk to your host</b><p>Questions go straight to Kipper — the people who run the home.</p></div>
+        <div class="tcard"><b>Best-rate promise</b><p>Book here and you won't find it cheaper elsewhere for the same dates.</p></div>
+      </div>
+      <div class="anno"><span class="tag">NOTE — TRUST BAND</span>All trust signals in one band, right after the pitch — this is the conversion argument compressed. "Best-rate promise" is a business commitment: <strong>founder to confirm we will honor it</strong> (it constrains future channel pricing).</div>
+    </div>
+
+    <div class="sec">
+      <h3>House rules, briefly</h3>
+      <p>Check-in 3 PM · check-out 11 AM · quiet hours 10 PM–8 AM · 8 overnight max (10 total) · $50/pet/stay, one pet max · no parties, smoking, or vaping. San Diego STRO Tier-2, license STR-13982L.</p>
+      <div class="anno"><span class="tag">NOTE — RULES SUMMARY</span>One line, plain language, license included — the guests who care will read it; the rest won't bounce off a wall of text. Full terms behind "read all house rules" in production. <strong>Data:</strong> brief, verbatim.</div>
+    </div>
+
+    <div class="sec">
+      <h3>Questions, answered</h3>
+      <details open>
+        <summary>What time is check-in and check-out? <span class="pm">[+]</span></summary>
+        <div class="a">Check-in from 3:00 PM, check-out by 11:00 AM.</div>
+      </details>
+      <details>
+        <summary>Is the pool heated? Is it shared? <span class="pm">[+]</span></summary>
+        <div class="a">Yes — heating is included, and the pool is entirely private to your stay.</div>
+      </details>
+      <details>
+        <summary>Can we bring a pet? <span class="pm">[+]</span></summary>
+        <div class="a">One pet max, $50 per pet per stay.</div>
+      </details>
+      <details>
+        <summary>Do we share any space with the upstairs? <span class="pm">[+]</span></summary>
+        <div class="a">No. The upstairs is a separate residence with its own entrance — no shared indoor spaces, entrances, or amenities.</div>
+      </details>
+      <details>
+        <summary>Where exactly is the house? <span class="pm">[+]</span></summary>
+        <div class="a">In the Mira Mesa area of San Diego, near La Jolla and the beaches. The exact address is shared after booking.</div>
+      </details>
+      <div class="anno"><span class="tag">NOTE — COLLAPSED FAQ</span>Five real questions drawn from the actual Airbnb inbox history (pool heating, upstairs privacy, pets, address). Collapsed by default to keep the page short; the first is open to signal there's more. <strong>Data:</strong> brief + inbox patterns; answers verbatim from verified facts.</div>
+    </div>
+  </main>
+
+  <aside>
+    <div class="railcard">
+      <div class="p"><b>$349</b> / night <span style="color:#8b8680;font-size:12px">from</span></div>
+      <div class="field">[ CHECK-IN — date picker ]</div>
+      <div class="field">[ CHECK-OUT — date picker ]</div>
+      <div class="field">[ GUESTS — 2 guests ▾ ]</div>
+      <a class="btn" href="#">[ CHECK AVAILABILITY ]</a>
+      <div class="break">
+        <div style="display:flex;justify-content:space-between"><span>$349 × 5 nights</span><span>$1,745</span></div>
+        <div style="display:flex;justify-content:space-between"><span>Cleaning fee</span><span>$150*</span></div>
+        <div style="display:flex;justify-content:space-between"><span>Taxes (10.5%*)</span><span>$199</span></div>
+        <div class="t"><span>Total</span><span>$2,094*</span></div>
+      </div>
+      <div class="anno"><span class="tag">NOTE — PRICE-MODULE RAIL</span>The rail shows an itemized sample breakdown — this is the transparency bet: guests see the math before committing. Asterisks mark sample values: <strong>$150 cleaning fee and 10.5% tax are labeled SAMPLE in the current build — founder must finalize both before launch.</strong> In production this module is live (server-side quote already built). "You won't be charged yet" microcopy goes under the button in production.</div>
+    </div>
+  </aside>
+</div>
+
+<footer>
+  <div>© Kipper Property Management · San Diego, CA<br>STRO Tier-2 · License STR-13982L</div>
+  <div>Home · Stays · About · Contact · FAQ</div>
+</footer>
+
+<div class="mobilebar">
+  <div class="st"><b>From $349 / night</b><span>No reviews yet</span></div>
+  <a class="go" href="#">[ CHECK AVAILABILITY ]</a>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — MOBILE BAR</span>Price-first even on mobile: "From $349/night" + CTA, fixed. The most aggressive commerce of the three concepts — fastest path to a booking decision, least room for atmosphere.</div></div>
+
+</body>
+</html>
