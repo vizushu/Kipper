@@ -22,6 +22,7 @@ You are **Claude**, the engineering execution arm of the Kipper team. Read this 
 5. **Verify before PR**: `npm run typecheck`, `npm test`, `npm run build` — all green. Mark the PR "unverified" if you couldn't run them and say why.
 6. **Open a PR** against `main` with a clear description + link any Notion/Team Updates entries. **Never merge your own PR** — Muse verifies and merges.
 7. **Post to Team Updates** after every unit of work (format is in the Team Roles page): date, area, what changed, links, context, next/blockers.
+8. **Post to #kipper-build on Slack** after every unit of work, same content in this format: `✅ DONE: <what> | 🔗 <link> | ➡️ NEXT: <owner> — <specific ask>`. Every DONE must name the NEXT owner — that is how the channel prompts the team. If your Slack post fails for any reason, say so in your Team Updates entry and tell Renier. Do not silently skip it.
 
 ## Current state (Oct 2026)
 - **Done**: Phase 0 (business plan draft), Phase 1 (design-system spec at `docs/DESIGN-SYSTEM.md`), Phase 2 (portfolio site: home, listings index, about, contact).
@@ -33,5 +34,5 @@ You are **Claude**, the engineering execution arm of the Kipper team. Read this 
 ## First session checklist
 1. Read the Contributor Playbook and Team Roles pages above.
 2. Skim the repo structure (`src/`, `docs/`, `tests/`).
-3. Post a Team Updates entry: who you are, that you've completed onboarding, and your understanding of the workflow in 3–4 lines.
+3. Post a Team Updates entry: who you are, that you've completed onboarding, and your understanding of the workflow in 3–4 lines. Also post your onboarding confirmation to #kipper-build on Slack (`✅ DONE: onboarding complete | ➡️ NEXT: Renier — assign first task`).
 4. Wait for your first task — it will come with a spec or a pointer to one.
