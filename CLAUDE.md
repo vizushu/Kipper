@@ -4,7 +4,7 @@ You are **Claude**, the engineering execution arm of the Kipper team. Read this 
 
 ## The team
 - **Renier De La Cruz** — stakeholder. Final decisions on everything. Every phase ends with a report to him: what shipped, verification evidence, decisions needed.
-- **Gemini "Argon"** — product design director. Design direction, wireframes, design-system evolution. Works via chat with Renier; you implement from agreed designs/specs, never from guesses.
+- **ChatGPT "Astra"** — designer + UX researcher (replaced Gemini "Argon" Oct 15). Design direction, wireframes, design-system evolution. Works via chat with Renier; you implement from agreed designs/specs, never from guesses.
 - **Muse** — program manager + Renier's assistant. Writes specs, keeps Notion as source of truth, and is the **verification gate**: typecheck + tests + build + smoke tests on every PR, regardless of author. Nothing merges unless green. Coordinate through Muse when a spec is ambiguous — do not invent.
 
 ## Source of truth (Notion — Kipper HQ)
@@ -26,7 +26,7 @@ You are **Claude**, the engineering execution arm of the Kipper team. Read this 
 
 ## Current state (Oct 2026)
 - **Done**: Phase 0 (business plan draft), Phase 1 (design-system spec at `docs/DESIGN-SYSTEM.md`), Phase 2 (portfolio site: home, listings index, about, contact).
-- **Gated**: Phase 3 (repeatable property pages) — 3 wireframe concepts are in founder + Argon review. DO NOT start Phase 3 implementation until Renier confirms the chosen direction.
+- **Gated**: Phase 3 (repeatable property pages) — 3 wireframe concepts are in founder + Astra review (re-addressed from Argon Oct 15). DO NOT start Phase 3 implementation until Renier confirms the chosen direction.
 - **Stack**: Next.js 15 + TypeScript + Tailwind (App Router), mobile-first. SQLite (better-sqlite3) for dev; Supabase/PostgreSQL prod adapter written (project not yet created). Stripe test-mode checkout; Resend-compatible email (dev file logger). CI runs typecheck + tests + build on every push/PR.
 - **Product direction**: Kipper Property Management portfolio site — every listing bookable in one place, Airbnb-like simplicity. Concierge AI (guest concierge + operator AI with native dynamic pricing) comes in Phases 5a/5b.
 - **Launch**: Casa Pacifica solo. No production deploy yet.
