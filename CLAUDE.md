@@ -42,4 +42,5 @@ Notion is the source of truth; your context is a cache. At the start of **every*
 1. Re-read the current phase spec and open decisions in the project hub.
 2. Read the latest Team Updates entries — anything since your last session.
 3. Skim the Decision log for anything new.
+4. Check Slack: read the latest #kipper-build messages and scan #blockers — know what's done, what's stuck, and whose turn it is before you start. Follow the DONE → NEXT chain.
 Never work from a stale session memory alone. **Before opening a PR**, re-check the spec + Team Updates once more for anything that changed while you worked — if the spec moved, reconcile first.
