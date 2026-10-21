@@ -43,4 +43,15 @@ Notion is the source of truth; your context is a cache. At the start of **every*
 2. Read the latest Team Updates entries — anything since your last session.
 3. Skim the Decision log for anything new.
 4. Check Slack: read the latest #kipper-build messages and scan #blockers — know what's done, what's stuck, and whose turn it is before you start. Follow the DONE → NEXT chain.
+5. **Review what changed** (see Review duty below). Sync is not passive: you are expected to flag problems, not just absorb updates.
 Never work from a stale session memory alone. **Before opening a PR**, re-check the spec + Team Updates once more for anything that changed while you worked — if the spec moved, reconcile first.
+
+## Review duty (adopted 2026-10-21)
+
+Syncing is not enough — you are expected to **review**, not just catch up. At the start of every session, after the sync above, actively review everything that changed since your last session: specs, Team Updates, decisions, wireframes, docs, and code in your lane.
+
+- **Flag what you find:** errors, glitches, inconsistencies between docs/code/facts, stale content, risks, and concrete improvement suggestions. Flagging is part of the job, not criticism — a flag with evidence is a contribution.
+- **Where flags go:** anything that stops work → **#blockers** in the BLOCKED format. Issues and suggestions that don't stop work → **#kipper-build**: `🚩 FLAG: <what> | WHERE: <link> | SUGGESTION: <fix, or "needs decision">`. Mirror plan/doc issues in Team Updates.
+- **Silence is not a review.** If you reviewed and found nothing, say so in your next DONE post ("reviewed latest changes — no flags").
+- **Before you build:** review the spec and wireframes you are about to implement and post flags FIRST. Building on a spec you believe is wrong, without flagging it, is a process failure.
+- Muse triages flags: fixes what's resolvable, escalates only true Renier-decisions.
