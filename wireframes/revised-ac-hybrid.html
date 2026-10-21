@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireframe — REVISED: A+C Hybrid (Astra direction, approved 2026-10-21)</title>
+<!--
+REVISED WIREFRAME — A+C HYBRID. Implements Astra's wireframe review (delivered 2026-10-16) as approved unchanged by Renier 2026-10-21.
+A's structure (photo-first hero, centered title, fact row, host card, sticky booking) + C's booking transparency/mechanics + restrained B editorial copy.
+Principle (Astra): "Photography earns attention. Clear information builds confidence. Transparent pricing earns the booking."
+Decisions referenced in annotations as D1–D8 (Astra's 8 provisional decisions, now confirmed) and P0/P1 (her revision lists).
+Verified Casa Pacifica facts only. No prices are rendered anywhere in this wireframe: amounts exist only as a live server quote (see booking states).
+-->
+<style>
+:root{--paper:#FAF8F5;--ink:#1C1917;--clay:#A8552F;--mut:#8b8680;--line:#ddd6ca;--fill:#e9e4da;--fill2:#dcd6c9;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#efece6;color:var(--ink);font-family:Georgia,'Times New Roman',serif;-webkit-font-smoothing:antialiased}
+.sans{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}
+/* ---- wireframe banner ---- */
+.wf-banner{background:var(--ink);color:var(--paper);padding:20px 24px;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}
+.wf-banner .kicker{font-size:11px;letter-spacing:.18em;font-weight:700;opacity:.6}
+.wf-banner h1{font-size:18px;letter-spacing:.04em;margin-top:6px}
+.wf-banner p{font-size:13px;line-height:1.6;opacity:.78;max-width:980px;margin-top:10px}
+.wf-banner .legend{margin-top:10px;font-size:11px;opacity:.6}
+/* ---- compliance map ---- */
+.pmap{max-width:1120px;margin:22px auto 0;padding:0 24px;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif}
+.pmap h2{font-size:13px;letter-spacing:.14em;margin-bottom:10px}
+.pmap table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff}
+.pmap td,.pmap th{border:1px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top;line-height:1.5}
+.pmap th{background:var(--fill);font-size:11px;letter-spacing:.1em}
+.pmap .ok{color:#3f6212;font-weight:700;white-space:nowrap}
+/* ---- frames ---- */
+.framelabel{max-width:1120px;margin:34px auto 10px;padding:0 24px;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:12px;letter-spacing:.16em;font-weight:700;color:#6f6a62}
+.frame-d{max-width:1440px;margin:0 auto;background:var(--paper);border:1px solid var(--line);box-shadow:0 6px 30px rgba(28,25,23,.08)}
+.frame-m{width:393px;max-width:100%;margin:0 auto;background:var(--paper);border:1px solid var(--line);box-shadow:0 6px 30px rgba(28,25,23,.08);position:relative;overflow:hidden;padding-bottom:84px}
+/* ---- nav ---- */
+.nav{display:flex;justify-content:space-between;align-items:center;padding:14px 24px;border-bottom:1px solid var(--line);font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:13px;background:var(--paper)}
+.nav .links{display:flex;gap:22px;color:#4a453e}
+.nav .plainlink{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+/* ---- photo placeholder ---- */
+.ph{background:repeating-linear-gradient(45deg,var(--fill),var(--fill) 14px,var(--fill2) 14px,var(--fill2) 28px);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:12px;letter-spacing:.1em;color:#6f6a62;padding:28px;position:relative}
+.ph .tag{position:absolute;top:10px;left:12px;font-size:10px;letter-spacing:.14em;font-weight:700;color:#8b8680}
+.hero{height:62vh;min-height:380px}
+.floatbtn{position:absolute;background:var(--paper);border:1px solid var(--line);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:14px;font-family:-apple-system,sans-serif}
+.counter{position:absolute;bottom:14px;right:16px;background:rgba(28,25,23,.75);color:#fff;font-family:-apple-system,sans-serif;font-size:12px;padding:5px 12px;border-radius:20px;letter-spacing:.08em}
+.showall{position:absolute;bottom:14px;left:16px;background:var(--paper);border:1px solid var(--ink);font-family:-apple-system,sans-serif;font-size:12px;font-weight:600;padding:8px 14px;min-height:36px}
+/* ---- layout ---- */
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.titleblock{padding:40px 24px 8px;max-width:760px;margin:0 auto;text-align:center}
+.titleblock h2{font-size:40px;font-weight:600;letter-spacing:-.01em}
+.titleblock .place{font-family:-apple-system,sans-serif;font-size:15px;color:#5c564d;margin-top:10px}
+.titleblock .facts{font-family:-apple-system,sans-serif;font-size:15px;margin-top:10px;letter-spacing:.02em}
+.truststrip{max-width:960px;margin:26px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:0 24px}
+.trust{border:1px solid var(--line);background:#fff;padding:16px 18px;font-family:-apple-system,sans-serif;display:flex;gap:12px;align-items:center}
+.trust .ic{font-size:18px;flex:none}
+.trust b{font-size:13.5px;display:block}
+.trust span{font-size:12.5px;color:#5c564d;display:block;margin-top:2px;line-height:1.45}
+.hostcard{max-width:760px;margin:22px auto 0;border:1px solid var(--line);background:#fff;padding:20px 22px;display:flex;gap:16px;align-items:center;font-family:-apple-system,sans-serif}
+.hostcard .av{width:52px;height:52px;border-radius:50%;background:var(--fill2);border:1px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#6f6a62}
+.hostcard b{font-size:15px}.hostcard span{display:block;font-size:13px;color:#5c564d;margin-top:3px}
+.highlights{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:960px;margin:34px auto 0;padding:0 24px}
+.hcard{border:1px solid var(--line);background:#fff;padding:20px;font-family:-apple-system,sans-serif}
+.hcard .ic{font-size:22px;margin-bottom:10px}
+.hcard b{font-size:14px}.hcard p{font-size:13px;color:#5c564d;margin-top:6px;line-height:1.55}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:56px;max-width:1120px;margin:44px auto 0;padding:0 24px;align-items:start}
+.bookcard{position:sticky;top:24px;border:1px solid var(--line);background:#fff;padding:24px;font-family:-apple-system,sans-serif;box-shadow:0 4px 16px rgba(28,25,23,.06)}
+.bookcard .price{font-size:16px;font-weight:600}
+.bookcard .price small{display:block;font-weight:400;font-size:12.5px;color:#5c564d;margin-top:4px;line-height:1.5}
+.bookcard .field{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:12px;color:#6f6a62;letter-spacing:.04em;min-height:44px}
+.bookcard .btn{display:block;text-align:center;background:var(--ink);color:#fff;padding:15px;font-size:13px;letter-spacing:.1em;font-weight:700;margin-top:14px;text-decoration:none;min-height:48px}
+.bookcard .btn.disabled{background:var(--fill2);color:#6f6a62;pointer-events:none}
+.bookcard .fine{font-size:12px;color:#8b8680;text-align:center;margin-top:10px;line-height:1.6}
+.qline{display:flex;justify-content:space-between;font-size:13.5px;padding:7px 0;color:#3d3831}
+.qline.total{border-top:1px solid var(--line);margin-top:8px;padding-top:12px;font-weight:700;font-size:14.5px;color:var(--ink)}
+.qline .amt{color:#6f6a62;letter-spacing:.15em}
+.sec{padding:30px 0;border-top:1px solid var(--line);margin-top:30px}
+.sec:first-child{border-top:none;margin-top:0;padding-top:0}
+.sec h3{font-size:24px;font-weight:600;margin-bottom:14px}
+.sec p.body{font-family:-apple-system,sans-serif;font-size:15px;line-height:1.7;color:#3d3831;max-width:640px}
+.sec p.body + p.body{margin-top:12px}
+.bedlist{font-family:-apple-system,sans-serif;font-size:14px;margin-top:14px;line-height:2}
+.bedlist b{display:inline-block;min-width:120px}
+.amen{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;font-family:-apple-system,sans-serif;font-size:14px}
+.amen div{border:1px dashed var(--line);padding:12px 14px;color:#4a453e;background:#fff}
+.rules{font-family:-apple-system,sans-serif;font-size:14px;line-height:2.1}
+.rules b{display:inline-block;min-width:150px}
+/* annotations */
+.anno{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;font-size:12px;line-height:1.6;color:#6f6a62;border-left:3px dashed #b9b2a4;background:#f4f1ea;padding:10px 14px;margin:14px 0}
+.anno .tag{display:block;font-size:10px;letter-spacing:.16em;font-weight:700;color:#a09a8e;margin-bottom:5px}
+/* footer */
+footer{margin-top:60px;border-top:1px solid var(--line);padding:30px 24px;font-family:-apple-system,sans-serif;font-size:12px;color:#8b8680;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;line-height:1.7}
+/* ---- mobile ---- */
+.m-nav{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);font-family:-apple-system,sans-serif;font-size:13px;background:var(--paper)}
+.m-hero{height:290px;border-left:none;border-right:none;border-top:none}
+.m-titleblock{padding:26px 20px 4px;text-align:center}
+.m-titleblock h2{font-size:30px;font-weight:600}
+.m-titleblock .place{font-family:-apple-system,sans-serif;font-size:14px;color:#5c564d;margin-top:8px}
+.m-titleblock .facts{font-family:-apple-system,sans-serif;font-size:14px;margin-top:8px;line-height:1.6}
+.m-sec{padding:22px 20px 0}
+.m-trust{border:1px solid var(--line);background:#fff;padding:14px 16px;font-family:-apple-system,sans-serif;margin-top:14px;display:flex;gap:12px;align-items:center}
+.m-host{border:1px solid var(--line);background:#fff;padding:16px;font-family:-apple-system,sans-serif;margin-top:14px;display:flex;gap:14px;align-items:center}
+.m-book{border:1px solid var(--line);background:#fff;padding:20px;font-family:-apple-system,sans-serif;margin-top:14px;box-shadow:0 4px 16px rgba(28,25,23,.06)}
+.m-bar{position:absolute;bottom:0;left:0;right:0;background:var(--paper);border-top:1px solid var(--line);padding:12px 16px 30px;display:flex;align-items:center;justify-content:space-between;font-family:-apple-system,sans-serif;z-index:5}
+.m-bar .st{font-size:13px;line-height:1.45}.m-bar .st b{display:block;font-size:13.5px}
+.m-bar .go{background:var(--ink);color:#fff;padding:0 22px;height:48px;display:flex;align-items:center;font-size:13px;letter-spacing:.08em;font-weight:700;text-decoration:none}
+/* ---- booking states ---- */
+.states{max-width:1440px;margin:0 auto;padding:0 24px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.state{border:1px solid var(--line);background:#fff;padding:20px;font-family:-apple-system,sans-serif}
+.state .slabel{font-size:10.5px;letter-spacing:.16em;font-weight:700;color:#a09a8e;margin-bottom:12px}
+.state .field{border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-top:10px;font-size:12px;color:#6f6a62;min-height:44px}
+.state .btn{display:block;text-align:center;background:var(--ink);color:#fff;padding:14px;font-size:12.5px;letter-spacing:.1em;font-weight:700;margin-top:12px;text-decoration:none;min-height:48px}
+.state .btn.disabled{background:var(--fill2);color:#6f6a62;pointer-events:none}
+.state .fine{font-size:11.5px;color:#8b8680;text-align:center;margin-top:9px;line-height:1.6}
+.state p.note{font-size:12.5px;line-height:1.6;color:#3d3831}
+.skel{height:12px;background:var(--fill);border-radius:6px;margin-top:12px}
+@media(max-width:1100px){.states{grid-template-columns:1fr 1fr}}
+@media(max-width:640px){.states{grid-template-columns:1fr}.truststrip{grid-template-columns:1fr}.highlights{grid-template-columns:1fr}.cols{grid-template-columns:1fr}.rail{display:none}}
+</style>
+</head>
+<body>
+
+<div class="wf-banner">
+  <div class="kicker">REVISED WIREFRAME · LOW FIDELITY · NOT FINAL DESIGN</div>
+  <h1>REVISED — A+C HYBRID (ASTRA DIRECTION · APPROVED BY RENIER 2026-10-21)</h1>
+  <p><strong>What this is:</strong> the single revised property-page wireframe Astra's conditional gate approval asked for. A's structure (photo-first hero, centered title, fact row, host card, sticky booking) + C's booking transparency and mechanics + B's restrained editorial copy, applied only where it doesn't slow the scan. <strong>Principle:</strong> photography earns attention, clear information builds confidence, transparent pricing earns the booking. Below: desktop at 1440px, mobile at 393px, then the 4-state booking interaction. No dollar amounts appear anywhere — prices exist only as a live server quote (D4/P0).</p>
+  <div class="legend">HATCHED BOX = photo placeholder · [BRACKET TEXT] = UI control · NOTE = annotation (decision + source) · D1–D8 = Astra's confirmed decisions · P0/P1 = her revision lists</div>
+</div>
+
+<div class="pmap">
+  <h2>ASTRA'S P0 / P1 REVISIONS — WHERE EACH ONE IS RESOLVED</h2>
+  <table>
+    <tr><th style="width:44%">Revision</th><th>Resolution in this wireframe</th><th style="width:70px">Status</th></tr>
+    <tr><td>P0 — Remove the unapproved $349 minimum and all sample fees/taxes</td><td>No price, fee, or tax figure appears anywhere. Pre-date state reads "Add dates to see price" (D4); quote amounts render only from the pricing engine (State 3).</td><td class="ok">✓ DONE</td></tr>
+    <tr><td>P0 — One dominant CTA per viewport</td><td>Nav carries a quiet text link only. The single solid CTA is the booking action (sticky rail on desktop, sticky bar on mobile, pay button at checkout).</td><td class="ok">✓ DONE</td></tr>
+    <tr><td>P0 — Remove "Free cancellation terms apply" until the policy is approved</td><td>No cancellation claim anywhere. State 4 reserves the pre-payment slot, labeled pending Renier's final wording.</td><td class="ok">✓ DONE</td></tr>
+    <tr><td>P0 — Correct the property configuration</td><td>3 bedrooms · sleeps 8 · downstairs only, exactly per the verified brief. Astra's unverified "5BR expansion" reference is excluded.</td><td class="ok">✓ DONE</td></tr>
+    <tr><td>P0 — Remove unsupported trust claims</td><td>No best-rate promise, no ratings, no transferred review history. Trust strip carries verified facts only (license, entire-downstairs, pool heating included).</td><td class="ok">✓ DONE</td></tr>
+    <tr><td>P1 — Simplify navigation</td><td>Four items: Stays · About · Contact + quiet availability link. FAQ removed from the property-page nav.</td><td class="ok">✓ DONE</td></tr>
+    <tr><td>P1 — Working gallery with accurate photo counter</td><td>Hero counter reads 1 / 13 (13 real photos on file) with a [ Show all photos ] control; gallery is a build requirement, not a static hero.</td><td class="ok">✓ DONE</td></tr>
+    <tr><td>P1 — Date-based itemized quotes</td><td>State 3: nightly × nights, cleaning fee, taxes, total — all server-calculated; see booking states.</td><td class="ok">✓ DONE</td></tr>
+    <tr><td>P1 — Sticky CTA safe-area insets; ≥44px touch targets</td><td>Mobile bar pads for the safe-area inset (annotated); every control is ≥44px tall, booking buttons 48px.</td><td class="ok">✓ DONE</td></tr>
+    <tr><td>Gate evidence — 360px overflow / accessibility check</td><td>Annotated at the end of this file: fact row wraps, grids stack, no horizontal scroll; focus order follows the D3 hierarchy.</td><td class="ok">✓ NOTED</td></tr>
+  </table>
+</div>
+
+<div class="framelabel">DESKTOP — 1440PX</div>
+<div class="frame-d">
+
+<nav class="nav sans">
+  <div><strong>Kipper</strong> <span style="color:#8b8680">PROPERTY MANAGEMENT</span></div>
+  <div class="links"><span>Stays</span><span>About</span><span>Contact</span></div>
+  <div><span class="plainlink">Check availability</span></div>
+</nav>
+<div class="wrap"><div class="anno" style="margin-bottom:0"><span class="tag">NOTE — NAV · P1 + D5</span>Navigation cut to three sections plus one quiet text link. The nav availability link is deliberately NOT a filled button — the only solid, dominant CTA in any viewport is the booking action (D5).</div></div>
+
+<div class="ph hero">
+  <span class="tag">PHOTO</span>
+  <div class="floatbtn" style="top:16px;left:16px">‹</div>
+  <div class="floatbtn" style="top:16px;right:70px">⤴</div>
+  <div class="floatbtn" style="top:16px;right:16px">♡</div>
+  [ HERO PHOTO — 1 OF 13 · pool at dusk or living room, landscape 16:9 ]<br><span style="font-size:11px">13 real Casa Pacifica photos on file; final sequence art-directed in Phase 3 build</span>
+  <div class="showall">[ Show all photos ]</div>
+  <div class="counter">1 / 13</div>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — HERO · D2 + P1</span>Image-first, no type-first hero (D2). The gallery is a working control with an accurate counter — 13 is the real photo count, not a placeholder (P1). Share/save float in the familiar Airbnb positions (D1).</div></div>
+
+<div class="titleblock">
+  <h2>Casa Pacifica</h2>
+  <div class="place">Mira Mesa · San Diego, California</div>
+  <div class="facts">8 guests &nbsp;·&nbsp; 3 bedrooms &nbsp;·&nbsp; 5 beds &nbsp;·&nbsp; 2 bathrooms</div>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — HIERARCHY · D3 + Q8</span>Order is name → location → verified facts, per D3. "5 beds" counts the bunk as two (twin-over-full) plus king, queen, and the living-room sleeper sofa — the convention is spelled out in Sleeping arrangements below so the number is never a mystery.</div></div>
+
+<div class="truststrip">
+  <div class="trust"><div class="ic">🪪</div><div><b>Licensed in San Diego</b><span>STRO license STR-13982L — shown here and again before payment (D8).</span></div></div>
+  <div class="trust"><div class="ic">🏠</div><div><b>The whole downstairs is yours</b><span>Upstairs is a separate home with its own entrance. No shared spaces.</span></div></div>
+  <div class="trust"><div class="ic">🌊</div><div><b>Pool heating included</b><span>Private pool and cabana — heating is part of the stay, not an add-on.</span></div></div>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — TRUST · D6 + P0</span>Every claim here is a verified fact from the property brief. No star rating, no review count, no "best rate" promise — the 383-review history belongs to a different listing and is never transferred (D6/P0). Pool heating "included" is as far as the copy goes; nothing claims the heater is on or ready.</div></div>
+
+<div class="hostcard">
+  <div class="av">K</div>
+  <div><b>Hosted by Kipper</b><span>Kipper Property Management · San Diego</span></div>
+</div>
+<div class="wrap"><div class="anno"><span class="tag">NOTE — HOST · D6</span>"Hosted by Kipper" is the confirmed host identity guests already see on Airbnb. No tenure or stay-count claims until Kipper's own direct-booking history exists to cite.</div></div>
+
+<div class="highlights">
+  <div class="hcard"><div class="ic">🏊</div><b>Private pool &amp; cabana</b><p>Your pool, your schedule — heating included in every stay.</p></div>
+  <div class="hcard"><div class="ic">🎱</div><b>Game &amp; billiards room</b><p>A full room for pool, games, and the night's rematch.</p></div>
+  <div class="hcard"><div class="ic">🔑</div><b>Entire downstairs home</b><p>3 bedrooms and 2 baths, all on one level — and all yours.</p></div>
+</div>
+
+<div class="cols">
+  <div class="main">
+    <div class="sec">
+      <h3>The space</h3>
+      <p class="body">Casa Pacifica is the entire downstairs of a Mira Mesa home: three bedrooms, two bathrooms, a game room with billiards, and a private pool and cabana out back. The upstairs is a separate home with its own entrance — you will never share a door, a kitchen, or a living space.</p>
+      <p class="body">One honest note: the washer and dryer live in the garage, which doubles as storage. It isn't pretty, and it works fine.</p>
+      <div class="anno"><span class="tag">NOTE — COPY · B-RESTRAINT + D7</span>B's editorial voice survives only as short, factual sequencing — two paragraphs, no essay (A+C hybrid). D7: the page shows exactly the space booked, including the material limitation (garage laundry) instead of hiding it. The removed backyard projector and the not-yet-built sauna appear nowhere on this page — absence is the honest treatment for both.</div>
+    </div>
+    <div class="sec">
+      <h3>Sleeping arrangements</h3>
+      <div class="bedlist">
+        <div><b>Bedroom 1</b> King bed</div>
+        <div><b>Bedroom 2</b> Queen bed</div>
+        <div><b>Bedroom 3</b> Twin-over-full bunk (sleeps 2)</div>
+        <div><b>Living room</b> Queen sleeper sofa</div>
+      </div>
+      <div class="anno"><span class="tag">NOTE — FACTS · PENDING RENIER</span>Bed inventory is verified (king / queen / twin-over-full bunk / queen sleeper = 5 beds, sleeps 8). The room-to-bed assignment shown is the standing assumption from the review brief — <strong>Renier to confirm or correct</strong> before the Phase 3 spec locks.</div>
+    </div>
+    <div class="sec">
+      <h3>Amenities</h3>
+      <div class="amen">
+        <div>Private pool — heating included</div><div>Pool cabana</div>
+        <div>Game &amp; billiards room</div><div>Full kitchen</div>
+        <div>Washer &amp; dryer (in garage)</div><div>Surfboards — you haul, your leashes</div>
+        <div>Air conditioning</div><div>Wi-Fi</div>
+      </div>
+      <div class="anno"><span class="tag">NOTE — AMENITIES · PENDING RENIER SIGN-OFF</span>Each item is from the verified brief; surfboards carry their real condition (guest transports, own leashes). Projector: removed — absent. Sauna: planned, not built — absent. <strong>Renier to sign off the final list.</strong></div>
+    </div>
+    <div class="sec">
+      <h3>House rules</h3>
+      <div class="rules">
+        <div><b>Check-in</b> 3:00 PM</div>
+        <div><b>Checkout</b> 11:00 AM</div>
+        <div><b>Guests</b> Max 8 overnight · 10 total including visitors</div>
+        <div><b>Quiet hours</b> 10:00 PM – 8:00 AM</div>
+        <div><b>Not allowed</b> Parties or events · smoking or vaping</div>
+        <div><b>Pets</b> Welcome — 1 max, $50 per pet per stay</div>
+        <div><b>Parking</b> Please don't block the neighbor's driveway</div>
+      </div>
+      <div class="anno"><span class="tag">NOTE — RULES · D8</span>Rules appear in full here AND are recapped in the booking rail before payment (State 4) — a guest can never reach the pay button without passing them (D8). The $50 pet fee is a set policy fee, so it is allowed to appear; nightly price, cleaning fee, and taxes are not set here and never appear as page copy (P0).</div>
+    </div>
+  </div>
+  <div class="rail">
+    <div class="bookcard">
+      <div class="price">Add dates to see price<small>Your total comes from a live quote — never a "from" price.</small></div>
+      <div class="field">CHECK-IN &nbsp;→&nbsp; CHECKOUT<br><span style="font-size:13px;color:#3d3831">[ Select dates ]</span></div>
+      <div class="field">GUESTS<br><span style="font-size:13px;color:#3d3831">[ 2 guests ]</span></div>
+      <a class="btn" href="#">CHECK AVAILABILITY</a>
+      <div class="fine">You won't be charged yet.<br>San Diego STRO license STR-13982L</div>
+    </div>
+    <div class="anno"><span class="tag">NOTE — BOOKING RAIL · D4 + D5 + STATE 1</span>This is booking State 1 of 4 (full sequence below). No price exists until dates are picked (D4); the solid button is the viewport's one dominant CTA (D5). The rail is sticky on desktop; on mobile it collapses into the sticky bottom bar.</div>
+  </div>
+</div>
+
+<footer>
+  <div>Kipper Property Management · San Diego, California<br>STRO license STR-13982L · TOT 660372</div>
+  <div>Stays · About · Contact</div>
+</footer>
+</div><!-- /frame-d -->
+
+<div class="framelabel">MOBILE — 393PX</div>
+<div class="frame-m">
+
+<div class="m-nav"><div><strong>Kipper</strong> <span style="color:#8b8680">PROPERTY MGMT</span></div><div style="font-size:20px">☰</div></div>
+
+<div class="ph m-hero">
+  <span class="tag">PHOTO</span>
+  [ HERO PHOTO — 1 OF 13 ]
+  <div class="showall">[ Show all photos ]</div>
+  <div class="counter">1 / 13</div>
+</div>
+
+<div class="m-titleblock">
+  <h2>Casa Pacifica</h2>
+  <div class="place">Mira Mesa · San Diego, California</div>
+  <div class="facts">8 guests · 3 bedrooms · 5 beds · 2 bathrooms</div>
+</div>
+
+<div class="m-sec">
+  <div class="m-trust"><div style="font-size:18px">🪪</div><div style="font-size:13px;line-height:1.5"><b>Licensed in San Diego</b> — STRO STR-13982L. Entire downstairs home, no shared spaces. Pool heating included.</div></div>
+  <div class="anno"><span class="tag">NOTE — MOBILE TRUST · D3</span>The three desktop trust cards compress into one verified-facts strip on mobile — same claims, same sources, no new copy invented for small screens.</div>
+
+  <div class="m-host"><div class="av" style="width:48px;height:48px;border-radius:50%;background:var(--fill2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;color:#6f6a62;flex:none">K</div><div style="font-size:14px"><b>Hosted by Kipper</b><span style="display:block;font-size:12.5px;color:#5c564d;margin-top:2px">Kipper Property Management · San Diego</span></div></div>
+
+  <div class="hcard" style="margin-top:14px"><div class="ic">🏊</div><b>Private pool &amp; cabana</b><p>Your pool, your schedule — heating included in every stay.</p></div>
+  <div class="hcard" style="margin-top:10px"><div class="ic">🎱</div><b>Game &amp; billiards room</b><p>A full room for pool, games, and the night's rematch.</p></div>
+  <div class="hcard" style="margin-top:10px"><div class="ic">🔑</div><b>Entire downstairs home</b><p>3 bedrooms and 2 baths, all on one level — and all yours.</p></div>
+
+  <h3 style="font-size:21px;font-weight:600;margin-top:26px">The space</h3>
+  <p class="body sans" style="font-size:14.5px;line-height:1.7;color:#3d3831;margin-top:10px">Casa Pacifica is the entire downstairs of a Mira Mesa home: three bedrooms, two bathrooms, a game room with billiards, and a private pool and cabana out back. The upstairs is a separate home with its own entrance — no shared doors, kitchens, or living spaces. The washer and dryer live in the garage, which doubles as storage; it isn't pretty, and it works fine.</p>
+
+  <h3 style="font-size:21px;font-weight:600;margin-top:26px">Sleeping arrangements</h3>
+  <div class="bedlist" style="font-size:13.5px">
+    <div><b style="min-width:96px">Bedroom 1</b> King bed</div>
+    <div><b style="min-width:96px">Bedroom 2</b> Queen bed</div>
+    <div><b style="min-width:96px">Bedroom 3</b> Twin-over-full bunk (2)</div>
+    <div><b style="min-width:96px">Living room</b> Queen sleeper sofa</div>
+  </div>
+
+  <h3 style="font-size:21px;font-weight:600;margin-top:26px">House rules</h3>
+  <div class="rules" style="font-size:13.5px">
+    <div><b style="min-width:110px">Check-in</b> 3:00 PM</div>
+    <div><b style="min-width:110px">Checkout</b> 11:00 AM</div>
+    <div><b style="min-width:110px">Guests</b> Max 8 overnight · 10 total</div>
+    <div><b style="min-width:110px">Quiet hours</b> 10 PM – 8 AM</div>
+    <div><b style="min-width:110px">Not allowed</b> Parties · smoking/vaping</div>
+    <div><b style="min-width:110px">Pets</b> 1 max · $50 per stay</div>
+  </div>
+
+  <div class="m-book">
+    <div style="font-size:15.5px;font-weight:600">Add dates to see price</div>
+    <div class="field" style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:12px;font-size:12px;color:#6f6a62;min-height:44px">CHECK-IN → CHECKOUT<br><span style="font-size:13px;color:#3d3831">[ Select dates ]</span></div>
+    <div class="field" style="border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:10px;font-size:12px;color:#6f6a62;min-height:44px">GUESTS<br><span style="font-size:13px;color:#3d3831">[ 2 guests ]</span></div>
+    <div class="fine" style="font-size:11.5px;color:#8b8680;text-align:center;margin-top:10px">You won't be charged yet · STRO STR-13982L</div>
+  </div>
+  <div class="anno"><span class="tag">NOTE — MOBILE BOOKING · D5</span>The full booking card still exists in the scroll for guests who prefer it, but the sticky bar below is the viewport's dominant CTA. Both drive the same 4-state flow — one system, two entry points.</div>
+</div>
+
+<div class="m-bar">
+  <div class="st"><b>Add dates to see price</b>Select dates for your total</div>
+  <a class="go" href="#">CHECK AVAILABILITY</a>
+</div>
+<div class="wrap"><div class="anno" style="margin:10px 14px 0"><span class="tag">NOTE — STICKY BAR · P1</span>The bar's bottom padding (30px here) reserves the phone's safe-area inset — in the build this is <em>env(safe-area-inset-bottom)</em> so the CTA never sits under a home indicator. Button height 48px; every tappable element on the page is ≥44px (P1).</div></div>
+</div><!-- /frame-m -->
+
+<div class="framelabel">BOOKING INTERACTION — THE 4 STATES (ASTRA'S SPEC)</div>
+<div class="states">
+
+  <div class="state">
+    <div class="slabel">STATE 1 — NO DATES</div>
+    <div style="font-size:15px;font-weight:600">Add dates to see price</div>
+    <div class="field">CHECK-IN → CHECKOUT<br>[ Select dates ]</div>
+    <div class="field">GUESTS<br>[ 2 guests ]</div>
+    <a class="btn" href="#">CHECK AVAILABILITY</a>
+    <div class="fine">You won't be charged yet</div>
+    <div class="anno"><span class="tag">MECHANICS</span>Default state everywhere (rail, mobile bar, checkout entry). No price, no "from" anchor, no urgency copy. Button validates dates + guest count (≤8 overnight) before anything else happens.</div>
+  </div>
+
+  <div class="state">
+    <div class="slabel">STATE 2 — VALIDATING</div>
+    <div style="font-size:15px;font-weight:600">Checking your dates…</div>
+    <div class="field">CHECK-IN → CHECKOUT<br>Fri, Nov 6 → Wed, Nov 11</div>
+    <div class="field">GUESTS<br>6 guests</div>
+    <div class="skel" style="width:82%"></div><div class="skel" style="width:64%"></div><div class="skel" style="width:74%"></div>
+    <a class="btn disabled" href="#">CHECKING…</a>
+    <div class="anno"><span class="tag">MECHANICS</span>One server round-trip checks availability AND price together — never one without the other. If the dates are taken, the error lands here, inline, with the nearest open dates offered. No spinner-only dead ends.</div>
+  </div>
+
+  <div class="state">
+    <div class="slabel">STATE 3 — QUOTE</div>
+    <div style="font-size:15px;font-weight:600">Your quote</div>
+    <p class="note" style="margin-top:2px">Fri, Nov 6 → Wed, Nov 11 · 6 guests</p>
+    <div style="margin-top:10px">
+      <div class="qline"><span>[Nightly rate] × 5 nights</span><span class="amt">$ ···</span></div>
+      <div class="qline"><span>Cleaning fee</span><span class="amt">$ ···</span></div>
+      <div class="qline"><span>Taxes</span><span class="amt">$ ···</span></div>
+      <div class="qline total"><span>Total</span><span class="amt">$ ···</span></div>
+    </div>
+    <a class="btn" href="#">CONTINUE TO CHECKOUT</a>
+    <div class="fine">Quote held for 15 minutes</div>
+    <div class="anno"><span class="tag">MECHANICS · D4 + P0</span>The dots are deliberate: amounts exist ONLY as this live server quote, rendered at quote time. Nothing is copied from page copy, so no stale total and no sample figure can ever leak in (P0). Change the dates and the quote is discarded, not edited.</div>
+  </div>
+
+  <div class="state">
+    <div class="slabel">STATE 4 — CHECKOUT</div>
+    <div style="font-size:15px;font-weight:600">Confirm and pay</div>
+    <div class="field">GUEST<br>[ Name · email · phone ]</div>
+    <div class="field">PAYMENT<br>[ Card — processed by Stripe ]</div>
+    <div style="margin-top:12px">
+      <div class="qline"><span>Dates</span><span>Nov 6 → Nov 11</span></div>
+      <div class="qline"><span>Total</span><span>From your quote (State 3)</span></div>
+      <div class="qline"><span>Check-in / out</span><span>3 PM / 11 AM</span></div>
+      <div class="qline"><span>Max guests</span><span>8 overnight · 10 total</span></div>
+      <div class="qline"><span>Cancellation</span><span>[ Final wording — pending Renier ]</span></div>
+      <div class="qline"><span>License</span><span>STRO STR-13982L</span></div>
+    </div>
+    <a class="btn" href="#">PAY</a>
+    <div class="anno"><span class="tag">MECHANICS · D8</span>Everything material — total, rules, cancellation, license — is on screen BEFORE the pay button; pay is this viewport's one dominant CTA (D5/D8). The total is revalidated against the server at payment: if the quote expired or dates changed, the guest returns to State 3 with a fresh quote. Never a silent price change.</div>
+  </div>
+
+</div>
+
+<div class="wrap" style="max-width:1120px">
+  <div class="anno" style="margin-top:26px"><span class="tag">NOTE — 360PX + ACCESSIBILITY (ASTRA'S GATE EVIDENCE)</span><strong>360px:</strong> the fact row wraps to two lines, trust and highlight grids stack to one column, the booking states stack vertically, and the sticky bar keeps its inset padding — no horizontal scroll anywhere (border-box sizing and fluid widths throughout). <strong>Accessibility:</strong> focus order follows the D3 hierarchy (title → facts → booking), all controls ≥44px with visible labels, the date fields and CTA are reachable without a mouse, and the photo counter is text, not color alone. Rendered screenshots at 393px/1440px to be captured at Renier's gate review from this file.</div>
+  <div class="anno"><span class="tag">NOTE — WHAT'S STILL OPEN (RENIER, CONTENT FACTS ONLY)</span>1) Room-to-bed assignment (shown: BR1 king · BR2 queen · BR3 bunk). 2) Final cleaning fee + tax rate — deliberately absent here; they enter via the pricing engine, never page copy. 3) Cancellation policy final wording — slot reserved in State 4. 4) Amenity list sign-off. None of these block the gate decision on structure; all four must land before the Phase 3 spec locks.</div>
+</div>
+
+<div style="height:40px"></div>
+</body>
+</html>

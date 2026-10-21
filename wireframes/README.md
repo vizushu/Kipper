@@ -4,6 +4,12 @@ Three low-fidelity concepts for the Casa Pacifica property page (the template ev
 
 **Shared ground rules across all three:** one sticky "Check availability" CTA, no ratings/reviews rendered (none exist — marked "omitted, never faked"), only verified Casa Pacifica facts, placeholders clearly labeled.
 
+---
+
+## REVISED — A+C Hybrid (approved direction)
+
+[revised-ac-hybrid.html](revised-ac-hybrid.html) — the single revised wireframe implementing Astra's review (A+C hybrid: A's structure + C's booking transparency + restrained B copy), **approved unchanged by Renier 2026-10-21**. Contains the desktop (1440px) and mobile (393px) renderings plus the 4-state booking interaction (no dates → validating → quote → checkout), with Astra's P0/P1 compliance map up front. No prices are rendered anywhere — amounts exist only as a live server quote. Concepts A/B/C below are retained as review history. **Status: awaiting Renier's gate approval → Muse writes the Phase 3 spec → Claude builds.**
+
 | File | Concept |
 |---|---|
 | [concept-a-airbnb-native.html](concept-a-airbnb-native.html) | Airbnb-native |
