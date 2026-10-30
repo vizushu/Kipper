@@ -49,7 +49,7 @@ export const guestsSchema = z.object({
 });
 
 export function zodErrorResponse(e: z.ZodError): NextResponse {
-  const message = e.errors
+  const message = e.issues
     .map((x) => `${x.path.join(".") || "body"}: ${x.message}`)
     .join("; ");
   return apiError("INVALID_REQUEST", message, 400);
