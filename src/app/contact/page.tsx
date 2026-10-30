@@ -1,63 +1,35 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { IconMessage, IconSparkle, IconUsers } from '@/components/icons';
 import { isPublicPreview } from '@/lib/booking-launch';
-import { getGuestContactChannels } from '@/lib/guest-contact';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Contact us',
-  description: 'Contact options for Casa Pacifica: Slack, Discord, SMS and Ask dot. Guest connections are being prepared.',
+  title: 'Ask Kipper',
+  description: 'Questions about your Casa Pacifica stay? Guest messaging is being connected. No messages are received through this preview.',
 };
-const STATUS = { available: 'Available', preview: 'Unavailable in preview', not_connected: 'Not connected', in_development: 'In development' };
 
+/** One contact entry. Legacy community invites are deliberately not guest support. */
 export default function ContactPage() {
   const preview = isPublicPreview();
-  return (
-    <div className="mx-auto max-w-[760px] px-5 py-10 pb-20 sm:px-8 sm:py-12">
-      <Link href="/properties/casa-pacifica" className="mb-7 inline-flex min-h-11 items-center text-sm text-ink">← Back to the home</Link>
-      <p className="mb-3 text-xs uppercase tracking-[0.18em] text-stone-500">Contact Casa Pacifica</p>
-      <h1 className="font-display text-4xl font-normal tracking-tight text-ink sm:text-5xl">Let’s talk about your stay.</h1>
-      <p className="mt-5 max-w-2xl text-base leading-relaxed text-stone-600">
-        Choose the way you prefer to connect. We’re preparing dedicated guest channels — no private team spaces or personal contact details are shared here.
-      </p>
-      <div className="mt-8 rounded-2xl border border-stone-200 bg-cream px-5 py-4 text-sm leading-relaxed text-stone-600">
-        {preview ? 'This is a preview: messages cannot be sent, contact links are disabled, and no guest details are collected on this page.' : 'Only connected options below can be used. Unavailable options do not accept messages.'}
-        {' '}Ask dot is not answering questions yet. No response time is promised.
-      </div>
+  return <div className="mx-auto max-w-[590px] px-5 pb-20 pt-8 sm:px-8 sm:py-12">
+    <Link href="/properties/casa-pacifica" className="mb-7 inline-flex min-h-11 items-center text-sm text-ink">← Back to the home</Link>
+    <p className="casa-eyebrow mb-3">Ask Kipper · Casa Pacifica</p>
+    <h1 className="font-display text-4xl font-normal leading-[1.1] tracking-tight text-ink sm:text-5xl">Questions about your stay?</h1>
+    <p className="mt-5 text-sm leading-7 text-moss">One place for stay questions and help from the team.</p>
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-2" aria-label="Guest contact options">
-        {getGuestContactChannels().map(channel => {
-          const Icon = channel.id === 'dot' ? IconSparkle : channel.id === 'sms' ? IconMessage : IconUsers;
-          return (
-            <article key={channel.id} aria-labelledby={`contact-${channel.id}`} className={`flex min-w-0 flex-col rounded-xl border p-5 sm:p-6 ${channel.id === 'dot' ? 'border-clay/25 bg-cream' : 'border-stone-300 bg-[#fffcf6]'}`}>
-              <div className="flex items-start justify-between gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-clay-soft text-clay-dark"><Icon className="h-5 w-5" /></span>
-                <span className="rounded-full bg-stone-100 px-3 py-1 text-right text-xs font-medium text-stone-600">{STATUS[channel.status]}</span>
-              </div>
-              <h2 id={`contact-${channel.id}`} className="mt-5 font-display text-2xl font-normal text-ink">{channel.name}</h2>
-              <p className="mb-6 mt-2 text-sm leading-relaxed text-stone-600">{channel.description}</p>
-              {channel.href ? (
-                <a href={channel.href} rel="noopener noreferrer" referrerPolicy="no-referrer" className="mt-auto inline-flex min-h-12 items-center justify-center rounded-xl bg-ink px-5 py-3 text-sm font-medium text-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-clay">
-                  {channel.action}<span className="sr-only"> — opens {channel.id === 'sms' ? 'your messaging app' : 'an external service'}</span>
-                </a>
-              ) : <p className="mt-auto border-t border-stone-200 pt-4 text-xs leading-relaxed text-stone-500">{channel.id === 'dot' ? 'Guest integration and privacy safeguards are being reviewed. There is no chat submission or automatic answer here.' : 'No message will be sent from this option. A guest-facing connection must be approved before it becomes available.'}</p>}
-            </article>
-          );
-        })}
-      </section>
+    <section aria-label="Message the team" className="mt-7">
+      <button type="button" disabled aria-describedby="message-status" className="flex min-h-12 w-full items-center justify-center rounded-full bg-ink px-6 py-3 text-sm font-medium text-paper opacity-60 disabled:cursor-not-allowed">Message us</button>
+      <p id="message-status" role="status" className="mt-3 text-sm leading-6 text-moss">{preview ? 'Messaging is unavailable in this preview.' : 'Guest messaging is not connected yet.'} No message can be sent here.</p>
+      <p className="mt-5 text-sm text-moss"><span className="font-medium text-ink">Prefer email?</span> Guest email is not connected yet.</p>
+    </section>
 
-      <section className="mt-10 border-t border-stone-200 pt-8" aria-labelledby="contact-help">
-        <h2 id="contact-help" className="font-display text-2xl font-normal text-ink">Helpful while you explore</h2>
-        <p className="mt-2 text-sm leading-relaxed text-stone-600">Stay details and policies are available without sending a message.</p>
-        <nav aria-label="Stay information" className="mt-4 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-clay-dark">
-          <Link href="/properties/casa-pacifica" className="underline underline-offset-4">Explore the accommodation</Link>
-          <Link href="/booking-access" className="underline underline-offset-4">Recover booking access</Link>
-          <Link href="/faq" className="underline underline-offset-4">Common questions</Link>
-          <Link href="/policies/cancellation" className="underline underline-offset-4">Cancellation policy</Link>
-        </nav>
-        <p className="mt-6 text-xs leading-relaxed text-stone-500">Do not share payment details, passwords or entry codes in community channels. For an existing reservation, use the verified contact in your original confirmation. These contact options are not emergency services.</p>
-      </section>
-    </div>
-  );
+    <section aria-labelledby="urgent-help" className="mt-9 border-t border-line pt-7">
+      <h2 id="urgent-help" className="font-display text-2xl font-normal">Booked guests: urgent help</h2>
+      <p className="mt-3 text-sm leading-7 text-moss">Use the verified host contact in your original booking confirmation for urgent stay issues. You don’t need to go through automated questions.</p>
+      <p className="mt-2 text-xs leading-6 text-moss">Urgent contact is not connected on this website. For immediate danger, contact local emergency services.</p>
+      <Link href="/booking-access" className="mt-4 inline-flex min-h-11 items-center text-sm underline underline-offset-4">Find your booking</Link>
+    </section>
+
+    <p className="mt-8 border-t border-line pt-5 text-xs leading-6 text-moss">Kipper AI is not answering here yet. No guest details are collected and no response time is promised.</p>
+  </div>;
 }

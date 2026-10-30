@@ -1,59 +1,44 @@
-# Casa Pacifica guest contact foundation
+# Unified Ask Kipper contact experience
 
-The contact page presents Slack, Discord, SMS and Ask dot in a responsive card grid.
-Disconnected options have honest status text, not dead buttons or simulated chat.
-No guest details are collected on the page. Existing `/api/contact` preview blocking
-is unchanged; the legacy email form is not mounted on the new channel page.
+`/contact` is the single Ask Kipper entry linked from the header and footer. It uses
+one narrow column: “Questions about your stay?”, a prominent Message us action,
+a quiet email alternative, and a directly visible booked-guest urgent-help section.
+No search, multi-field form or automated question sequence is required.
 
-## Current state
+## Current state — not connected
 
-No destinations, numbers, accounts or credentials have been configured. No guest
-messages have been sent. Ask dot is **not live** and has no submit control, iframe,
-SDK, web socket, fabricated reply, hidden public API or private conversation link.
-Kipper remains the in-development concierge AI; the website brand is Casa Pacifica.
+No verified monitored guest channel, guest email or urgent-support contact has
+been configured. Message us is explicitly disabled with an associated explanation.
+Email and urgent website contact have short unavailable statuses, not large cards
+or invented links. Booked guests are directed to the verified host contact in their
+original confirmation; immediate danger is directed to local emergency services.
+This is guidance, not an operational emergency channel or response-time promise.
 
-## Guest-facing links (future explicit configuration)
+Kipper AI is not answering. The page accepts no guest details, sends no messages,
+and makes no provider calls. It does not expose personal numbers, private emails,
+Slack invitations, Discord communities or private assistant conversations. Slack
+is an internal team implementation concern, not a competing public contact option.
 
-Only the server page reads `src/lib/guest-contact.ts`; it must not be imported by
-client components. Runtime rendering prevents destinations being baked into a
-static page at build time. `SITE_PREVIEW_MODE=true` strips all destinations even
-when other flags or values are present. Unavailable cards never serialize them.
+The historical `guest-contact.ts` invitation validator remains unused by this page;
+even its old approved-link flags cannot activate the new contact experience. Its
+unit validation is retained, but it is not a supported public messaging integration.
+The existing `/api/contact` and public-preview guards remain unchanged. The legacy
+email form is not mounted. No credentials, destination values, provider accounts or
+service configuration were changed in this increment.
 
-Outside preview, `GUEST_CONTACT_LINKS_APPROVED=true` also requires an approved value:
-- `GUEST_CONTACT_SLACK_URL`: HTTPS `join.slack.com/t/<workspace>/shared_invite/<invite>`.
-- `GUEST_CONTACT_DISCORD_URL`: HTTPS `discord.gg/<invite>` or `discord.com/invite/<invite>`.
-- `GUEST_CONTACT_SMS_NUMBER`: guest-support E.164 number, `+` and 8–15 digits.
+## Before activation
 
-These are outbound invitation/SMS-app links, not integrations or automated answers.
-There is no prefilled message, guest-data forwarding or provider call on render.
-URL credentials, query strings, fragments, custom ports, internal channel paths,
-unrecognized domains and malformed phone numbers are rejected. External links use
-no-referrer and noreferrer/noopener. URL validation does not prove a destination is
-guest-safe: the owner must verify intended audience, permissions, number ownership,
-moderation and invite availability before approving publication. Do not configure
-personal numbers or existing private team spaces. No Slack/Discord/SMS credentials
-belong in these fields. The current preview stays closed even after link approval.
+The owner must choose and verify one monitored guest-facing conversation channel,
+a dedicated guest email alternative and an urgent human route, including ownership,
+coverage, permissions and privacy disclosures. Only then should the corresponding
+controls be wired and tested. The urgent route must bypass automated questions.
+No response-time SLA is approved.
 
-## Ask dot / future adapter boundary
+Future Kipper AI must identify itself clearly and escalate into that same conversation,
+not another competing system. No supported public dot API or Muse guest relay is
+assumed. A future adapter needs guest/session isolation, authenticated replies,
+ticket-to-thread binding, abuse limits, deduplication, retention and human escalation.
+Internal Slack history, private assistant memory, another guest’s data and access
+codes must never be exposed. Test with synthetic data before approving real messages.
 
-No supported public dot guest API has been verified. Native dot texting is not
-assumed to support arbitrary guest recipients. A private Slack automation is not a
-secure guest chat product by itself. Do not build or enable a speculative relay.
-
-A future integration requires an approved transport and clear guest identity/session
-model, separate guest-safe knowledge from private assistant memory, ticket-to-thread
-binding, per-visitor authorization on replies, rate limits/abuse handling, explicit
-privacy/retention disclosures and escalation rules. Reject prompts requesting
-private records, entry codes, payments or unauthorized changes. A human escalation
-must not expose internal channels, personal contact details or another guest's
-conversation. Test sender authenticity, replay/deduplication and isolation using
-synthetic data before any real message flow. No credentials or provisioning are
-part of this increment.
-
-## Pending owner decisions and validation
-
-Provide the dedicated guest Slack/Discord invitations and approved guest SMS number.
-Choose whether guests talk to actual dot via a verified supported integration or a
-separate, narrowly scoped Kipper FAQ assistant with human/dot escalation. Neither
-has been activated or silently substituted. Browser/device outbound-app behavior,
-provider permissions and guest-session security remain untested until configured.
+This update changes presentation only; it does not implement or activate messaging.

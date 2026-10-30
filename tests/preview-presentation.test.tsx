@@ -36,7 +36,7 @@ describe('public preview presentation', () => {
     expect(generateMetadata().robots).toBeUndefined();
     expect(robots().rules).toMatchObject({ allow: '/' });
     expect(renderToStaticMarkup(<ContactPage />)).not.toContain('contact-form');
-    expect(renderToStaticMarkup(<ContactPage />)).toContain('Ask dot');
+    expect(renderToStaticMarkup(<ContactPage />)).toContain('Ask Kipper');
     expect(renderToStaticMarkup(<CheckoutPage />)).toContain('checkout-form');
   });
 });

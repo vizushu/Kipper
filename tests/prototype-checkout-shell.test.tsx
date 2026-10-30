@@ -31,8 +31,8 @@ it('keeps recovery private and disabled under the prototype visual shell', () =>
 });
 it('renders contact options without a pretend concierge conversation', () => {
   const html = renderToStaticMarkup(<ContactPage />);
-  expect(html).toContain('Let’s talk about your stay.');
-  expect(html).toContain('Ask dot is not answering questions yet');
+  expect(html).toContain('Questions about your stay?');
+  expect(html).toContain('Kipper AI is not answering here yet');
   expect(html).not.toMatch(/<textarea|<input|<form/);
 });
 it('maps checkout progression to details state while keeping authoritative price and provider form', () => {
