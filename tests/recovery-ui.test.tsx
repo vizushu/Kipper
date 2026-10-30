@@ -29,7 +29,7 @@ describe('booking access server gate', () => {
     const html = renderToStaticMarkup(<BookingAccessPage />);
     expect(html.match(/<form /g)).toHaveLength(2);
     expect(html).toContain('for="recovery-reference"'); expect(html).toContain('for="recovery-email"'); expect(html).toContain('for="recovery-code"');
-    expect(html).toContain('type="password"'); expect(html).toContain('sm:grid-cols-2');
+    expect(html).toContain('type="password"'); expect(html).toContain('max-w-[590px]');
   });
 });
 describe('memory-only recovery controller', () => {

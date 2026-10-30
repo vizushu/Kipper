@@ -13,6 +13,7 @@
  * States: loading quote, quote error (with code-aware messaging),
  * guest form, payment, processing, success redirect, failure + retry.
  */
+import BookingProgress from "./BookingProgress";
 import { bookingFlowNotice, quoteIsCurrent } from "@/lib/booking-flow-state";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -290,12 +291,12 @@ function CheckoutFlow() {
     }
   }
 
-  if (paymentWarning) return <div role="alert" className="mx-auto max-w-xl px-4 py-16 text-center">
+  if (paymentWarning) return <div role="alert" className="mx-auto max-w-[590px] px-5 py-16 text-center">
     <h1 className="font-display text-2xl">Verify your payment attempt</h1>
     <p className="mt-4">{paymentWarning}</p>
     <p className="mt-3 text-sm">Nothing will be queued or retried automatically.</p><Link href="/booking-access" className="mt-5 inline-block underline">Recover booking access</Link>
   </div>;
-  if (!online || needsRecheck) return <div role="status" className="mx-auto max-w-xl px-4 py-16 text-center">
+  if (!online || needsRecheck) return <div role="status" className="mx-auto max-w-[590px] px-5 py-16 text-center">
     <h1 className="font-display text-2xl">{online ? "Recheck your stay before continuing" : "You’re offline"}</h1>
     <p className="mt-4">Booking and payment are paused. Nothing is queued or replayed. Recheck current availability and pricing after reconnecting.</p>
     <Button className="mt-5" disabled={!online} onClick={loadQuote}>Recheck availability and price</Button>
@@ -304,7 +305,7 @@ function CheckoutFlow() {
 
   if (quoteError || !quote) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-16 text-center sm:px-6">
+      <div className="mx-auto max-w-[590px] px-5 py-16 text-center sm:px-6">
         <p className="font-display text-2xl font-medium text-ink">We couldn't price that stay</p>
         <p className="mt-3 text-stone-600">{quoteError?.message ?? "Something went wrong."}</p>
         <div className="mt-6 flex justify-center gap-3">
@@ -320,20 +321,36 @@ function CheckoutFlow() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <h1 className="font-display text-3xl font-medium text-ink">Review & book</h1>
+    <div className="mx-auto max-w-[590px] px-5 py-7 pb-20 sm:px-8 sm:py-10">
+      <BookingProgress current={detailsConfirmed ? "payment" : "review"} />
+      <h1 className="font-display text-4xl font-normal tracking-tight text-ink">Review your stay.</h1>
       <p className="mt-2 text-stone-600">
         {property?.name ?? "Casa Pacifica"} · {fmtDate(quote.checkIn)} → {fmtDate(quote.checkOut)} ·{" "}
         {guestSummary(quote.guests)}
         {quote.pets > 0 && ` · ${quote.pets} pet`}
       </p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_400px]">
+      <div className="mt-7 flex flex-col gap-6">
+        {/* Price summary */}
+        <aside aria-label="Price summary">
+          <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+            <h2 className="font-display text-2xl font-normal text-ink">Price breakdown</h2>
+            <div className="mt-2">
+              <PriceBreakdown quote={quote} showSampleBadge={quote.paymentMode !== "live"} />
+            </div>
+            <div className="mt-4 rounded-xl bg-cream px-4 py-3 text-xs leading-relaxed text-stone-500">
+              {quote.nights} night{quote.nights === 1 ? "" : "s"} · {fmtDate(quote.checkIn)} →{" "}
+              {fmtDate(quote.checkOut)}
+              <br />
+              {quote.staySnapshot ? `Check-in from ${quote.staySnapshot.checkInTime} · check-out by ${quote.staySnapshot.checkOutTime}` : "Consult the accepted stay terms for arrival times."}
+            </div>
+          </Card>
+        </aside>
         <div className="space-y-6">
           {/* Guest details */}
-          <Card className="p-6">
+          <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-medium text-ink">Guest details</h2>
+              <h2 className="font-display text-2xl font-normal text-ink">Guest details</h2>
               {detailsConfirmed && (
                 <span className="flex items-center gap-1 text-sm font-medium text-moss">
                   <IconCheck className="h-4 w-4" /> Saved
@@ -395,8 +412,8 @@ function CheckoutFlow() {
 
           <p role="status" className="rounded-xl bg-cream p-4 text-sm">{booking ? `${booking.paymentMode === 'live' ? 'Temporary hold' : 'Test hold'} ${booking.reference}. Payment is not yet verified; this is not a confirmed reservation.` : bookingFlowNotice(quote)}</p>
           {/* Payment */}
-          <Card className="p-6">
-            <h2 className="flex items-center gap-2 font-display text-xl font-medium text-ink">
+          <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+            <h2 className="flex items-center gap-2 font-display text-2xl font-normal text-ink">
               <IconLock className="h-5 w-5 text-stone-400" /> Payment
             </h2>
             {!detailsConfirmed ? (
@@ -443,21 +460,7 @@ function CheckoutFlow() {
           </p>
         </div>
 
-        {/* Price summary */}
-        <aside aria-label="Price summary">
-          <Card className="p-6 lg:sticky lg:top-24">
-            <h2 className="font-display text-xl font-medium text-ink">Price breakdown</h2>
-            <div className="mt-2">
-              <PriceBreakdown quote={quote} showSampleBadge={quote.paymentMode !== "live"} />
-            </div>
-            <div className="mt-4 rounded-xl bg-cream px-4 py-3 text-xs leading-relaxed text-stone-500">
-              {quote.nights} night{quote.nights === 1 ? "" : "s"} · {fmtDate(quote.checkIn)} →{" "}
-              {fmtDate(quote.checkOut)}
-              <br />
-              {quote.staySnapshot ? `Check-in from ${quote.staySnapshot.checkInTime} · check-out by ${quote.staySnapshot.checkOutTime}` : "Consult the accepted stay terms for arrival times."}
-            </div>
-          </Card>
-        </aside>
+
       </div>
       {confirmed && <p className="sr-only">Booking confirmed — redirecting to your confirmation.</p>}
     </div>
@@ -466,9 +469,9 @@ function CheckoutFlow() {
 
 function CheckoutSkeleton() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6" aria-label="Loading checkout">
+    <div className="mx-auto max-w-[590px] px-5 py-7 pb-20 sm:px-8 sm:py-10" aria-label="Loading checkout">
       <div className="h-9 w-64 animate-pulse rounded-xl bg-cream" />
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_400px]">
+      <div className="mt-7 flex flex-col gap-6">
         <div className="space-y-6">
           <div className="h-72 animate-pulse rounded-2xl bg-cream" />
           <div className="h-64 animate-pulse rounded-2xl bg-cream" />

@@ -52,12 +52,12 @@ export default async function BookingConfirmationPage({
         : "Pending payment";
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <div className="text-center">
+    <div className="mx-auto max-w-[590px] px-5 py-10 pb-20 sm:px-8">
+      <div className="text-center" data-booking-status={booking.status}>
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-moss/10 text-moss">
           <IconCheck className="h-7 w-7" />
         </span>
-        <h1 className="mt-4 font-display text-3xl font-medium text-ink">
+        <h1 className="mt-4 font-display text-4xl font-normal tracking-tight text-ink">
           {bookingStatusHeading(booking)}
         </h1>
         <p className="mt-2 text-stone-600">
@@ -72,8 +72,8 @@ export default async function BookingConfirmationPage({
       </div>
 
       <div className="mt-8 grid gap-6">
-        <Card className="p-6">
-          <h2 className="font-display text-xl font-medium text-ink">Your stay</h2>
+        <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+          <h2 className="font-display text-2xl font-normal text-ink">Your stay</h2>
           <dl className="mt-2 divide-y divide-stone-100">
             <DetailRow label="Property" value={propertyName} />
             <DetailRow label="Check-in" value={`${fmtDate(booking.checkIn)} · ${snapshot ? `from ${snapshot.checkInTime}` : originalTerms}`} />
@@ -86,8 +86,8 @@ export default async function BookingConfirmationPage({
           </dl>
         </Card>
 
-        <Card className="p-6">
-          <h2 className="font-display text-xl font-medium text-ink">Payment summary</h2>
+        <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+          <h2 className="font-display text-2xl font-normal text-ink">Payment summary</h2>
           <dl className="mt-2 divide-y divide-stone-100">
             {booking.lineItems.map((item, i) => (
               <DetailRow
@@ -106,8 +106,8 @@ export default async function BookingConfirmationPage({
           </p>
         </Card>
 
-        <Card className="p-6">
-          <h2 className="font-display text-xl font-medium text-ink">Arrival info</h2>
+        <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+          <h2 className="font-display text-2xl font-normal text-ink">Arrival info</h2>
           <p className="mt-3 flex gap-3 text-sm text-stone-600">
             <IconKey className="h-4 w-4 shrink-0 text-clay" />
             Arrival instructions and access details are shared privately by your host. Consult your original confirmation.
@@ -118,8 +118,8 @@ export default async function BookingConfirmationPage({
 
         </Card>
 
-        <Card className="p-6">
-          <h2 className="font-display text-xl font-medium text-ink">Cancellation terms</h2>
+        <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+          <h2 className="font-display text-2xl font-normal text-ink">Cancellation terms</h2>
           <p className="mt-2 text-sm leading-relaxed text-stone-600">
             {snapshot?.cancellationPolicy ?? originalTerms}
           </p>

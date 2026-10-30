@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: '/',
     scope: '/',
     display: 'standalone',
-    background_color: '#FAF8F5',
-    theme_color: '#1C1917',
+    background_color: '#F6F3EB',
+    theme_color: '#344D3C',
     lang: 'en',
     icons: [
       { src: '/icons/casa-pacifica-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

@@ -30,7 +30,8 @@ describe('Kipper concierge startup positioning', () => {
 it('uses Casa Pacifica for navigation, app identity, offline shell and receipt sender defaults',()=>{
   const header=readFileSync('src/components/Header.tsx','utf8');
   expect(header).toContain('aria-label="Casa Pacifica home"');
-  expect(header).not.toContain('Kipper');
+  expect(header).toContain('Ask Kipper');
+  expect(header).not.toMatch(/Kipper Stays|Kipper Property Management/);
   expect(readFileSync('public/offline.html','utf8')).toContain('CASA PACIFICA');
   const outbox=readFileSync('src/lib/outbox.ts','utf8');
   expect(outbox).toContain('Casa Pacifica <bookings@example.test>');

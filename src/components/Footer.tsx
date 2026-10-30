@@ -18,11 +18,11 @@ export default function Footer() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <footer className="border-t border-stone-200 bg-cream">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+    <footer className="border-t border-stone-200 bg-paper">
+      <div className="mx-auto max-w-6xl px-4 pb-32 pt-10 sm:px-6">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
-            <p className="font-display text-xl font-medium text-ink">Casa Pacifica</p>
+            <p className="font-display text-[27px] font-normal tracking-[-1px] text-ink">casa pacifica</p>
             <p className="mt-1 text-sm text-stone-500">
               Mira Mesa · San Diego
             </p>

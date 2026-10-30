@@ -161,7 +161,7 @@ export default function CheckoutForm({
 
   if (keyMissing) {
     return (
-      <div className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-6 text-center">
+      <div className="rounded-xl border border-stone-300 bg-cream px-5 py-6 text-center">
         <p className="font-medium text-ink">Payments aren't switched on yet</p>
         <p className="mx-auto mt-2 max-w-md text-sm text-stone-600">
           The payment key does not match this quote's payment mode. Your dates
@@ -221,7 +221,7 @@ export default function CheckoutForm({
         </label>
         <div
           ref={cardMountRef}
-          className="rounded-2xl border border-stone-300 bg-white px-4 py-3.5"
+          className="rounded-lg border border-stone-300 bg-[#fffcf6] px-4 py-3.5"
         />
         <p className="mt-1.5 text-xs text-stone-500">
           Card details are handled securely by Stripe — we never see or store them.

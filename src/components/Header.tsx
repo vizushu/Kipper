@@ -1,105 +1,20 @@
 "use client";
-/**
- * Site header: brand + primary nav + availability CTA.
- * Sticky, paper background, subtle bottom border.
- */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { cn } from "@/components/cn";
-import { Button } from "@/components/ui";
+import { useEffect, useState } from "react";
 import { IconMenu, IconX } from "@/components/icons";
 
-const NAV = [
-  { href: "/", label: "Home" },
-  { href: "/properties", label: "Stays" },
-  { href: "/about", label: "About" },
-  { href: "/contact", label: "Contact" },
-  { href: "/faq", label: "FAQ" },
-];
-
-function BrandMark() {
-  return (
-    <Link href="/" className="flex items-center gap-2.5" aria-label="Casa Pacifica home">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-paper">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden className="h-5 w-5">
-          <circle cx="12" cy="12" r="4.5" />
-          <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2l-2.1 2.1M7.3 16.7l-2.1 2.1" />
-        </svg>
-      </span>
-      <span className="leading-tight">
-        <span className="block font-display text-lg font-medium text-ink">Casa Pacifica</span>
-        <span className="block text-[11px] uppercase tracking-[0.12em] text-stone-500">
-          San Diego
-        </span>
-      </span>
-    </Link>
-  );
-}
-
+const NAV = [{ href: "/", label: "The home" }, { href: "/properties", label: "Plan a stay" }, { href: "/booking-access", label: "Find your booking" }, { href: "/contact", label: "Contact" }, { href: "/faq", label: "Questions" }];
 export default function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const isAdmin = pathname.startsWith("/admin");
-  const isPropertyDetail = /^\/properties\/[^/]+\/?$/.test(pathname);
-
-  if (isAdmin) return null; // admin has its own chrome
-
-  return (
-    <header className="sticky top-0 z-40 border-b border-stone-200 bg-paper/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <BrandMark />
-        <nav className="hidden items-center gap-1 md:flex" aria-label="Primary">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                pathname === item.href
-                  ? "bg-cream text-ink"
-                  : "text-stone-600 hover:bg-cream hover:text-ink",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-          {!isPropertyDetail && <Link href="/properties" className="ml-2">
-            <Button size="sm">Check availability</Button>
-          </Link>}
-        </nav>
-        <div className="flex items-center gap-2 md:hidden">
-          {!isPropertyDetail && <Link href="/properties">
-            <Button size="sm">Book</Button>
-          </Link>}
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-label={open ? "Close menu" : "Open menu"}
-            className="rounded-xl p-2 text-ink hover:bg-cream"
-          >
-            {open ? <IconX className="h-6 w-6" /> : <IconMenu className="h-6 w-6" />}
-          </button>
-        </div>
-      </div>
-      {open && (
-        <nav className="border-t border-stone-200 bg-paper px-4 py-3 md:hidden" aria-label="Mobile">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className={cn(
-                "block rounded-xl px-4 py-3 text-base font-medium",
-                pathname === item.href ? "bg-cream text-ink" : "text-stone-600",
-              )}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      )}
-    </header>
-  );
+  useEffect(() => setOpen(false), [pathname]);
+  if (pathname.startsWith("/admin")) return null;
+  return <header className="sticky top-0 z-40 border-b border-line bg-paper">
+    <div className="mx-auto flex min-h-[74px] max-w-[1120px] items-center justify-between gap-3 px-[22px] py-3 sm:min-h-20 sm:px-7">
+      <Link href="/" aria-label="Casa Pacifica home" className="leading-tight"><span className="block font-display text-[27px] tracking-[-1px]">casa pacifica</span><span className="mt-1 block text-[9px] uppercase tracking-[2.1px] text-moss">Mira Mesa · San Diego</span></Link>
+      <nav aria-label="Primary" className="flex items-center gap-2"><Link href="/contact" className="flex min-h-11 items-center px-2 text-sm underline-offset-4 hover:underline">Ask Kipper</Link><button type="button" onClick={() => setOpen(v => !v)} aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="site-menu" className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-cream">{open ? <IconX className="h-5 w-5" /> : <IconMenu className="h-5 w-5" />}</button></nav>
+    </div>
+    {open && <nav id="site-menu" aria-label="Site menu" className="border-t border-line bg-paper px-5 py-3"><div className="mx-auto max-w-[1064px]">{NAV.map(item => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="block rounded-lg px-3 py-3 text-sm hover:bg-cream" aria-current={pathname === item.href ? "page" : undefined}>{item.label}</Link>)}</div></nav>}
+  </header>;
 }

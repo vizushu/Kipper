@@ -10,7 +10,7 @@ import { isPublicPreview } from "@/lib/booking-launch";
 // Deliberate local-system fallbacks keep clean builds independent of font CDNs.
 const fontVariables = { "--font-display": "Georgia", "--font-sans": "system-ui" } as CSSProperties;
 
-export const viewport: Viewport = { themeColor: "#1C1917", width: "device-width", initialScale: 1, viewportFit: "cover" };
+export const viewport: Viewport = { themeColor: "#344D3C", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 const siteMetadata: Metadata = {
   manifest: "/manifest.webmanifest",
@@ -46,7 +46,7 @@ export default function RootLayout({
   const preview = isPublicPreview();
   return (
     <html lang="en" style={fontVariables}>
-      <body className={`bg-paper font-sans text-ink antialiased ${preview ? "pt-14 [&>header]:top-14 [&_[role=dialog]]:top-14" : ""}`}>
+      <body className={`bg-paper font-sans text-ink antialiased ${preview ? "public-preview pt-7 [&>header]:top-7 [&_[role=dialog]]:top-7" : ""}`}>
         {preview && <PreviewBanner />}
         <a
           href="#main"

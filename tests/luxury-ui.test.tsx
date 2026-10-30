@@ -26,11 +26,12 @@ it('shows eight exact verified amenities with every original detail in a native 
   expect(selectAmenityHighlights([{ category: 'Other', items: ['Verified item'] }])).toEqual(['Verified item']);
   expect(selectAmenityHighlights([])).toEqual([]);
 });
-it('renders a compact three-photo desktop mosaic and an always-visible mobile photo count', () => {
+it('renders the prototype carousel with photo albums and visible count', () => {
   const html = renderToStaticMarkup(<PhotoGallery photos={property.photos} propertyName={property.name} />);
-  expect((html.match(/aria-label="View photo:/g) ?? [])).toHaveLength(3);
+  expect(html).toContain('aria-label="Open all photo albums"');
+  expect(html).toContain('aria-label="Next home photo"');
   expect(html).toContain('View all 12 photos');
-  expect(html).toContain('12 photos');
+  expect(html).toContain('1 / 12');
   expect(html).not.toContain('opacity-0');
   expect(renderToStaticMarkup(<PhotoGallery photos={[]} propertyName="Empty" />)).toBe('');
 });

@@ -2,10 +2,11 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import AvailabilityCalendar, { type DateRange } from "@/components/AvailabilityCalendar";
-import GuestSelector from "@/components/GuestSelector";
+import BookingProgress from "@/app/checkout/BookingProgress";
+import GuestSelector, { guestSummary } from "@/components/GuestSelector";
 import PriceBreakdown from "@/components/PriceBreakdown";
 import StickyBookBar from "@/components/StickyBookBar";
-import { Button, Card } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { IconX } from "@/components/icons";
 import { formatCents, type GuestCount, type Property, type Quote } from "@/lib/types";
 import { requestQuote } from "@/data/client-api";
@@ -103,7 +104,8 @@ export default function BookingWidget({ property, onRangeChange, bookingBlockedR
   }
   function body(id: string) {
     return <div className="space-y-5">
-      <div><h2 className="font-display text-2xl">Plan your stay</h2><p className="mt-1 text-sm text-stone-500">{publicPreview ? "Explore accommodation by date" : quote ? "Your stay, item by item" : "Add dates to see the price"}</p></div>
+      <BookingProgress current={quote ? "review" : "dates"} />
+      <div><p className="casa-eyebrow mb-3">Make time for this</p><h2 className="font-display text-4xl font-normal">When will you unwind?</h2><p className="mt-1 text-sm text-stone-500">{publicPreview ? "Explore accommodation by date" : quote ? "Your stay, item by item" : "Add dates to see the price"}</p></div>
       <div className="grid grid-cols-2 gap-2">
         <label className="min-w-0 text-xs font-medium">Check-in<input aria-label="Check-in date" type="date" value={range?.checkIn ?? ""} onChange={event => changeRange({ checkIn: event.target.value, checkOut: range?.checkOut ?? "" })} className="mt-1 block min-h-11 w-full min-w-0 rounded-xl border border-stone-300 bg-white px-2 text-sm" /></label>
         <label className="min-w-0 text-xs font-medium">Checkout<input aria-label="Checkout date" type="date" value={range?.checkOut ?? ""} min={range?.checkIn || undefined} onChange={event => changeRange({ checkIn: range?.checkIn ?? "", checkOut: event.target.value })} className="mt-1 block min-h-11 w-full min-w-0 rounded-xl border border-stone-300 bg-white px-2 text-sm" /></label>
@@ -121,8 +123,7 @@ export default function BookingWidget({ property, onRangeChange, bookingBlockedR
     </div>;
   }
   return <>
-    <Card className="hidden p-5 lg:sticky lg:top-24 lg:block lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto">{body(`${promoId}-desktop`)}</Card>
-    {expanded && <div ref={sheet} className="fixed inset-0 z-50 flex flex-col bg-paper lg:hidden" role="dialog" aria-modal="true" aria-label="Plan your stay"><div className="flex items-center justify-between border-b border-stone-200 px-4 py-3"><p className="font-display text-lg">Plan your stay</p><button type="button" onClick={() => setExpanded(false)} aria-label="Close booking panel" className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-cream"><IconX className="h-6 w-6" /></button></div><div className="flex-1 overflow-y-auto px-4 py-5" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}>{body(`${promoId}-mobile`)}</div></div>}
-    {!expanded && <StickyBookBar label={publicPreview ? "Explore accommodation dates" : quote ? `${formatCents(quote.totalCents)} total` : "Add dates to see price"} detail={range?.checkOut ? `${range.checkIn} → ${range.checkOut}` : "Choose your stay dates"} onOpen={() => setExpanded(true)} />}
+    <div ref={sheet} style={{ top: "calc(var(--casa-preview-height, 0px) + var(--casa-header-height, 80px))" }} hidden={!expanded} className={expanded ? "fixed inset-0 z-50 flex flex-col bg-paper" : "hidden"} role="dialog" aria-modal="true" aria-label="Plan your stay"><div className="flex items-center justify-between border-b border-line px-5 py-3"><button type="button" onClick={() => setExpanded(false)} className="min-h-11 px-2 text-sm">← Back to the home</button><button type="button" onClick={() => setExpanded(false)} aria-label="Close booking panel" className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-cream"><IconX className="h-6 w-6" /></button></div><div className="flex-1 overflow-y-auto px-5 py-7" style={{ paddingBottom: "max(20px, env(safe-area-inset-bottom))" }}><div className="mx-auto max-w-[527px]">{body(`${promoId}-stay`)}</div></div></div>
+    {!expanded && <StickyBookBar label={publicPreview ? "Explore accommodation dates" : quote ? `${formatCents(quote.totalCents)} total` : "Add dates to see price"} detail={range?.checkOut ? `${range.checkIn} → ${range.checkOut} · ${guestSummary(guests)}` : "Choose your stay dates"} onOpen={() => setExpanded(true)} />}
   </>;
 }
