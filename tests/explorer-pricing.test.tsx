@@ -1,0 +1,22 @@
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {afterEach,beforeEach,describe,it,expect,vi} from 'vitest';
+import fs from 'node:fs';
+import {fetchExplorerQuote,createExplorerRequestGuard,type ExplorerQuoteInput} from '../src/lib/explorer-quote';
+import {getProperty,toPropertySummary} from '../src/lib/property';
+import type {Quote} from '../src/lib/types';
+import PropertiesExplorer from '../src/app/properties/PropertiesExplorer';
+vi.mock('next/navigation',()=>({useSearchParams:()=>new URLSearchParams('checkIn=2027-02-20&checkOut=2027-02-22')}));
+vi.mock('../src/data/client-api',()=>({requestQuote:vi.fn()}));
+const input:ExplorerQuoteInput={propertyId:'casa-pacifica',checkIn:'2027-02-20',checkOut:'2027-02-22',guests:{adults:2,children:1,infants:1},pets:0};
+const quote:Quote={...input,id:'synthetic-quote',propertySlug:'casa-pacifica',nights:2,lineItems:[],subtotalCents:61567,discountCents:0,petFeeCents:0,paymentMode:'test',currency:'USD',totalCents:89711,nightlyRates:[{date:'2027-02-20',rateCents:30000},{date:'2027-02-21',rateCents:31567}],cleaningFeeCents:18000,taxesCents:10144,expiresAt:'2027-01-01T00:15:00.000Z'};
+beforeEach(()=>vi.stubGlobal('React',React));afterEach(()=>vi.unstubAllGlobals());
+describe('date-specific explorer quotes',()=>{
+ it('uses the exact server total and all guest counts, not a sum of nightly calendar rates',async()=>{const request=vi.fn().mockResolvedValue(quote);const result=await fetchExplorerQuote(input,request,()=>Date.parse('2027-01-01T00:00:00Z'));expect(request).toHaveBeenCalledExactlyOnceWith(input);expect(result.totalCents).toBe(89711);expect(result).toBe(quote);});
+ it.each([{propertyId:'other'},{checkOut:'2027-02-23'},{guests:{adults:2,children:1,infants:0}},{pets:1},{currency:'EUR'},{totalCents:NaN},{expiresAt:'2026-01-01T00:00:00Z'}])('rejects stale or mismatched quote evidence %j',async patch=>{await expect(fetchExplorerQuote(input,vi.fn().mockResolvedValue({...quote,...patch}),()=>Date.parse('2027-01-01T00:00:00Z'))).rejects.toThrow('fresh stay quote');});
+ it('discards a previous response after dates or guests change',async()=>{const guard=createExplorerRequestGuard();const old=guard.begin();let resolve!:(value:Quote)=>void;const pending=fetchExplorerQuote(input,()=>new Promise(r=>{resolve=r;}),()=>Date.parse('2027-01-01T00:00:00Z'));guard.invalidate();const fresh=guard.begin();resolve(quote);await pending;expect(guard.isCurrent(old)).toBe(false);expect(guard.isCurrent(fresh)).toBe(true);});
+ it('does not expose a fixed starting nightly field in property summaries',()=>{expect(toPropertySummary(getProperty('casa-pacifica')!)).not.toHaveProperty('startingNightlyCents');});
+ it('renders preview honestly without prices, availability claims, nightly budget or quote-submit controls',()=>{const html=renderToStaticMarkup(<PropertiesExplorer properties={[toPropertySummary(getProperty('casa-pacifica')!)]} publicPreview/>);expect(html).toContain('Availability and prices are not being checked');expect(html).not.toMatch(/Max \$|\/ night|Available ·|Check stay total|\$349|\$449/);});
+ it('offers an explicit server quote action outside preview without claiming availability',()=>{const html=renderToStaticMarkup(<PropertiesExplorer properties={[toPropertySummary(getProperty('casa-pacifica')!)]}/>);expect(html).toContain('Check stay total');expect(html).toContain('including mandatory cleaning and applicable tax');expect(html).not.toContain('Available ·');});
+ it('removes unsupported best-rate metadata and local calendar-total calculation',()=>{const source=fs.readFileSync('src/app/properties/PropertiesExplorer.tsx','utf8');expect(source).not.toContain('/api/availability');expect(source).not.toContain('nightlyRateCents');expect(source).toContain('if(publicPreview||!validDates');expect(fs.readFileSync('src/app/properties/page.tsx','utf8')).not.toMatch(/best rate/i);});
+});

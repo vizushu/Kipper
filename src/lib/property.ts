@@ -239,7 +239,6 @@ export function toPropertySummary(p: Property): PropertySummary {
     bathrooms: p.bathrooms,
     // Deliberately not photo 01 (shows the removed projector screen).
     coverPhoto: p.photos[0],
-    startingNightlyCents: p.minNightlyCents,
     amenityTags: [
       "Private pool",
       "Sleeps 8",

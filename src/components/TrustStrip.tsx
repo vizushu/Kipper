@@ -1,7 +1,7 @@
 /**
  * TrustStrip — the single trust badge card per the design system (§3).
  *
- * One badge max (never five). Used for "Best rate — book direct" and
+ * One badge max (never five). Used for verified property information and
  * similar single trust signals.
  */
 import { cn } from "@/components/cn";

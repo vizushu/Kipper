@@ -150,7 +150,6 @@ export interface PropertySummary {
   bedrooms: number;
   bathrooms: number;
   coverPhoto: Photo;
-  startingNightlyCents: number;
   amenityTags: string[];
 }
 
