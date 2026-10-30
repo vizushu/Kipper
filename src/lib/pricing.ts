@@ -1,3 +1,4 @@
+import { snapshotForStay } from "./accommodation";
 /**
  * Server-side pricing engine.
  *
@@ -11,8 +12,8 @@
  * - June–August nights ×1.15
  * - Each night clamped to [minNightlyCents, maxNightlyCents] (default $349–$1,030)
  * - Admin rate overrides replace the computed nightly rate for a date
- * - Cleaning fee (default 15000¢ — ⚠️ SAMPLE, admin-editable)
- * - Tax (default 10.5% — ⚠️ SAMPLE, admin-editable), applied to
+ * - Cleaning fee (current 3BR 18000¢, admin-editable)
+ * - Tax (Zone 2 12.75%, admin-editable), applied to
  *   (nightly subtotal − discounts + cleaning)
  * - Pet fee 5000¢/stay when pets > 0
  * - Promo code DIRECT10 = 10% off the nightly subtotal (honors Renier's
@@ -58,8 +59,8 @@ export interface PricingSettings {
 }
 
 export const DEFAULT_PRICING_SETTINGS: PricingSettings = {
-  cleaningFeeCents: 15000, // ⚠️ SAMPLE — Renier has not confirmed
-  taxRatePct: 10.5, // ⚠️ SAMPLE — Renier has not confirmed
+  cleaningFeeCents: 18000, // Approved current 3BR cleaning fee
+  taxRatePct: 12.75, // Verified Zone 2 TOT; collection-time policy, effective 2025-05-01
   minStayNights: 1,
   maxStayNights: 28,
   promos: [
@@ -108,7 +109,7 @@ export function validateGuests(guests: GuestCount, property: Property): void {
   }
   // Infants (under 2) don't count toward overnight capacity — standard STR practice.
   const overnight = adults + children;
-  if (overnight > property.maxGuests) {
+  if (overnight > property.maxGuests || overnight + infants > property.maxTotalOccupancy) {
     throw new BookingError(
       "GUEST_LIMIT",
       `This home sleeps ${property.maxGuests} overnight guests (adults + children); ` +
@@ -205,7 +206,8 @@ export function computeQuote(input: ComputeQuoteInput): Quote {
   } = input;
 
   const nights = validateStayWindow(checkIn, checkOut, settings, now);
-  validateGuests(guests, property);
+  const staySnapshot = snapshotForStay(property, checkIn, checkOut);
+  validateGuests(guests, {...property, maxGuests: staySnapshot.maxGuests, maxTotalOccupancy: staySnapshot.maxTotalOccupancy});
 
   if (!isWhole(pets) || pets < 0) {
     throw new BookingError("GUEST_LIMIT", "Pet count must be a whole number ≥ 0.");
@@ -281,6 +283,7 @@ export function computeQuote(input: ComputeQuoteInput): Quote {
   const createdAt = now;
   return {
     id: `q_${createdAt.getTime().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
+    staySnapshot: {...staySnapshot, cleaningFeeCents, taxRatePct: settings.taxRatePct, taxPolicyVersion: property.taxPolicyVersion},
     propertyId: property.id,
     propertySlug: property.slug,
     checkIn,

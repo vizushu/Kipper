@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Badge, Button, EmptyState } from "@/components/ui";
 import { IconChevronLeft, IconChevronRight, IconX } from "@/components/icons";
-import { CASA_PACIFICA_ID } from "@/data/property";
+import { CASA_PACIFICA_ID } from "@/data/public-config";
 import type { BlockedRange, Booking } from "@/lib/types";
 import { cn } from "@/components/cn";
 

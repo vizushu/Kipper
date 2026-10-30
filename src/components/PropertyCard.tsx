@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui";
 import { IconBath, IconBed, IconPin, IconUsers } from "@/components/icons";
-import { formatCents } from "@/lib/types";
 import type { PropertySummary } from "@/lib/types";
 
 export default function PropertyCard({ property }: { property: PropertySummary }) {
@@ -34,14 +33,7 @@ export default function PropertyCard({ property }: { property: PropertySummary }
               {property.neighborhood}, {property.city}
             </p>
           </div>
-          <p className="shrink-0 text-right">
-            <span className="text-[11px] uppercase tracking-wide text-stone-500">from</span>
-            <br />
-            <span className="text-lg font-semibold text-ink">
-              {formatCents(property.startingNightlyCents)}
-            </span>
-            <span className="text-sm text-stone-500">/night</span>
-          </p>
+          <p className="text-sm text-stone-500">Select dates for accommodation details</p>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-stone-600">
           <span className="inline-flex items-center gap-1.5">

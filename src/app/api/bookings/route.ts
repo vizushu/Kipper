@@ -1,3 +1,6 @@
+import { snapshotForStay } from "@/lib/accommodation";
+import { createBookingAccessToken, isBookingAccessConfigured } from "@/lib/booking-access";
+import { isBookingTestPreviewEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
 import { z } from "zod";
 import { createBookingForQuote, guestSafeBooking } from "@/lib/bookings";
 import { getAdapter } from "@/lib/db";
@@ -23,6 +26,8 @@ const bookingSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  if (!isBookingTestPreviewEnabled()) return apiError("BOOKING_NOT_OPEN", BOOKING_LAUNCH_MESSAGE, 503);
+  if (!isBookingAccessConfigured()) return apiError("BOOKING_NOT_OPEN", "Booking access is not configured.", 503);
   const parsed = await parseBody(req, bookingSchema);
   if (!parsed.ok) return parsed.response;
   const { quoteId, guest, idempotencyKey } = parsed.data;
@@ -41,17 +46,26 @@ export async function POST(req: Request) {
   if (!property) return notFound("Property not found.");
 
   try {
+    // A quote cannot authorize a configuration that has since been disabled.
+    const currentSnapshot = snapshotForStay(property, quote.checkIn, quote.checkOut);
+    if (!quote.staySnapshot || quote.staySnapshot.configurationId !== currentSnapshot.configurationId) {
+      return bookingErrorResponse(new BookingError("QUOTE_EXPIRED", "Accommodation details changed. Please request a fresh quote."));
+    }
     const { booking } = await createBookingForQuote(adapter, quote, guest, idempotencyKey);
 
+    let paymentIntentId: string | undefined;
     // Create the test-mode PaymentIntent for the booking total.
     try {
-      const pi = await createPaymentIntent(quote, booking.idempotencyKey);
-      await adapter.updateBooking(booking.id, { stripePaymentIntentId: pi.id });
-      const withPi = (await adapter.getBooking(booking.id)) ?? booking;
-      return json({ booking: guestSafeBooking(withPi), clientSecret: pi.clientSecret }, 201);
+      const pi = await createPaymentIntent(quote, booking.idempotencyKey, booking.id);
+      paymentIntentId = pi.id;
+      const withPi = await adapter.attachPaymentIntent(booking.id, pi.id);
+      if (!withPi) return apiError("PAYMENT_FAILED", "Your booking hold expired or is no longer available. Please request a fresh quote.", 409);
+      const response = json({ booking: guestSafeBooking(withPi), clientSecret: pi.clientSecret, accessToken: createBookingAccessToken(withPi.reference) }, 201);
+      response.headers.set("Cache-Control", "private, no-store");
+      return response;
     } catch (stripeErr) {
       // Booking exists (pending_payment); payment setup failed.
-      await adapter.updateBooking(booking.id, { paymentStatus: "failed" });
+      if (paymentIntentId) await adapter.failPendingBookingPayment(booking.id, paymentIntentId);
       const message =
         stripeErr instanceof Error ? stripeErr.message : "Payment setup failed.";
       return apiError("PAYMENT_FAILED", message, 500);

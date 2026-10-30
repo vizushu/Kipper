@@ -1,83 +1,70 @@
+import { isPublicPreview } from "@/lib/booking-launch";
 import Stripe from "stripe";
 import { guestSafeBooking } from "@/lib/bookings";
 import { getAdapter } from "@/lib/db";
 import { sendBookingConfirmation, sendHostNotification } from "@/lib/email";
 import { getProperty } from "@/lib/property";
+import {
+  assertPaymentBinding,
+  assertSuccessfulPayment,
+  paymentEvidence,
+  PaymentVerificationError,
+  verifyTestWebhook,
+} from "@/lib/payment-verification";
 import { json } from "../../_helpers";
 
-/**
- * Stripe webhook (TEST MODE).
- *
- * - If STRIPE_WEBHOOK_SECRET is set, the signature is verified.
- * - Otherwise the payload is accepted in dev with a warning log
- *   (documented; set the secret before any real traffic).
- *
- * Handles payment_intent.succeeded → confirm booking + emails,
- *         payment_intent.payment_failed → mark payment failed.
- */
+/** Signed TEST MODE events only, including local development. Never revive cancelled bookings. */
 export async function POST(req: Request) {
-  const rawBody = await req.text();
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
+  if (isPublicPreview()) return json({error:"Payments are disabled in this preview."},503);
   let event: Stripe.Event;
-  if (webhookSecret) {
-    const sig = req.headers.get("stripe-signature");
-    if (!sig) return json({ error: "Missing stripe-signature." }, 400);
-    const key = process.env.STRIPE_SECRET_KEY;
-    if (!key || key.startsWith("sk_live")) {
-      return json({ error: "Stripe not configured (test mode)." }, 500);
-    }
-    const stripe = new Stripe(key);
-    try {
-      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-    } catch (e) {
-      return json(
-        { error: e instanceof Error ? e.message : "Invalid webhook signature." },
-        400
-      );
-    }
-  } else {
-    console.warn(
-      "[webhook] STRIPE_WEBHOOK_SECRET not set — accepting unverified payload (dev only)."
+  try {
+    event = verifyTestWebhook(
+      await req.text(),
+      req.headers.get("stripe-signature"),
+      process.env.STRIPE_SECRET_KEY,
+      process.env.STRIPE_WEBHOOK_SECRET
     );
-    try {
-      event = JSON.parse(rawBody) as Stripe.Event;
-    } catch {
-      return json({ error: "Invalid JSON payload." }, 400);
-    }
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : "Invalid webhook." },
+      error instanceof PaymentVerificationError ? error.httpStatus : 400);
+  }
+
+  if (event.type !== "payment_intent.succeeded" && event.type !== "payment_intent.payment_failed") {
+    return json({ received: true, ignored: event.type });
   }
 
   const adapter = getAdapter();
+  const pi = event.data.object as Stripe.PaymentIntent;
+  const booking = await adapter.getBookingByPaymentIntentId(pi.id);
+  if (!booking) return json({ received: true });
+  try {
+    assertPaymentBinding(booking, paymentEvidence(pi));
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : "Invalid payment evidence." }, 400);
+  }
 
-  if (event.type === "payment_intent.succeeded") {
-    const pi = event.data.object as Stripe.PaymentIntent;
-    const booking = await adapter.getBookingByPaymentIntentId(pi.id);
-    if (booking && booking.status !== "confirmed") {
-      const confirmed =
-        (await adapter.updateBooking(booking.id, {
-          status: "confirmed",
-          paymentStatus: "paid_test",
-          stripePaymentIntentId: pi.id,
-          confirmedAt: new Date().toISOString(),
-        })) ?? booking;
-      const property = getProperty(confirmed.propertyId);
-      if (property) {
-        await sendBookingConfirmation(confirmed, property);
-        await sendHostNotification(confirmed, property);
-      }
-      return json({ received: true, booking: guestSafeBooking(confirmed) });
-    }
+  // Late events must never reopen cancelled inventory or downgrade a confirmed booking.
+  if (booking.status === "cancelled" || booking.status === "confirmed") {
     return json({ received: true });
   }
 
   if (event.type === "payment_intent.payment_failed") {
-    const pi = event.data.object as Stripe.PaymentIntent;
-    const booking = await adapter.getBookingByPaymentIntentId(pi.id);
-    if (booking && booking.status !== "confirmed") {
-      await adapter.updateBooking(booking.id, { paymentStatus: "failed" });
-    }
+    await adapter.failPendingBookingPayment(booking.id, pi.id);
     return json({ received: true });
   }
 
-  return json({ received: true, ignored: event.type });
+  try {
+    assertSuccessfulPayment(booking, paymentEvidence(pi));
+  } catch (error) {
+    return json({ error: error instanceof Error ? error.message : "Invalid payment evidence." }, 400);
+  }
+  const result = await adapter.confirmBookingPayment(booking.id, pi.id, new Date().toISOString());
+  if (!result) return json({ error: "Booking hold expired, was cancelled, or conflicts with inventory. Manual payment review required." }, 409);
+  const { booking: confirmed, transitioned } = result;
+  const property = getProperty(confirmed.propertyId);
+  if (property && transitioned) {
+    await sendBookingConfirmation(confirmed, property);
+    await sendHostNotification(confirmed, property);
+  }
+  return json({ received: true, booking: guestSafeBooking(confirmed) });
 }

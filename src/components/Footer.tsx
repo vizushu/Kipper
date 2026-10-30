@@ -30,7 +30,7 @@ export default function Footer() {
             <address className="mt-4 flex items-start gap-2 text-sm not-italic leading-relaxed text-stone-600">
               <IconPin className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
               <span>
-                10840 New Salem Point
+                Mira Mesa
                 <br />
                 San Diego, CA 92126 · Mira Mesa
               </span>

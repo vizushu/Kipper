@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   pets INTEGER NOT NULL DEFAULT 0,
   guest_json TEXT NOT NULL,
   line_items_json TEXT NOT NULL,
+  stay_snapshot_json TEXT,
+  hold_expires_at TEXT,
   total_cents INTEGER NOT NULL,
   currency TEXT NOT NULL DEFAULT 'USD',
   status TEXT NOT NULL DEFAULT 'pending_payment',
@@ -99,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_quotes_expires ON quotes (expires_at);
 `;
 
 function resolveDbPath(dbPath?: string): string {
-  const file = dbPath ?? path.join(process.cwd(), "data", "bookings.db");
+  const file = dbPath ?? process.env.SQLITE_PATH ?? path.join(process.cwd(), "data", "bookings.db");
   const dir = path.dirname(file);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   return file;
@@ -116,6 +118,8 @@ interface BookingRow {
   pets: number;
   guest_json: string;
   line_items_json: string;
+  stay_snapshot_json: string | null;
+  hold_expires_at: string | null;
   total_cents: number;
   currency: "USD";
   status: BookingStatus;
@@ -130,6 +134,7 @@ interface BookingRow {
 
 function rowToBooking(r: BookingRow): Booking {
   return {
+    holdExpiresAt: r.hold_expires_at ?? undefined,
     id: r.id,
     reference: r.reference,
     propertyId: r.property_id,
@@ -140,6 +145,7 @@ function rowToBooking(r: BookingRow): Booking {
     pets: r.pets,
     guest: JSON.parse(r.guest_json),
     lineItems: JSON.parse(r.line_items_json),
+    staySnapshot: r.stay_snapshot_json ? JSON.parse(r.stay_snapshot_json) : undefined,
     totalCents: r.total_cents,
     currency: r.currency,
     status: r.status,
@@ -169,6 +175,9 @@ export class SqliteAdapter implements DataAdapter {
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("foreign_keys = ON");
     this.db.exec(SCHEMA);
+    const columns = this.db.prepare("PRAGMA table_info(bookings)").all() as {name: string}[];
+    if (!columns.some(c => c.name === "stay_snapshot_json")) this.db.exec("ALTER TABLE bookings ADD COLUMN stay_snapshot_json TEXT");
+    if (!columns.some(c => c.name === "hold_expires_at")) this.db.exec("ALTER TABLE bookings ADD COLUMN hold_expires_at TEXT");
     this.seedSettingsIfEmpty();
   }
 
@@ -223,9 +232,11 @@ export class SqliteAdapter implements DataAdapter {
   // ---- bookings -----------------------------------------------------------
   async createBookingIfAvailable(input: NewBookingInput): Promise<Booking> {
     const nowIso = new Date().toISOString();
+    const holdExpiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
     const id = newId("bk");
 
     const tx = this.db.transaction((reference: string) => {
+      this.expirePendingNow(nowIso);
       // 1) Re-check availability INSIDE the transaction.
       const overlap = this.db
         .prepare(
@@ -266,8 +277,8 @@ export class SqliteAdapter implements DataAdapter {
             `INSERT INTO bookings (
                id, reference, property_id, check_in, check_out, nights,
                guests_json, pets, guest_json, line_items_json, total_cents,
-               currency, status, payment_status, idempotency_key, created_at
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', 'unpaid', ?, ?)`
+               currency, status, payment_status, idempotency_key, created_at, stay_snapshot_json, hold_expires_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', 'unpaid', ?, ?, ?, ?)`
           )
           .run(
             id,
@@ -283,7 +294,9 @@ export class SqliteAdapter implements DataAdapter {
             input.totalCents,
             input.currency,
             input.idempotencyKey,
-            nowIso
+            nowIso,
+            input.staySnapshot ? JSON.stringify(input.staySnapshot) : null,
+            holdExpiresAt
           );
       } catch (err) {
         if (err instanceof Error && /UNIQUE constraint failed: bookings\.idempotency_key/.test(err.message)) {
@@ -301,7 +314,7 @@ export class SqliteAdapter implements DataAdapter {
     let lastErr: unknown = null;
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
-        tx(newReference());
+        tx.immediate(newReference());
         const created = await this.getBooking(id);
         if (!created) throw new Error("Booking insert did not persist.");
         return created;
@@ -314,6 +327,44 @@ export class SqliteAdapter implements DataAdapter {
       }
     }
     throw lastErr instanceof Error ? lastErr : new Error("Failed to create booking.");
+  }
+
+  private expirePendingNow(now: string): number {
+    return this.db.prepare(`UPDATE bookings SET status = 'cancelled', cancelled_at = ?, admin_notes = coalesce(admin_notes || '\n', '') || 'Payment hold expired; late payment requires manual review.' WHERE status = 'pending_payment' AND hold_expires_at IS NOT NULL AND hold_expires_at <= ?`).run(now, now).changes;
+  }
+
+  async expirePendingBookings(now = new Date().toISOString()): Promise<number> {
+    return this.db.transaction(() => this.expirePendingNow(now)).immediate();
+  }
+
+  async attachPaymentIntent(id: string, paymentIntentId: string): Promise<Booking | null> {
+    return this.db.transaction(() => {
+      this.expirePendingNow(new Date().toISOString());
+      this.db.prepare(`UPDATE bookings SET stripe_payment_intent_id = ? WHERE id = ? AND status = 'pending_payment' AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = ?)`).run(paymentIntentId, id, paymentIntentId);
+      const row = this.db.prepare('SELECT * FROM bookings WHERE id = ?').get(id) as BookingRow | undefined;
+      return row && row.status === 'pending_payment' && row.stripe_payment_intent_id === paymentIntentId ? rowToBooking(row) : null;
+    }).immediate();
+  }
+
+  async failPendingBookingPayment(id: string, paymentIntentId: string): Promise<boolean> {
+    const result = this.db.prepare(`UPDATE bookings SET payment_status = 'failed' WHERE id = ? AND stripe_payment_intent_id = ? AND status = 'pending_payment'`).run(id, paymentIntentId);
+    return result.changes > 0;
+  }
+
+  async confirmBookingPayment(id: string, paymentIntentId: string, confirmedAt: string): Promise<{booking: Booking; transitioned: boolean} | null> {
+    return this.db.transaction(() => {
+      this.expirePendingNow(new Date().toISOString());
+      const row = this.db.prepare('SELECT * FROM bookings WHERE id = ?').get(id) as BookingRow | undefined;
+      if (!row || row.stripe_payment_intent_id !== paymentIntentId || row.status === 'cancelled') return null;
+      if (row.status === 'confirmed') return {booking: rowToBooking(row), transitioned: false};
+      // A newly imported/manual block may invalidate a previously free hold.
+      const block = this.db.prepare('SELECT id FROM blocks WHERE property_id = ? AND from_date < ? AND to_date > ? LIMIT 1').get(row.property_id, row.check_out, row.check_in);
+      const overlap = this.db.prepare(`SELECT id FROM bookings WHERE id != ? AND property_id = ? AND status IN ('confirmed', 'pending_payment') AND check_in < ? AND check_out > ? LIMIT 1`).get(id, row.property_id, row.check_out, row.check_in);
+      if (block || overlap) return null;
+      this.db.prepare(`UPDATE bookings SET status = 'confirmed', payment_status = 'paid_test', confirmed_at = ? WHERE id = ? AND status = 'pending_payment' AND stripe_payment_intent_id = ?`).run(confirmedAt, id, paymentIntentId);
+      const confirmed = this.db.prepare('SELECT * FROM bookings WHERE id = ?').get(id) as BookingRow;
+      return {booking: rowToBooking(confirmed), transitioned: true};
+    }).immediate();
   }
 
   async getBooking(id: string): Promise<Booking | null> {
@@ -353,6 +404,7 @@ export class SqliteAdapter implements DataAdapter {
       adminNotes?: string;
     }
   ): Promise<Booking | null> {
+    if (Object.keys(patch).some(k => k !== "adminNotes")) throw new Error("Use atomic booking lifecycle methods for state changes.");
     const sets: string[] = [];
     const vals: unknown[] = [];
     const map: Record<string, string> = {
@@ -376,13 +428,12 @@ export class SqliteAdapter implements DataAdapter {
   }
 
   async cancelBooking(id: string): Promise<Booking | null> {
-    return this.updateBooking(id, {
-      status: "cancelled",
-      cancelledAt: new Date().toISOString(),
-    });
+    this.db.prepare("UPDATE bookings SET status='cancelled', cancelled_at=coalesce(cancelled_at,?) WHERE id=?").run(new Date().toISOString(),id);
+    return this.getBooking(id);
   }
 
   async listBookings(filter: ListBookingsFilter = {}): Promise<Booking[]> {
+    await this.expirePendingBookings();
     const conds: string[] = [];
     const vals: unknown[] = [];
     if (filter.propertyId) {
@@ -401,6 +452,7 @@ export class SqliteAdapter implements DataAdapter {
   }
 
   async findOverlappingBookings(propertyId: string, checkIn: string, checkOut: string): Promise<Booking[]> {
+    await this.expirePendingBookings();
     const rows = this.db
       .prepare(
         `SELECT * FROM bookings

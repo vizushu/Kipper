@@ -55,12 +55,12 @@ function guestHtml(booking: Booking, property: Property): string {
   const g = booking.guest;
   const totalGuests = booking.guests.adults + booking.guests.children + booking.guests.infants;
   return shell(
-    `Booking confirmed — ${esc(property.name)}`,
+    `Booking confirmed — ${esc(booking.staySnapshot?.propertyName ?? property.name)}`,
     `<p>Hi ${esc(g.name)},</p>
-<p>Your stay at <strong>${esc(property.name)}</strong> is confirmed. Your booking reference is <strong>${esc(booking.reference)}</strong> — please keep it handy.</p>
+<p>Your stay at <strong>${esc(booking.staySnapshot?.propertyName ?? property.name)}</strong> is confirmed. Your booking reference is <strong>${esc(booking.reference)}</strong> — please keep it handy.</p>
 <table style="width:100%;border-collapse:collapse;margin:16px 0;">
-<tr><td style="padding:6px 0;color:#666;">Check-in</td><td style="text-align:right;"><strong>${esc(booking.checkIn)}</strong> from ${esc(property.checkInTime)}</td></tr>
-<tr><td style="padding:6px 0;color:#666;">Check-out</td><td style="text-align:right;"><strong>${esc(booking.checkOut)}</strong> by ${esc(property.checkOutTime)}</td></tr>
+<tr><td style="padding:6px 0;color:#666;">Check-in</td><td style="text-align:right;"><strong>${esc(booking.checkIn)}</strong> from ${esc(booking.staySnapshot?.checkInTime ?? "See original booking terms")}</td></tr>
+<tr><td style="padding:6px 0;color:#666;">Check-out</td><td style="text-align:right;"><strong>${esc(booking.checkOut)}</strong> by ${esc(booking.staySnapshot?.checkOutTime ?? "See original booking terms")}</td></tr>
 <tr><td style="padding:6px 0;color:#666;">Guests</td><td style="text-align:right;">${totalGuests} (${booking.guests.adults} adult${booking.guests.adults === 1 ? "" : "s"}${booking.guests.children ? `, ${booking.guests.children} child${booking.guests.children === 1 ? "" : "ren"}` : ""}${booking.guests.infants ? `, ${booking.guests.infants} infant${booking.guests.infants === 1 ? "" : "s"}` : ""})${booking.pets ? ` · ${booking.pets} pet` : ""}</td></tr>
 <tr><td style="padding:6px 0;color:#666;">Address</td><td style="text-align:right;">${esc(property.address)}, ${esc(property.city)}, ${esc(property.state)} ${esc(property.zip)}</td></tr>
 <tr><td style="padding:6px 0;color:#666;">Check-in method</td><td style="text-align:right;">${esc(property.checkInMethod)}</td></tr>
@@ -68,6 +68,8 @@ function guestHtml(booking: Booking, property: Property): string {
 <h2 style="font-size:16px;">Charges</h2>
 <table style="width:100%;border-collapse:collapse;">${lineItemsHtml(booking)}
 <tr><td style="padding:10px 0;border-top:2px solid #1a1a1a;"><strong>Total</strong></td><td style="padding:10px 0;border-top:2px solid #1a1a1a;text-align:right;"><strong>${esc(formatCents(booking.totalCents))}</strong></td></tr></table>
+<p>Accommodation: ${esc(booking.staySnapshot?.label ?? "See original booking terms")}</p>
+<p>Cancellation: ${esc(booking.staySnapshot?.cancellationPolicy ?? "See original booking terms")}</p>
 <h2 style="font-size:16px;">Good to know</h2>
 <ul><li>Quiet hours: ${esc(property.quietHours)}</li><li>Wifi details are in this email's follow-up before arrival.</li><li>Please review the house rules in your booking details.</li></ul>
 <p>We look forward to hosting you!<br>— Kipper, Kipper Property Management</p>`
@@ -81,7 +83,7 @@ function hostHtml(booking: Booking, property: Property): string {
     `<p>A new booking was just confirmed on the direct site:</p>
 <table style="width:100%;border-collapse:collapse;margin:16px 0;">
 <tr><td style="padding:6px 0;color:#666;">Reference</td><td style="text-align:right;"><strong>${esc(booking.reference)}</strong></td></tr>
-<tr><td style="padding:6px 0;color:#666;">Property</td><td style="text-align:right;">${esc(property.name)}</td></tr>
+<tr><td style="padding:6px 0;color:#666;">Property</td><td style="text-align:right;">${esc(booking.staySnapshot?.propertyName ?? property.name)}</td></tr>
 <tr><td style="padding:6px 0;color:#666;">Dates</td><td style="text-align:right;">${esc(booking.checkIn)} → ${esc(booking.checkOut)} (${booking.nights} night${booking.nights === 1 ? "" : "s"})</td></tr>
 <tr><td style="padding:6px 0;color:#666;">Guest</td><td style="text-align:right;">${esc(g.name)} &lt;${esc(g.email)}&gt;${g.phone ? ` · ${esc(g.phone)}` : ""}</td></tr>
 <tr><td style="padding:6px 0;color:#666;">Party</td><td style="text-align:right;">${booking.guests.adults}A / ${booking.guests.children}C / ${booking.guests.infants}I${booking.pets ? ` · ${booking.pets} pet(s)` : ""}</td></tr>
@@ -95,7 +97,7 @@ function hostHtml(booking: Booking, property: Property): string {
 
 async function deliver(to: string, subject: string, html: string, kind: "guest" | "host", reference: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (apiKey) {
+  if (apiKey && process.env.EMAIL_DELIVERY_MODE === "live" && process.env.BOOKING_TEST_MODE !== "true") {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -108,7 +110,7 @@ async function deliver(to: string, subject: string, html: string, kind: "guest" 
       const body = await res.text();
       throw new Error(`Resend ${res.status}: ${body}`);
     }
-    console.log(`[email] sent ${kind} email for ${reference} to ${to} via Resend`);
+    console.log(`[email] sent ${kind} email for ${reference} via Resend`);
     return;
   }
   // Dev logger fallback: write the rendered email to disk.
@@ -116,7 +118,7 @@ async function deliver(to: string, subject: string, html: string, kind: "guest" 
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `${Date.now()}-${kind}-${reference}.html`);
   fs.writeFileSync(file, html, "utf8");
-  console.log(`[email:dev] ${kind} email for ${reference} → ${to} written to ${file} (RESEND_API_KEY not set)`);
+  console.log(`[email:dev] ${kind} email for ${reference} written to ${file} (RESEND_API_KEY not set)`);
 }
 
 /** Contact-form message → host inbox. Never throws — logs and continues on failure. */
@@ -140,7 +142,7 @@ export async function sendContactMessage(
       `contact-${Date.now()}`,
     );
   } catch (err) {
-    console.error(`[email] FAILED contact message from ${email}:`, err);
+    console.error(`[email] FAILED contact message:`, err);
   }
 }
 

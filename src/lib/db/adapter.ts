@@ -40,6 +40,7 @@ export interface SettingsPatch {
 
 /** Everything needed to create a booking; id/createdAt are assigned by the adapter. */
 export interface NewBookingInput {
+  staySnapshot?: Booking["staySnapshot"];
   propertyId: string;
   checkIn: string;
   checkOut: string;
@@ -77,6 +78,10 @@ export interface DataAdapter {
    * ONE transaction — callers must not pre-check outside of it.
    */
   createBookingIfAvailable(input: NewBookingInput): Promise<Booking>;
+  expirePendingBookings(now?: string): Promise<number>;
+  confirmBookingPayment(id: string, paymentIntentId: string, confirmedAt: string): Promise<{booking: Booking; transitioned: boolean} | null>;
+  failPendingBookingPayment(id: string, paymentIntentId: string): Promise<boolean>;
+  attachPaymentIntent(id: string, paymentIntentId: string): Promise<Booking | null>;
   getBooking(id: string): Promise<Booking | null>;
   getBookingByReference(reference: string): Promise<Booking | null>;
   getBookingByIdempotencyKey(key: string): Promise<Booking | null>;

@@ -1,3 +1,4 @@
+import { resolveStayConfiguration } from "./accommodation";
 /**
  * Availability computation.
  *
@@ -77,6 +78,7 @@ export function computeAvailabilityDays(input: AvailabilityInput): AvailabilityD
       available = false;
       blockedReason = "blocked";
     }
+    if (available && resolveStayConfiguration(property, date, addDays(date, 1)).status !== "available") { available = false; blockedReason = "blocked"; }
     return {
       date,
       available,

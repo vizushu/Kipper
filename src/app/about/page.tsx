@@ -20,7 +20,7 @@ const PILLARS = [
   {
     icon: IconShield,
     title: "Book direct, skip the markup",
-    body: "Every stay is bookable right here — no marketplace service fees added on top of your bill.",
+    body: "Explore our accommodation and contact Kipper about your dates. Online booking is not open yet.",
   },
   {
     icon: IconKey,
@@ -55,7 +55,7 @@ export default function AboutPage() {
           and a host you can actually reach.
         </p>
         <p>
-          Our first home is Casa Pacifica — 10840 New Salem Point, San Diego —
+          Our first home is Casa Pacifica — Mira Mesa, San Diego —
           a 3-bedroom, 2-bathroom retreat that sleeps 8, with a private heated
           pool in the heart of Mira Mesa, minutes from La Jolla.
         </p>

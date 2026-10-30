@@ -41,7 +41,40 @@ export interface PetPolicy {
   maxPets: number;
 }
 
+export interface AccommodationConfiguration {
+  id: string;
+  label: string;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  bedrooms: number;
+  maxGuests?: number;
+  maxTotalOccupancy?: number;
+  checkoutApproved: boolean;
+}
+
+export interface StaySnapshot {
+  cleaningFeeCents?: number;
+  taxRatePct?: number;
+  taxPolicyVersion?: string;
+  configurationId: string;
+  label: string;
+  bedrooms: number;
+  maxGuests: number;
+  maxTotalOccupancy: number;
+  propertyName: string;
+  timezone: 'America/Los_Angeles';
+  checkInTime: string;
+  checkOutTime: string;
+  houseRules: string[];
+  cancellationPolicy: string;
+  cancellationPolicyVersion?: string;
+}
+
 export interface Property {
+  configurations?: AccommodationConfiguration[];
+  taxPolicyVersion?: string;
+  license?: string;
+  hostName?: string;
   id: string;
   slug: string;
   name: string;
@@ -70,6 +103,7 @@ export interface Property {
   checkInMethod: string;
   quietHours: string;
   cancellationPolicy: string;
+  cancellationPolicyVersion?: string;
   petPolicy: PetPolicy;
   photos: Photo[];
   faqs: Faq[];
@@ -124,6 +158,7 @@ export interface LineItem {
 }
 
 export interface Quote {
+  staySnapshot?: StaySnapshot;
   id: string;
   propertyId: string;
   propertySlug: string;
@@ -155,6 +190,8 @@ export interface BookingGuest {
 }
 
 export interface Booking {
+  holdExpiresAt?: string;
+  staySnapshot?: StaySnapshot;
   id: string;
   reference: string; // guest-facing, e.g. "CP-7K2Q9A"
   propertyId: string;

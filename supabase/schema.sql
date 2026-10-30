@@ -149,6 +149,86 @@ begin
 end;
 $$;
 
+alter table bookings add column if not exists stay_snapshot jsonb;
+
+-- Pending holds are bounded. Existing legacy holds remain NULL for manual review;
+-- never infer expiry for reservations created before this migration.
+alter table bookings add column if not exists hold_expires_at timestamptz;
+
+create or replace function expire_pending_bookings(p_now timestamptz default now())
+returns integer language plpgsql as $$
+declare v_property text; v_count integer := 0; v_changed integer;
+begin
+  for v_property in select distinct property_id from bookings where status='pending_payment' and hold_expires_at <= p_now order by property_id loop
+    perform pg_advisory_xact_lock(hashtextextended(v_property, 0));
+    update bookings set status='cancelled', cancelled_at=p_now,
+      admin_notes=concat_ws(E'\n', admin_notes, 'Payment hold expired; late payment requires manual review.')
+      where property_id=v_property and status='pending_payment' and hold_expires_at <= p_now;
+    get diagnostics v_changed = row_count;
+    v_count := v_count + v_changed;
+  end loop;
+  return v_count;
+end; $$;
+
+create or replace function attach_payment_intent(p_id text, p_payment_intent_id text)
+returns setof bookings language plpgsql as $$
+declare v_property text;
+begin
+  select property_id into v_property from bookings where id=p_id;
+  if v_property is null then return; end if;
+  perform pg_advisory_xact_lock(hashtextextended(v_property, 0));
+  return query update bookings set stripe_payment_intent_id=p_payment_intent_id
+    where id=p_id and status='pending_payment'
+      and (hold_expires_at is null or hold_expires_at > now())
+      and (stripe_payment_intent_id is null or stripe_payment_intent_id=p_payment_intent_id)
+    returning *;
+end; $$;
+
+create or replace function confirm_booking_payment(p_id text, p_payment_intent_id text, p_confirmed_at timestamptz)
+returns jsonb language plpgsql as $$
+declare v_property text; v_row bookings%rowtype;
+begin
+  select property_id into v_property from bookings where id=p_id;
+  if v_property is null then return null; end if;
+  perform pg_advisory_xact_lock(hashtextextended(v_property, 0));
+  select * into v_row from bookings where id=p_id for update;
+  if v_row.stripe_payment_intent_id is distinct from p_payment_intent_id or v_row.status='cancelled' then return null; end if;
+  if v_row.status='confirmed' then return jsonb_build_object('booking',to_jsonb(v_row),'transitioned',false); end if;
+  if v_row.hold_expires_at is not null and v_row.hold_expires_at <= now() then
+    update bookings set status='cancelled', cancelled_at=now(), admin_notes=concat_ws(E'\n',admin_notes,'Payment hold expired; late payment requires manual review.') where id=p_id;
+    return null;
+  end if;
+  if exists(select 1 from blocks where property_id=v_property and from_date<v_row.check_out and to_date>v_row.check_in) then return null; end if;
+  if exists(select 1 from bookings where id<>p_id and property_id=v_property and status in ('confirmed','pending_payment') and (status='confirmed' or hold_expires_at is null or hold_expires_at>now()) and check_in<v_row.check_out and check_out>v_row.check_in) then return null; end if;
+  update bookings set status='confirmed',payment_status='paid_test',confirmed_at=p_confirmed_at where id=p_id and status='pending_payment' returning * into v_row;
+  return jsonb_build_object('booking',to_jsonb(v_row),'transitioned',true);
+end; $$;
+
+create or replace function cancel_booking(p_id text)
+returns setof bookings language plpgsql as $$
+declare v_property text;
+begin
+  select property_id into v_property from bookings where id=p_id;
+  if v_property is null then return; end if;
+  perform pg_advisory_xact_lock(hashtextextended(v_property, 0));
+  return query update bookings set status='cancelled',cancelled_at=coalesce(cancelled_at,now()) where id=p_id returning *;
+end; $$;
+
+-- Blocks/OTA-import rows must serialize with holds and confirmation too.
+create or replace function lock_block_inventory()
+returns trigger language plpgsql as $$
+begin
+  if TG_OP='UPDATE' and OLD.property_id is distinct from NEW.property_id then
+    raise exception 'Block inventory identity is immutable; delete and recreate under review';
+  end if;
+  if TG_OP='DELETE' then
+    perform pg_advisory_xact_lock(hashtextextended(OLD.property_id,0)); return OLD;
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended(NEW.property_id,0)); return NEW;
+end; $$;
+drop trigger if exists blocks_inventory_lock on blocks;
+create trigger blocks_inventory_lock before insert or update or delete on blocks for each row execute function lock_block_inventory();
+
 create or replace function create_booking_if_available(p_booking jsonb)
 returns setof bookings
 language plpgsql
@@ -159,6 +239,10 @@ declare
   v_row  bookings%rowtype;
   attempt int := 0;
 begin
+  -- Serialize reservation creation for the same physical property.
+  perform pg_advisory_xact_lock(hashtextextended(p_booking->>'property_id', 0));
+  update bookings set status='cancelled',cancelled_at=now(),admin_notes=concat_ws(E'\n',admin_notes,'Payment hold expired; late payment requires manual review.')
+    where property_id=p_booking->>'property_id' and status='pending_payment' and hold_expires_at <= now();
   -- 1) Availability re-check (inside this transaction).
   if exists (
     select 1 from bookings
@@ -188,7 +272,7 @@ begin
       insert into bookings (
         id, reference, property_id, check_in, check_out, nights,
         guests, pets, guest, line_items, total_cents, currency,
-        status, payment_status, idempotency_key
+        status, payment_status, idempotency_key, stay_snapshot, hold_expires_at
       ) values (
         v_id, v_ref,
         p_booking->>'property_id',
@@ -202,7 +286,7 @@ begin
         (p_booking->>'total_cents')::int,
         coalesce(p_booking->>'currency', 'USD'),
         'pending_payment', 'unpaid',
-        p_booking->>'idempotency_key'
+        p_booking->>'idempotency_key', p_booking->'stay_snapshot', now() + interval '15 minutes'
       )
       returning * into v_row;
       exit insert_loop;
@@ -235,9 +319,16 @@ $$;
 -- content from code, not from this table, until the admin UI needs it).
 -- --------------------------------------------------------------------------
 insert into settings (key, value) values
-  ('cleaningFeeCents', '15000'),          -- ⚠️ SAMPLE — Renier has not confirmed
-  ('taxRatePct',       '10.5'),           -- ⚠️ SAMPLE — Renier has not confirmed
+  ('cleaningFeeCents', '18000'),          -- Approved current 3BR cleaning
+  ('taxRatePct',       '12.75'),          -- Verified San Diego Zone 2 TOT
   ('minStayNights',    '1'),
   ('maxStayNights',    '28'),
   ('promos',           '[{"code":"DIRECT10","type":"percent","percent":10,"description":"10% off the nightly subtotal — honors Renier''s promised 10%-off for direct rebookings"}]')
 on conflict (key) do nothing;
+
+-- Minimal canonical inventory identity. Public listing content remains in code.
+insert into properties (id, slug, data) values ('casa-pacifica','casa-pacifica','{}'::jsonb) on conflict (id) do nothing;
+
+-- Lifecycle RPCs are server-only. No public booking mutations via Supabase SDK.
+revoke execute on function create_booking_if_available(jsonb), expire_pending_bookings(timestamptz), attach_payment_intent(text,text), confirm_booking_payment(text,text,timestamptz), cancel_booking(text) from public, anon, authenticated;
+grant execute on function create_booking_if_available(jsonb), expire_pending_bookings(timestamptz), attach_payment_intent(text,text), confirm_booking_payment(text,text,timestamptz), cancel_booking(text) to service_role;

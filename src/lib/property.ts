@@ -1,3 +1,4 @@
+import { CANCELLATION_POLICY } from "./cancellation";
 /**
  * Casa Pacifica property content — the canonical listing.
  *
@@ -13,6 +14,13 @@
 import type { Property, PropertySummary } from "./types";
 
 const CASA_PACIFICA: Property = {
+  license: "STR-13982L",
+  taxPolicyVersion: "san-diego-zone2-2025-05-01",
+  hostName: "Kipper",
+  configurations: [
+    { id: "casa-pacifica-3br", label: "3-bedroom accommodation", effectiveFrom: "2020-01-01", effectiveTo: "2027-03-01", bedrooms: 3, maxGuests: 8, maxTotalOccupancy: 8, checkoutApproved: true },
+    { id: "casa-pacifica-5br", label: "5-bedroom accommodation", effectiveFrom: "2027-03-01", bedrooms: 5, checkoutApproved: false },
+  ],
   id: "casa-pacifica",
   slug: "casa-pacifica",
   name: "Casa Pacifica",
@@ -27,7 +35,7 @@ const CASA_PACIFICA: Property = {
   latitude: 32.912,
   longitude: -117.139,
   maxGuests: 8, // overnight
-  maxTotalOccupancy: 10, // incl. daytime visitors
+  maxTotalOccupancy: 8, // incl. daytime visitors
   bedrooms: 3,
   beds: 4,
   bathrooms: 2,
@@ -38,17 +46,17 @@ const CASA_PACIFICA: Property = {
     { room: "Living room", bed: "Queen sleeper sofa" },
   ],
   description:
-    "Welcome to your San Diego getaway — a thoughtfully designed single-level home perfect for families, friends, and business travel. Relax by the private pool (heating included), enjoy meals together in the spacious indoor and outdoor dining areas, or unwind after a day exploring San Diego. Conveniently located in the heart of Mira Mesa, minutes from UCSD, La Jolla Shores, and San Diego's best beaches and attractions.",
+    "Welcome to your San Diego getaway — a thoughtfully designed downstairs accommodation perfect for families, friends, and business travel. Relax by the private pool, enjoy meals together in the spacious indoor and outdoor dining areas, or unwind after a day exploring San Diego. Conveniently located in the heart of Mira Mesa, minutes from UCSD, La Jolla Shores, and San Diego's best beaches and attractions.",
   guestAccess:
-    "Guests enjoy private access to the entire downstairs: three bedrooms, two bathrooms, kitchen, dining, living room, laundry, backyard, pool, BBQ, and driveway. The upstairs is a separate private residence with its own entrance — locked throughout your stay; no shared indoor spaces.",
+    "Guests enjoy private access to the entire downstairs: three bedrooms, two bathrooms, kitchen, dining, living room, laundry, backyard, pool, BBQ, and designated parking. The upstairs is a separate private residence with its own entrance — locked throughout your stay; no shared indoor spaces.",
   highlights: [
     {
       title: "In Mira Mesa, near La Jolla",
       body: "A short drive to La Jolla Shores, UCSD, and San Diego's top beaches and attractions.",
     },
     {
-      title: "Private backyard with heated pool",
-      body: "Private pool with heating included, fire pit, BBQ grill, outdoor dining, and a fully fenced backyard.",
+      title: "Private backyard with pool",
+      body: "Private pool, fire pit, BBQ grill, outdoor dining, and a fully fenced backyard.",
     },
     {
       title: "Comfortable and well-equipped",
@@ -59,7 +67,7 @@ const CASA_PACIFICA: Property = {
     {
       category: "Pool & outdoors",
       items: [
-        "Private heated pool",
+        "Private pool",
         "Fully fenced backyard",
         "Cabana",
         "Fire pit",
@@ -124,11 +132,11 @@ const CASA_PACIFICA: Property = {
     },
   ],
   houseRules: [
-    "Maximum 8 overnight guests (10 total on the property including daytime visitors)",
+    "Maximum 8 overnight guests (8 total on the property including daytime visitors)",
     "Check-in from 3:00 PM; checkout by 11:00 AM",
     "Quiet hours 10:00 PM – 8:00 AM",
     "No parties or events",
-    "No smoking or vaping ($500 smoke remediation fee if evidence is found)",
+    "No smoking or vaping",
     "No drugs",
     "Children must be supervised at the pool at all times — no lifeguard on duty",
     "No glass near the pool",
@@ -142,8 +150,9 @@ const CASA_PACIFICA: Property = {
   quietHours: "10:00 PM – 8:00 AM",
   // ⚠️ Cancellation wording mirrors the Airbnb "Firm" policy; exact direct-booking
   // terms are Renier-to-confirm.
+  cancellationPolicyVersion: CANCELLATION_POLICY.version,
   cancellationPolicy:
-    "Firm — full refund for cancellations made 30+ days before check-in; 50% refund 7–30 days; no refund under 7 days. (Confirm exact terms with host.)",
+    CANCELLATION_POLICY.text,
   petPolicy: {
     allowed: true,
     feePerStayCents: 5000,
@@ -154,7 +163,6 @@ const CASA_PACIFICA: Property = {
     // REMOVED from guest use and must never be advertised; keep 01 in the gallery
     // but do not use it as the hero. Hero = photo 02 (living room) until Renier
     // supplies a projector-free hero shot.
-    { src: "/photos/casa-pacifica-01.jpg", alt: "Casa Pacifica — backyard and pool", room: "Pool" },
     { src: "/photos/casa-pacifica-02.jpg", alt: "Casa Pacifica — bright open living room", room: "Living room" },
     { src: "/photos/casa-pacifica-03.jpg", alt: "Casa Pacifica — fully equipped kitchen", room: "Kitchen" },
     { src: "/photos/casa-pacifica-04.jpg", alt: "Casa Pacifica — indoor dining area", room: "Dining area" },
@@ -171,7 +179,7 @@ const CASA_PACIFICA: Property = {
   faqs: [
     {
       q: "Is the pool heated?",
-      a: "Yes — pool heating is included with your stay.",
+      a: "Pool heating availability and pricing must be confirmed with Kipper before booking.",
     },
     {
       q: "Is the upstairs part of the rental?",
@@ -208,8 +216,8 @@ const CASA_PACIFICA: Property = {
   baseNightlyCents: 34900,
   minNightlyCents: 34900,
   maxNightlyCents: 103000,
-  cleaningFeeCents: 15000, // ⚠️ SAMPLE — Renier has not confirmed
-  taxRatePct: 10.5, // ⚠️ SAMPLE (San Diego TOT placeholder) — Renier has not confirmed
+  cleaningFeeCents: 18000, // Approved for the current 3-bedroom accommodation
+  taxRatePct: 12.75, // Verified San Diego Zone 2, effective 2025-05-01
   minStayNights: 1,
   maxStayNights: 28,
 };
@@ -218,7 +226,7 @@ const PROPERTIES: Property[] = [CASA_PACIFICA];
 
 /** Look up by id or slug. */
 export function getProperty(slugOrId: string): Property | undefined {
-  return PROPERTIES.find((p) => p.slug === slugOrId || p.id === slugOrId);
+  return PROPERTIES.find((p) => p.slug === slugOrId || p.id === slugOrId || (p.id === "casa-pacifica" && slugOrId === "casa-pacifica-san-diego"));
 }
 
 export function listProperties(): Property[] {
@@ -236,10 +244,10 @@ export function toPropertySummary(p: Property): PropertySummary {
     bedrooms: p.bedrooms,
     bathrooms: p.bathrooms,
     // Deliberately not photo 01 (shows the removed projector screen).
-    coverPhoto: p.photos[1],
+    coverPhoto: p.photos[0],
     startingNightlyCents: p.minNightlyCents,
     amenityTags: [
-      "Private heated pool",
+      "Private pool",
       "Sleeps 8",
       "3 bedrooms",
       "Mira Mesa",

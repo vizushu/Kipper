@@ -20,11 +20,12 @@ export async function POST(req: NextRequest) {
   if (!parsed.ok) return parsed.response;
   const { propertyId, from, to, reason } = parsed.data;
 
-  if (!getProperty(propertyId)) return notFound("Property not found.");
+  const property = getProperty(propertyId);
+  if (!property) return notFound("Property not found.");
   if (!isValidDateStr(from) || !isValidDateStr(to) || to <= from) {
     return apiError("INVALID_DATES", "Block range must be valid YYYY-MM-DD dates with to > from.", 400);
   }
 
-  const block = await getAdapter().createBlock({ propertyId, from, to, reason });
+  const block = await getAdapter().createBlock({ propertyId: property.id, from, to, reason });
   return json({ block }, 201);
 }

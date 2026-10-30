@@ -1,3 +1,4 @@
+import { isPublicPreview } from "./booking-launch";
 /**
  * Admin authentication for /api/admin/* routes.
  *
@@ -18,7 +19,7 @@ export const ADMIN_COOKIE_NAME = "cp_admin_session";
 const COOKIE_NAMESPACE = "cp-admin-session:v1:";
 
 function adminSecret(): string | undefined {
-  return process.env.ADMIN_SECRET || undefined;
+  return isPublicPreview() ? undefined : process.env.ADMIN_SECRET || undefined;
 }
 
 function expectedCookieValue(): string | null {

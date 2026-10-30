@@ -375,3 +375,19 @@ Re-send emails for a booking (uses the dev logger when Resend isn't configured).
 | `BOOKING_FROM_EMAIL` | no | From: address for emails |
 | `HOST_NOTIFY_EMAIL` | no | Where host notifications go (defaults to From:) |
 | `ADMIN_SECRET` | for admin | Enables `/api/admin/*` (header or login cookie) |
+
+## October 30 date-aware preview contract
+
+- All accommodation versions share `propertyId: casa-pacifica`; legacy slug `casa-pacifica-san-diego` resolves the same resource. Never create separate 3BR/5BR inventory.
+- `Property.configurations` uses inclusive `effectiveFrom`, exclusive `effectiveTo` dates in America/Los_Angeles, with id, label, bedrooms, optional capacities and checkoutApproved.
+- `Quote.staySnapshot` is copied to `Booking.staySnapshot`: configuration, accepted policy text/version, occupancy, check-in/out times, cleaning/tax amount and tax version. Legacy bookings without snapshots remain legacy; do not manufacture their historical promises.
+- A checkout on March 1 still belongs to the prior configuration. March 1 arrival selects 5BR, currently blocked pending approved facts. Cross-boundary stays require manual review.
+- Quote/availability/create endpoints fail closed with `BOOKING_NOT_OPEN` unless `BOOKING_TEST_MODE=true`. This flag enables TEST preview only, not live payments. Stripe only accepts sk_test_ credentials. No production activation path has been added.
+- Booking reference lookup requires a scoped signed capability in the Authorization header. Creating a test booking requires BOOKING_ACCESS_SECRET with at least 32 bytes. Treat capability links as secrets. Lookup is private/no-store.
+- Public property payloads omit street address and exact coordinates. Confirmation never exposes Wi-Fi credentials.
+- Cancellation preview is pure calculation, not a refund command. LA local 3 PM wall-time cutoff is the existing check-in-time assumption; at 30 days full, at 15 days half, below15 none. Cleaning is fully refundable before arrival. Taxes require separate adjustment review.
+
+## Atomic lifecycle and public preview
+New pending bookings have `holdExpiresAt` (15minutes). Expiration transitions them to cancelled, preserving rows and accepted snapshots. Legacy rows without expiry remain for manual review. Availability/reservation creation/confirmation sweeps expired holds; no scheduler is required to prevent expired holds blocking a new search. Confirmation checks intent binding, state, expiry and competing inventory atomically. Only the winning transition emits receipts; duplicate events are acknowledged without duplicate send. Generic booking updates cannot mutate lifecycle fields. Block imports serialize with reservations; a conflicting block prevents payment confirmation and requires manual review. No automatic refunds occur.
+
+`SITE_PREVIEW_MODE=true` disables booking even if BOOKING_TEST_MODE is true, disables admin/contact/guest lookup, hides guest forms and sends no real email. All API JSON responses are private/no-store. This flag must be set before building and running a public preview.

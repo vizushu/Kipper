@@ -6,12 +6,11 @@
  * - Unavailable days (booked / blocked / past) are not selectable.
  * - Min-stay is validated against each night's minStayNights; violations
  *   are explained in plain language, never silently ignored.
- * - Price preview: per-day rates in cells + stay total under the calendar.
+ * - Prices come only from the server quote, never a client-computed total.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Badge } from "@/components/ui";
 import { IconChevronLeft, IconChevronRight } from "@/components/icons";
-import { formatCents, type AvailabilityDay } from "@/lib/types";
+import { type AvailabilityDay } from "@/lib/types";
 import { cn } from "@/components/cn";
 
 export interface DateRange {
@@ -70,8 +69,10 @@ export default function AvailabilityCalendar({
   const [validationError, setValidationError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
-  const windowFrom = toISO(monthStart(monthOffset));
-  const windowTo = toISO(new Date(monthStart(monthOffset + monthsVisible).getTime()));
+  const visibleFrom = toISO(monthStart(monthOffset));
+  const visibleTo = toISO(monthStart(monthOffset + monthsVisible));
+  const windowFrom = range?.checkIn && range.checkIn < visibleFrom ? range.checkIn : visibleFrom;
+  const windowTo = range?.checkOut && range.checkOut > visibleTo ? range.checkOut : visibleTo;
 
   useEffect(() => {
     let cancelled = false;
@@ -130,7 +131,8 @@ export default function AvailabilityCalendar({
 
   function pick(date: string) {
     const day = days[date];
-    if (!day?.available) return;
+    const checkoutCandidate = !!range?.checkIn && !range.checkOut && date > range.checkIn;
+    if (!day || (!day.available && !checkoutCandidate)) return;
     if (!range || (range.checkIn && range.checkOut)) {
       // start a new range
       onRangeChange({ checkIn: date, checkOut: "" });
@@ -156,18 +158,6 @@ export default function AvailabilityCalendar({
       onRangeChange({ checkIn: from, checkOut: to });
     }
   }
-
-  const stayTotal = useMemo(() => {
-    if (!range?.checkIn || !range?.checkOut) return null;
-    const nights = diffNights(range.checkIn, range.checkOut);
-    let total = 0;
-    for (let i = 0; i < nights; i++) {
-      const day = days[addDaysISO(range.checkIn, i)];
-      if (!day?.available) return null;
-      total += day.nightlyRateCents;
-    }
-    return { nights, total };
-  }, [range, days]);
 
   const months = useMemo(
     () => Array.from({ length: monthsVisible }, (_, i) => monthStart(monthOffset + i)),
@@ -201,6 +191,8 @@ export default function AvailabilityCalendar({
             if (!date) return <span key={`b-${i}`} />;
             const day = days[date];
             const available = day?.available ?? false;
+            const checkoutCandidate = !!day && !!range?.checkIn && !range.checkOut && date > range.checkIn;
+            const selectable = available || checkoutCandidate;
             const isCheckIn = range?.checkIn === date;
             const isCheckOut = range?.checkOut === date;
             const inRange =
@@ -219,13 +211,13 @@ export default function AvailabilityCalendar({
               <button
                 key={date}
                 type="button"
-                disabled={!available}
+                disabled={!selectable}
                 onClick={() => pick(date)}
                 onMouseEnter={() => setHover(date)}
-                aria-label={`${date}${available && day ? `, ${formatCents(day.nightlyRateCents)} per night` : ", unavailable"}`}
+                aria-label={`${date}${available ? ", available" : checkoutCandidate ? ", checkout only" : ", unavailable"}`}
                 className={cn(
-                  "flex aspect-square min-w-0 flex-col items-center justify-center rounded-xl text-sm transition-colors",
-                  !available && "cursor-not-allowed text-stone-300 line-through",
+                  "flex min-h-11 min-w-0 flex-col items-center justify-center rounded-xl text-sm transition-colors",
+                  !selectable && "cursor-not-allowed text-stone-300 line-through",
                   available && !isCheckIn && !isCheckOut && !inRange && !hoverInRange &&
                     "text-ink hover:bg-cream",
                   (inRange || hoverInRange) && "bg-clay-soft text-clay-dark",
@@ -233,16 +225,7 @@ export default function AvailabilityCalendar({
                 )}
               >
                 <span className="font-medium leading-none">{parseISO(date).getDate()}</span>
-                {available && day && (
-                  <span
-                    className={cn(
-                      "mt-0.5 text-[10px] leading-none",
-                      isCheckIn || isCheckOut ? "text-white/80" : "text-stone-400",
-                    )}
-                  >
-                    {formatCents(day.nightlyRateCents)}
-                  </span>
-                )}
+
               </button>
             );
           })}
@@ -259,7 +242,7 @@ export default function AvailabilityCalendar({
           onClick={() => setMonthOffset((o) => Math.max(0, o - 1))}
           disabled={monthOffset === 0}
           aria-label="Previous month"
-          className="rounded-full p-2 text-ink hover:bg-cream disabled:opacity-30"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-ink hover:bg-cream disabled:opacity-30"
         >
           <IconChevronLeft className="h-5 w-5" />
         </button>
@@ -275,14 +258,14 @@ export default function AvailabilityCalendar({
           type="button"
           onClick={() => setMonthOffset((o) => o + 1)}
           aria-label="Next month"
-          className="rounded-full p-2 text-ink hover:bg-cream"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-ink hover:bg-cream"
         >
           <IconChevronRight className="h-5 w-5" />
         </button>
       </div>
 
       {loading ? (
-        <div className="grid gap-6 md:grid-cols-2" aria-label="Loading availability">
+        <div className={cn("grid gap-6", monthsVisible > 1 && "md:grid-cols-2")} aria-label="Loading availability">
           {Array.from({ length: monthsVisible }).map((_, i) => (
             <div key={i} className="h-64 animate-pulse rounded-2xl bg-cream" />
           ))}
@@ -302,7 +285,7 @@ export default function AvailabilityCalendar({
           </button>
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2">{months.map(renderMonth)}</div>
+        <div className={cn("grid gap-6", monthsVisible > 1 && "md:grid-cols-2")}>{months.map(renderMonth)}</div>
       )}
 
       {validationError && (
@@ -311,20 +294,7 @@ export default function AvailabilityCalendar({
         </p>
       )}
 
-      {stayTotal && (
-        <div className="mt-3 flex items-center justify-between rounded-xl bg-cream px-4 py-3">
-          <span className="text-sm text-stone-600">
-            {stayTotal.nights} night{stayTotal.nights === 1 ? "" : "s"} · avg{" "}
-            {formatCents(Math.round(stayTotal.total / stayTotal.nights))}/night
-          </span>
-          <span className="text-lg font-semibold text-ink">{formatCents(stayTotal.total)}</span>
-        </div>
-      )}
-      {!stayTotal && !validationError && (
-        <p className="mt-3 text-center text-sm text-stone-500">
-          Select your check-in and check-out dates.
-        </p>
-      )}
+      {!validationError && <p className="mt-3 text-center text-xs leading-relaxed text-stone-500">Select check-in and checkout. Checkout does not occupy that night. Availability and price are rechecked before booking.</p>}
     </div>
   );
 }

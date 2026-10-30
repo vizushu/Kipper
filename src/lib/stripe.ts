@@ -1,10 +1,10 @@
 /**
  * Stripe payments — TEST MODE ONLY.
  *
- * - createPaymentIntent(quote, idempotencyKey): creates a test-mode
+ * - createPaymentIntent(quote, idempotencyKey, bookingId): creates a test-mode
  *   PaymentIntent for the quote total and returns { id, clientSecret }.
  * - verifyPaymentIntent(id): retrieves the PaymentIntent and returns its
- *   { id, status, amountCents }.
+ *   identity, amount, currency, metadata and test-mode evidence.
  *
  * Requires STRIPE_SECRET_KEY. If it is missing (or is a LIVE key), we throw
  * a clear error and refuse to proceed — this module must never touch live
@@ -14,6 +14,7 @@
 
 import Stripe from "stripe";
 import type { Quote } from "./types";
+import { paymentEvidence, type PaymentEvidence } from "./payment-verification";
 
 export interface CreatedPaymentIntent {
   id: string;
@@ -22,11 +23,7 @@ export interface CreatedPaymentIntent {
   status: string;
 }
 
-export interface VerifiedPaymentIntent {
-  id: string;
-  status: Stripe.PaymentIntent.Status;
-  amountCents: number;
-}
+export type VerifiedPaymentIntent = PaymentEvidence;
 
 function stripeClient(): Stripe {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -35,9 +32,9 @@ function stripeClient(): Stripe {
       "Stripe not configured (test mode): set STRIPE_SECRET_KEY to a test secret key (sk_test_…)."
     );
   }
-  if (key.startsWith("sk_live")) {
+  if (!key.startsWith("sk_test_")) {
     throw new Error(
-      "Refusing to use a LIVE Stripe key: this module is test-mode only."
+      "Refusing a non-test Stripe key: this module requires sk_test_ credentials."
     );
   }
   return new Stripe(key);
@@ -49,7 +46,8 @@ function stripeClient(): Stripe {
  */
 export async function createPaymentIntent(
   quote: Quote,
-  idempotencyKey: string
+  idempotencyKey: string,
+  bookingId: string
 ): Promise<CreatedPaymentIntent> {
   const stripe = stripeClient();
   const pi = await stripe.paymentIntents.create(
@@ -58,7 +56,7 @@ export async function createPaymentIntent(
       currency: quote.currency.toLowerCase(),
       automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       metadata: {
-        booking_quote_id: quote.id,
+        booking_id: bookingId,
         property_id: quote.propertyId,
         check_in: quote.checkIn,
         check_out: quote.checkOut,
@@ -85,11 +83,11 @@ export async function verifyPaymentIntent(
 ): Promise<VerifiedPaymentIntent> {
   const stripe = stripeClient();
   const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
-  return { id: pi.id, status: pi.status, amountCents: pi.amount };
+  return paymentEvidence(pi);
 }
 
 /** True when Stripe test mode is configured (safe to call at startup). */
 export function isStripeConfigured(): boolean {
   const key = process.env.STRIPE_SECRET_KEY;
-  return !!key && !key.startsWith("sk_live");
+  return !!key?.startsWith("sk_test_");
 }

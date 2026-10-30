@@ -3,8 +3,8 @@
  * CheckoutForm — Stripe payment step.
  *
  * Built directly on @stripe/stripe-js (no react-stripe-js dependency):
- * - Payment Request Button (Apple Pay surfaces automatically where supported,
- *   labeled clearly) when the device can make payments.
+ * - User-activated PaymentRequest.show() where wallet capability is reported.
+ *   Merchant/domain/browser eligibility still requires real-device verification.
  * - Standard card Element fallback, mounted manually.
  *
  * NEVER collects raw card numbers — all card input lives in Stripe Elements.
@@ -15,6 +15,7 @@
  *   3. This component confirms the PaymentIntent (PaymentRequest or card),
  *      then calls onConfirmPayment(paymentIntentId).
  */
+import type { Stripe, PaymentRequest, PaymentRequestPaymentMethodEvent, StripeCardElement } from "@stripe/stripe-js";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
 import { IconAlert, IconCard, IconLock } from "@/components/icons";
@@ -28,44 +29,6 @@ interface Props {
   onConfirmPayment: (paymentIntentId: string) => Promise<void>;
 }
 
-/**
- * Minimal Stripe.js typings so this file typechecks before @stripe/stripe-js
- * is installed (the coordinator adds it). Runtime loads it via dynamic
- * import; if the package is missing the import throws and we show an error.
- */
-interface StripeLike {
-  paymentRequest(options: {
-    country: string;
-    currency: string;
-    total: { label: string; amount: number };
-    requestPayerName?: boolean;
-    requestPayerEmail?: boolean;
-  }): PaymentRequestLike;
-  elements(): { create(type: "card", options?: unknown): StripeCardElementLike };
-  confirmCardPayment(
-    clientSecret: string,
-    data: { payment_method: unknown },
-  ): Promise<{
-    error?: { message?: string };
-    paymentIntent: { id: string; status: string };
-  }>;
-}
-interface PaymentRequestLike {
-  canMakePayment(): Promise<null | { applePay?: boolean; googlePay?: boolean }>;
-  on(event: "paymentmethod", handler: (ev: PaymentRequestEventLike) => void): void;
-  mount(target: HTMLElement): void;
-  unmount?(): void;
-}
-interface PaymentRequestEventLike {
-  paymentMethod: { id: string };
-  complete(status: "success" | "fail"): void;
-}
-interface StripeCardElementLike {
-  mount(target: HTMLElement): void;
-  unmount(): void;
-}
-type StripeNS = { Stripe: StripeLike };
-
 export default function CheckoutForm({
   quote,
   clientSecret,
@@ -73,7 +36,7 @@ export default function CheckoutForm({
   onCreateBooking,
   onConfirmPayment,
 }: Props) {
-  const [stripe, setStripe] = useState<StripeNS["Stripe"] | null>(null);
+  const [stripe, setStripe] = useState<Stripe | null>(null);
   const [canPayRequest, setCanPayRequest] = useState(false);
   const [payRequestLabel, setPayRequestLabel] = useState("Pay");
   const [paying, setPaying] = useState(false);
@@ -81,28 +44,22 @@ export default function CheckoutForm({
   const [stripeReady, setStripeReady] = useState(false);
   const [keyMissing, setKeyMissing] = useState(false);
   const cardMountRef = useRef<HTMLDivElement>(null);
-  const cardElementRef = useRef<StripeCardElementLike | null>(null);
-  const paymentRequestRef = useRef<PaymentRequestLike | null>(null);
+  const cardElementRef = useRef<StripeCardElement | null>(null);
+  const paymentRequestRef = useRef<PaymentRequest | null>(null);
 
   const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
   // Load Stripe.js once the booking (clientSecret) exists.
   useEffect(() => {
     if (!clientSecret) return;
-    if (!publishableKey) {
+    if (!publishableKey?.startsWith("pk_test_")) {
       setKeyMissing(true);
       return;
     }
     let cancelled = false;
     (async () => {
       try {
-        // Non-literal specifier: TypeScript leaves this as Promise<any>,
-        // so this file typechecks whether or not @stripe/stripe-js is
-        // installed. At runtime the coordinator's install provides it.
-        const specifier = "@stripe/stripe-js";
-        const mod = (await import(specifier)) as unknown as {
-          loadStripe(key: string): Promise<StripeLike | null>;
-        };
+        const mod = await import("@stripe/stripe-js");
         const s = await mod.loadStripe(publishableKey);
         if (cancelled || !s) {
           if (!cancelled) setError("Payment service failed to load. Please try again.");
@@ -118,7 +75,9 @@ export default function CheckoutForm({
           requestPayerName: true,
           requestPayerEmail: true,
         });
-        const result = await pr.canMakePayment();
+        // Wallet capability failure must not prevent the card fallback.
+        const result = await pr.canMakePayment().catch(() => null);
+        if (cancelled) return;
         if (!cancelled && result) {
           paymentRequestRef.current = pr;
           setCanPayRequest(true);
@@ -129,20 +88,10 @@ export default function CheckoutForm({
             setPaying(true);
             setError("");
             try {
-              const { error: confirmError, paymentIntent } =
-                await s.confirmCardPayment(clientSecret, {
-                  payment_method: ev.paymentMethod.id,
-                });
-              if (confirmError) {
-                ev.complete("fail");
-                setError(confirmError.message ?? "Payment failed. Please try again.");
-              } else {
-                ev.complete("success");
-                await onConfirmPayment(paymentIntent.id);
-              }
+              await confirmWalletPayment(s, clientSecret, ev, onConfirmPayment);
+
             } catch {
-              ev.complete("fail");
-              setError("Payment failed. Please try again.");
+              setError("Payment failed or confirmation could not be completed. Check your receipt before trying again.");
             } finally {
               setPaying(false);
             }
@@ -172,7 +121,8 @@ export default function CheckoutForm({
     })();
     return () => {
       cancelled = true;
-      cardElementRef.current?.unmount();
+      paymentRequestRef.current = null;
+      cardElementRef.current?.destroy();
       cardElementRef.current = null;
     };
   }, [clientSecret, publishableKey]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -204,7 +154,7 @@ export default function CheckoutForm({
         <p className="font-medium text-ink">Payments aren't switched on yet</p>
         <p className="mx-auto mt-2 max-w-md text-sm text-stone-600">
           This site is in test mode and the payment key isn't configured. Your dates
-          are held in the quote — please contact Kipper to complete your booking.
+          are not guaranteed by a quote — please contact Kipper for assistance.
         </p>
       </div>
     );
@@ -245,6 +195,7 @@ export default function CheckoutForm({
             paymentRequest={paymentRequestRef.current}
             label={payRequestLabel}
             disabled={paying}
+            onError={() => setError("Wallet could not open. Please use the card option.")}
           />
           <div className="my-4 flex items-center gap-3 text-xs text-stone-400">
             <span className="h-px flex-1 bg-stone-200" /> or pay with card{" "}
@@ -282,40 +233,38 @@ export default function CheckoutForm({
   );
 }
 
-/** Renders the native Payment Request button into a div. */
-function PaymentRequestButton({
-  paymentRequest,
-  label,
-  disabled,
-}: {
-  paymentRequest: PaymentRequestLike;
-  label: string;
-  disabled: boolean;
+/** User activation must invoke show() directly; PaymentRequest itself has no mount(). */
+export function PaymentRequestButton({ paymentRequest, label, disabled, onError }: {
+  paymentRequest: PaymentRequest; label: string; disabled: boolean; onError: () => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const mounted = useRef(false);
-  useEffect(() => {
-    if (ref.current && !mounted.current) {
-      try {
-        paymentRequest.mount(ref.current);
-        mounted.current = true;
-      } catch {
-        /* Payment Request button unsupported here; card fallback covers it */
-      }
-    }
-    return () => {
-      try {
-        paymentRequest.unmount?.();
-      } catch {
-        /* noop */
-      }
-      mounted.current = false;
-    };
-  }, [paymentRequest]);
-  return (
-    <div>
-      <p className="mb-2 text-sm font-medium text-ink">{label}</p>
-      <div ref={ref} className={disabled ? "pointer-events-none opacity-60" : undefined} />
-    </div>
-  );
+  return <button type="button" disabled={disabled}
+    className="w-full rounded-xl bg-ink px-5 py-3 font-medium text-white disabled:opacity-50"
+    onClick={() => { try { paymentRequest.show(); } catch { onError(); } }}>
+    {label}
+  </button>;
+}
+
+/** Close the wallet sheet before any required authentication, then verify server-side. */
+export async function confirmWalletPayment(
+  stripe: Stripe, clientSecret: string, event: PaymentRequestPaymentMethodEvent,
+  onConfirm: (id: string) => Promise<void>,
+): Promise<void> {
+  let initial;
+  try {
+    initial = await stripe.confirmCardPayment(clientSecret,
+      { payment_method: event.paymentMethod.id }, { handleActions: false });
+  } catch (error) { event.complete("fail"); throw error; }
+  if (initial.error) {
+    event.complete("fail");
+    throw new Error(initial.error.message ?? "Wallet payment failed.");
+  }
+  event.complete("success");
+  let intent = initial.paymentIntent;
+  if (intent.status === "requires_action") {
+    const result = await stripe.confirmCardPayment(clientSecret);
+    if (result.error) throw new Error(result.error.message ?? "Payment authentication failed.");
+    intent = result.paymentIntent;
+  }
+  if (intent.status !== "succeeded") throw new Error("Payment is not yet complete.");
+  await onConfirm(intent.id);
 }

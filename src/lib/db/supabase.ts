@@ -53,6 +53,8 @@ interface SnakeBooking {
   guests: { adults: number; children: number; infants: number };
   pets: number;
   guest: { name: string; email: string; phone?: string };
+  stay_snapshot?: Booking["staySnapshot"];
+  hold_expires_at?: string | null;
   line_items: { label: string; detail?: string; amountCents: number }[];
   total_cents: number;
   currency: "USD";
@@ -78,6 +80,8 @@ function toBooking(r: SnakeBooking): Booking {
     pets: r.pets,
     guest: r.guest,
     lineItems: r.line_items,
+    staySnapshot: r.stay_snapshot ?? undefined,
+    holdExpiresAt: r.hold_expires_at ?? undefined,
     totalCents: r.total_cents,
     currency: r.currency,
     status: r.status,
@@ -149,6 +153,7 @@ export class SupabaseAdapter implements DataAdapter {
           pets: input.pets,
           guest: input.guest,
           line_items: input.lineItems,
+          stay_snapshot: input.staySnapshot ?? null,
           total_cents: input.totalCents,
           currency: input.currency,
           idempotency_key: input.idempotencyKey,
@@ -161,6 +166,22 @@ export class SupabaseAdapter implements DataAdapter {
     const row = rows[0];
     if (!row) throw new Error("create_booking_if_available returned no row.");
     return toBooking(row);
+  }
+
+  async expirePendingBookings(now = new Date().toISOString()): Promise<number> {
+    return this.req<number>('POST', '/rpc/expire_pending_bookings', {p_now: now});
+  }
+  async attachPaymentIntent(id: string, paymentIntentId: string): Promise<Booking | null> {
+    const rows = await this.req<SnakeBooking[]>('POST', '/rpc/attach_payment_intent', {p_id:id, p_payment_intent_id:paymentIntentId});
+    return rows[0] ? toBooking(rows[0]) : null;
+  }
+  async failPendingBookingPayment(id: string, paymentIntentId: string): Promise<boolean> {
+    const rows = await this.req<SnakeBooking[]>('PATCH', `/bookings?id=eq.${encodeURIComponent(id)}&stripe_payment_intent_id=eq.${encodeURIComponent(paymentIntentId)}&status=eq.pending_payment`, {payment_status:'failed'}, 'return=representation');
+    return rows.length > 0;
+  }
+  async confirmBookingPayment(id: string, paymentIntentId: string, confirmedAt: string): Promise<{booking: Booking; transitioned: boolean} | null> {
+    const result = await this.req<{booking: SnakeBooking; transitioned: boolean} | null>('POST', '/rpc/confirm_booking_payment', {p_id:id, p_payment_intent_id:paymentIntentId, p_confirmed_at:confirmedAt});
+    return result?.booking ? {booking:toBooking(result.booking), transitioned:result.transitioned} : null;
   }
 
   async getBooking(id: string): Promise<Booking | null> {
@@ -203,6 +224,7 @@ export class SupabaseAdapter implements DataAdapter {
       adminNotes?: string;
     }
   ): Promise<Booking | null> {
+    if (Object.keys(patch).some(k => k !== "adminNotes")) throw new Error("Use atomic booking lifecycle methods for state changes.");
     const body: Record<string, unknown> = {};
     if (patch.status !== undefined) body.status = patch.status;
     if (patch.paymentStatus !== undefined) body.payment_status = patch.paymentStatus;
@@ -221,13 +243,12 @@ export class SupabaseAdapter implements DataAdapter {
   }
 
   async cancelBooking(id: string): Promise<Booking | null> {
-    return this.updateBooking(id, {
-      status: "cancelled",
-      cancelledAt: new Date().toISOString(),
-    });
+    const rows = await this.req<SnakeBooking[]>('POST', '/rpc/cancel_booking', {p_id:id});
+    return rows[0] ? toBooking(rows[0]) : null;
   }
 
   async listBookings(filter: ListBookingsFilter = {}): Promise<Booking[]> {
+    await this.expirePendingBookings();
     const q = new URLSearchParams({ order: "created_at.desc" });
     if (filter.propertyId) q.set("property_id", `eq.${filter.propertyId}`);
     if (filter.status) q.set("status", `eq.${filter.status}`);
@@ -240,6 +261,7 @@ export class SupabaseAdapter implements DataAdapter {
     checkIn: string,
     checkOut: string
   ): Promise<Booking[]> {
+    await this.expirePendingBookings();
     const q = new URLSearchParams({
       property_id: `eq.${propertyId}`,
       status: "in.(confirmed,pending_payment)",

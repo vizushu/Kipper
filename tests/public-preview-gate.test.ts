@@ -1,0 +1,14 @@
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {NextRequest} from 'next/server';
+import {isBookingTestPreviewEnabled} from '../src/lib/booking-launch';
+import {isAdminConfigured} from '../src/lib/admin-auth';
+import {POST as contact} from '../src/app/api/contact/route';
+import {POST as quote} from '../src/app/api/quote/route';
+import {POST as booking} from '../src/app/api/bookings/route';
+import {POST as confirm} from '../src/app/api/bookings/[id]/confirm/route';
+import {POST as webhook} from '../src/app/api/webhooks/stripe/route';
+import {GET as lookup} from '../src/app/api/bookings/ref/[reference]/route';
+beforeEach(()=>{vi.stubEnv('SITE_PREVIEW_MODE','true');vi.stubEnv('BOOKING_TEST_MODE','true');vi.stubEnv('ADMIN_SECRET','synthetic-preview-admin-key');});
+afterEach(()=>vi.unstubAllEnvs());
+it('public preview overrides test-booking and admin switches',()=>{expect(isBookingTestPreviewEnabled()).toBe(false);expect(isAdminConfigured()).toBe(false);});
+it('rejects transaction/contact routes before parsing or database access',async()=>{const request=()=>new Request('http://localhost/api',{method:'POST',body:'not json'});expect((await quote(request())).status).toBe(503);expect((await booking(request())).status).toBe(503);expect((await confirm(request(),{params:Promise.resolve({id:'none'})})).status).toBe(503);expect((await webhook(request())).status).toBe(503);expect((await contact(new NextRequest(request()))).status).toBe(503);expect((await lookup(new Request('http://localhost/api'),{params:Promise.resolve({reference:'none'})})).status).toBe(404);});

@@ -21,7 +21,8 @@ import { BookingError, type Quote } from "../src/lib/types";
 import { addDays, diffNights, todayInLA } from "../src/lib/dates";
 import type { NewBookingInput } from "../src/lib/db/adapter";
 
-const property = getProperty("casa-pacifica")!;
+// Generic persistence fixture: transition behavior is tested separately.
+const property = { ...getProperty("casa-pacifica")!, configurations: undefined };
 const settings = { ...DEFAULT_PRICING_SETTINGS };
 
 let dir: string;
@@ -70,8 +71,8 @@ afterAll(() => {
 describe("settings", () => {
   it("seeds defaults on first run", async () => {
     const s = await adapter.getSettings();
-    expect(s.cleaningFeeCents).toBe(15000);
-    expect(s.taxRatePct).toBe(10.5);
+    expect(s.cleaningFeeCents).toBe(18000);
+    expect(s.taxRatePct).toBe(12.75);
     expect(s.minStayNights).toBe(1);
     expect(s.maxStayNights).toBe(28);
     expect(s.promos).toHaveLength(1);
@@ -81,9 +82,9 @@ describe("settings", () => {
   it("applies partial updates", async () => {
     const s = await adapter.updateSettings({ cleaningFeeCents: 20000 });
     expect(s.cleaningFeeCents).toBe(20000);
-    expect(s.taxRatePct).toBe(10.5); // untouched
+    expect(s.taxRatePct).toBe(12.75); // untouched
     // restore for other tests
-    await adapter.updateSettings({ cleaningFeeCents: 15000 });
+    await adapter.updateSettings({ cleaningFeeCents: 18000 });
   });
 });
 
@@ -253,5 +254,22 @@ describe("lookups", () => {
     const found = await adapter.getBookingByReference(b.reference.toLowerCase());
     expect(found?.id).toBe(b.id);
     expect(await adapter.getBookingByReference("CP-NOPE01")).toBeNull();
+  });
+});
+
+describe('accepted terms and retry isolation', () => {
+  it('persists a copied configuration/policy snapshot', async () => {
+    const quote = makeQuote(D(160), 2);
+    const { booking } = await createBookingForQuote(adapter, quote, {name:'Snapshot Guest',email:'snapshot@example.com'}, 'snapshot-persistence');
+    expect(booking.staySnapshot).toEqual(quote.staySnapshot);
+    quote.staySnapshot!.houseRules.push('Later policy');
+    expect((await adapter.getBooking(booking.id))?.staySnapshot?.houseRules).not.toContain('Later policy');
+  });
+  it('rejects a changed payload reusing an idempotency key', async () => {
+    const quote = makeQuote(D(165), 2);
+    const guest = {name:'Retry Guest',email:'retry@example.com'};
+    await createBookingForQuote(adapter,quote,guest,'payload-retry-isolation');
+    await expect(createBookingForQuote(adapter,{...quote,totalCents:quote.totalCents+100},guest,'payload-retry-isolation')).rejects.toMatchObject({code:'DUPLICATE'});
+    await expect(createBookingForQuote(adapter,quote,{...guest,email:'other@example.com'},'payload-retry-isolation')).rejects.toMatchObject({code:'DUPLICATE'});
   });
 });

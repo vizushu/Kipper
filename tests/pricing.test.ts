@@ -105,12 +105,12 @@ describe("computeQuote", () => {
     expect(quote.subtotalCents).toBe(120000);
     expect(quote.promoCode).toBe("DIRECT10");
     expect(quote.discountCents).toBe(12000); // 10% of nightly subtotal
-    expect(quote.cleaningFeeCents).toBe(15000);
+    expect(quote.cleaningFeeCents).toBe(18000);
     expect(quote.petFeeCents).toBe(5000);
-    // Tax base: subtotal − discount + cleaning = 120000 − 12000 + 15000 = 123000
-    expect(quote.taxesCents).toBe(12915); // 123000 × 10.5%
-    expect(quote.totalCents).toBe(120000 - 12000 + 15000 + 5000 + 12915);
-    expect(quote.totalCents).toBe(140915);
+    // Tax base: subtotal − discount + cleaning = 120000 − 12000 + 18000 = 126000
+    expect(quote.taxesCents).toBe(16065); // 126000 × 12.75%
+    expect(quote.totalCents).toBe(120000 - 12000 + 18000 + 5000 + 16065);
+    expect(quote.totalCents).toBe(147065);
     expect(quote.currency).toBe("USD");
     expect(quote.expiresAt).toBe("2026-10-13T12:15:00.000Z"); // 15-min TTL
 
@@ -188,7 +188,7 @@ describe("computeQuote", () => {
       ...baseInput(checkIn, 1),
       guests: { adults: 8, children: 0, infants: 2 },
     };
-    expect(() => computeQuote(withInfants)).not.toThrow();
+    expect(() => computeQuote(withInfants)).toThrow(); // Maximum 8 total, including infants.
   });
 
   it("enforces the pet policy", () => {

@@ -18,7 +18,7 @@ import { getProperties } from "@/data/api";
 export const metadata: Metadata = {
   title: "Kipper Property Management — Book direct in San Diego",
   description:
-    "Kipper Property Management — an independent San Diego host. Browse our vacation stays, including Casa Pacifica (3BR, sleeps 8, private heated pool), and book direct with no marketplace fees.",
+    "Kipper Property Management — an independent San Diego host. Browse our vacation stays, including Casa Pacifica (3BR, sleeps 8, private pool), and explore direct-booking options.",
 };
 
 const WHY_DIRECT = [
@@ -29,8 +29,8 @@ const WHY_DIRECT = [
   },
   {
     icon: IconCheck,
-    title: "No Airbnb service fees",
-    body: "Booking direct cuts out the 14%+ guest service fees marketplaces add on top.",
+    title: "Direct host support",
+    body: "Ask Kipper about your stay, dates, and accommodation.",
   },
   {
     icon: IconMessage,
@@ -71,7 +71,7 @@ export default async function HomePage() {
               </h1>
               <p className="mt-3 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
                 A portfolio of San Diego vacation homes you can book direct —
-                no marketplace fees, one host who answers.
+                one host to help plan your stay.
               </p>
             </div>
           </div>
@@ -101,7 +101,7 @@ export default async function HomePage() {
       <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-6" aria-label="Booking promise">
         <TrustStrip
           badge="Book direct"
-          body="The best rate, guaranteed — the price we set is the price you pay. No platform markup, no guest service fees, no surprises at checkout."
+          body="Explore the accommodation for your dates and review itemized pricing before any future checkout. Online booking is not open yet."
         />
       </section>
 

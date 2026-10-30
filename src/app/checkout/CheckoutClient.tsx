@@ -13,14 +13,14 @@
  * States: loading quote, quote error (with code-aware messaging),
  * guest form, payment, processing, success redirect, failure + retry.
  */
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import CheckoutForm from "@/components/CheckoutForm";
 import PriceBreakdown from "@/components/PriceBreakdown";
 import { Button, Card, Field, SampleBadge } from "@/components/ui";
 import { IconAlert, IconArrowRight, IconCheck, IconLock } from "@/components/icons";
-import { confirmBooking, createBooking, getProperty, requestQuote } from "@/data/api";
+import { confirmBooking, createBooking, getProperty, requestQuote } from "@/data/client-api";
 import { track } from "@/analytics";
 import type { Booking, GuestCount, Property, Quote } from "@/lib/types";
 import { guestSummary } from "@/components/GuestSelector";
@@ -52,6 +52,15 @@ export default function CheckoutClient() {
   );
 }
 
+export function createCheckoutRequestGuard() {
+  let generation = 0;
+  return {
+    invalidate: () => { generation += 1; },
+    begin: () => ++generation,
+    isCurrent: (request: number) => request === generation,
+  };
+}
+
 function CheckoutFlow() {
   const router = useRouter();
   const params = useSearchParams();
@@ -73,6 +82,7 @@ function CheckoutFlow() {
   }, [params]);
 
   const [property, setProperty] = useState<Property | null>(null);
+  const [quoteInputKey, setQuoteInputKey] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteError, setQuoteError] = useState<{ message: string; code?: string } | null>(null);
   const [loadingQuote, setLoadingQuote] = useState(true);
@@ -84,14 +94,32 @@ function CheckoutFlow() {
   const [detailsConfirmed, setDetailsConfirmed] = useState(false);
 
   const [booking, setBooking] = useState<Booking | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmError, setConfirmError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
 
+  const requestGuard = useRef(createCheckoutRequestGuard());
+  const paymentRisk = useRef(false);
+  const [online, setOnline] = useState(true);
+  const [needsRecheck, setNeedsRecheck] = useState(false);
+  const [paymentWarning, setPaymentWarning] = useState("");
+  const attemptKey = `cp-idempotency-${inputs.propertyId}-${inputs.checkIn}-${inputs.checkOut}`;
+  const unresolvedKey = "cp-unresolved-payment";
+  const inputKey = JSON.stringify(inputs);
   const validInputs = Boolean(inputs.propertyId && inputs.checkIn && inputs.checkOut);
 
   const loadQuote = useCallback(async () => {
+    const generation = requestGuard.current.begin();
+    setQuote(null); setProperty(null);
+    if (!navigator.onLine || paymentRisk.current) {
+      setLoadingQuote(false);
+      setNeedsRecheck(true);
+      return;
+    }
+    setBooking(null); setClientSecret(null); setAccessToken(null);
+    setNeedsRecheck(false);
     if (!validInputs) {
       setLoadingQuote(false);
       setQuoteError({ message: "Missing booking details — please start from the property page." });
@@ -109,11 +137,14 @@ function CheckoutFlow() {
           pets: inputs.pets,
           promoCode: inputs.promoCode,
         }),
-        getProperty("casa-pacifica-san-diego"),
+        getProperty(inputs.propertyId),
       ]);
+      if (!requestGuard.current.isCurrent(generation) || !navigator.onLine) return;
+      setQuoteInputKey(inputKey);
       setQuote(q);
       setProperty(p);
     } catch (e) {
+      if (!requestGuard.current.isCurrent(generation)) return;
       const code = (e as { code?: string }).code;
       setQuoteError({
         message:
@@ -122,17 +153,45 @@ function CheckoutFlow() {
         code,
       });
     } finally {
-      setLoadingQuote(false);
+      if (requestGuard.current.isCurrent(generation)) setLoadingQuote(false);
     }
-  }, [inputs, validInputs]);
+  }, [inputKey, validInputs]);
 
   useEffect(() => {
-    loadQuote();
+    const invalidate = () => {
+      requestGuard.current.invalidate();
+      setQuote(null); setBooking(null); setClientSecret(null); setAccessToken(null);
+      setLoadingQuote(false); setNeedsRecheck(true);
+      if (paymentRisk.current) setPaymentWarning("Payment setup was already opened. Do not pay again. Contact Kipper with your booking reference or payment receipt to verify the result.");
+    };
+    const offline = () => { setOnline(false); invalidate(); };
+    const reconnect = () => { setOnline(true); invalidate(); };
+    setOnline(navigator.onLine);
+    window.addEventListener("offline", offline);
+    window.addEventListener("online", reconnect);
+    return () => { window.removeEventListener("offline", offline); window.removeEventListener("online", reconnect); };
+  }, []);
+
+  useEffect(() => {
+    requestGuard.current.invalidate();
+    setQuote(null); setBooking(null); setClientSecret(null); setAccessToken(null);
+    const unresolved = sessionStorage.getItem(unresolvedKey);
+    if (unresolved) {
+      paymentRisk.current = true;
+      setPaymentWarning(`An earlier payment attempt needs verification (${unresolved}). Do not pay again. Contact Kipper with your receipt.`);
+      setLoadingQuote(false);
+    } else if (!paymentRisk.current) {
+      void loadQuote();
+    } else {
+      setPaymentWarning("Your stay details changed after payment setup. Do not pay again. Verify the earlier attempt with Kipper first.");
+      setLoadingQuote(false);
+    }
+    return () => requestGuard.current.invalidate();
   }, [loadQuote]);
 
   function idempotencyKey(): string {
     // One key per checkout attempt, kept across reloads of this page.
-    const storageKey = `cp-idempotency-${inputs.propertyId}-${inputs.checkIn}-${inputs.checkOut}`;
+    const storageKey = attemptKey;
     let key = sessionStorage.getItem(storageKey);
     if (!key) {
       key = crypto.randomUUID();
@@ -151,27 +210,45 @@ function CheckoutFlow() {
   }
 
   async function handleCreateBooking() {
-    if (!quote || !validateDetails()) return;
+    if (!quote || quoteInputKey !== inputKey || !navigator.onLine || needsRecheck || paymentRisk.current || !validateDetails()) return;
+    const generation = requestGuard.current.begin();
     setCreating(true);
     setConfirmError("");
     track("payment_attempted", { quoteId: quote.id, totalCents: quote.totalCents });
     try {
-      const { booking: b, clientSecret: cs } = await createBooking({
+      const { booking: b, clientSecret: cs, accessToken: token } = await createBooking({
         quoteId: quote.id,
         guest: { name: name.trim(), email: email.trim(), phone: phone.trim() || undefined },
         idempotencyKey: idempotencyKey(),
       });
+      // Persist an unresolved marker before exposing payment UI. Never silently replay after reconnect/reload.
+      paymentRisk.current = true;
+      sessionStorage.setItem(unresolvedKey, b.reference);
+      if (!requestGuard.current.isCurrent(generation) || !navigator.onLine) {
+        setPaymentWarning(`Booking ${b.reference} was prepared while the connection or dates changed. Do not pay again; verify this attempt with Kipper.`);
+        return;
+      }
       setBooking(b);
+      setAccessToken(token);
       setClientSecret(cs);
     } catch (e) {
-      setConfirmError(e instanceof Error ? e.message : "Could not start your booking.");
+      const message = e instanceof Error ? e.message : "Could not start your booking.";
+      if (!paymentRisk.current && /hold expired|booking was cancelled/i.test(message)) {
+        sessionStorage.removeItem(attemptKey);
+        setNeedsRecheck(true); setQuote(null);
+      }
+      if (requestGuard.current.isCurrent(generation)) setConfirmError(message);
     } finally {
       setCreating(false);
     }
   }
 
   async function handleConfirmPayment(paymentIntentId: string) {
-    if (!booking) return;
+    if (!booking || !accessToken) return;
+    if (!navigator.onLine) {
+      setPaymentWarning(`Payment may have completed for ${booking.reference}. Do not pay again. Reconnect and contact Kipper with your receipt.`);
+      return;
+    }
     setConfirmError("");
     try {
       const { booking: confirmedBooking } = await confirmBooking(booking.id, paymentIntentId);
@@ -180,21 +257,29 @@ function CheckoutFlow() {
         totalCents: confirmedBooking.totalCents,
       });
       setConfirmed(true);
+      paymentRisk.current = false;
+      sessionStorage.removeItem(unresolvedKey);
       // New idempotency key for any future attempt.
       sessionStorage.removeItem(
         `cp-idempotency-${inputs.propertyId}-${inputs.checkIn}-${inputs.checkOut}`,
       );
-      router.push(`/booking/${confirmedBooking.reference}`);
+      router.push(`/booking/${encodeURIComponent(confirmedBooking.reference)}?token=${encodeURIComponent(accessToken)}`);
     } catch (e) {
-      setConfirmError(
-        e instanceof Error
-          ? e.message
-          : "Payment went through but we couldn't confirm your booking. Contact Kipper with your payment receipt — do not pay again.",
-      );
+      setPaymentWarning(`Payment may have completed for ${booking.reference}. Contact Kipper with your receipt — do not pay again. ${e instanceof Error ? e.message : "Confirmation could not be verified."}`);
     }
   }
 
-  if (loadingQuote) return <CheckoutSkeleton />;
+  if (paymentWarning) return <div role="alert" className="mx-auto max-w-xl px-4 py-16 text-center">
+    <h1 className="font-display text-2xl">Verify your payment attempt</h1>
+    <p className="mt-4">{paymentWarning}</p>
+    <p className="mt-3 text-sm">Nothing will be queued or retried automatically.</p>
+  </div>;
+  if (!online || needsRecheck) return <div role="status" className="mx-auto max-w-xl px-4 py-16 text-center">
+    <h1 className="font-display text-2xl">{online ? "Recheck your stay before continuing" : "You’re offline"}</h1>
+    <p className="mt-4">Booking and payment are paused. Nothing is queued or replayed. Recheck current availability and pricing after reconnecting.</p>
+    <Button className="mt-5" disabled={!online} onClick={loadQuote}>Recheck availability and price</Button>
+  </div>;
+  if (loadingQuote || (quote && quoteInputKey !== inputKey)) return <CheckoutSkeleton />;
 
   if (quoteError || !quote) {
     return (

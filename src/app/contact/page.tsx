@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import TitleBlock from "@/components/TitleBlock";
 import ContactForm from "./ContactForm";
+import { isPublicPreview } from "@/lib/booking-launch";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -9,6 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
+  if (isPublicPreview()) return <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6"><TitleBlock name="Contact preview" place="Kipper Property Management" /><p className="mt-8 rounded-2xl border border-stone-200 bg-cream p-6 text-center text-sm leading-relaxed">This is a website preview. Contact submissions are disabled and no guest details are collected here.</p></div>;
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
       <TitleBlock

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const SITE_FAQS = [
   {
     q: "Why should I book direct instead of Airbnb?",
-    a: "The same stay, without the markup. Marketplaces add 14%+ in guest service fees on top of the nightly rate. Booking here, that money stays out of your bill — and you get a direct line to Kipper, your host, instead of a support queue.",
+    a: "Booking directly lets you coordinate your stay with Kipper. Compare accommodation details and dates; no best-rate guarantee is made.",
   },
   {
     q: "How do payments work?",

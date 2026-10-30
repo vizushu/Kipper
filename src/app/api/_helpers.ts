@@ -13,11 +13,11 @@ import { BookingError } from "@/lib/types";
 import { isAdminRequest } from "@/lib/admin-auth";
 
 export function json(data: unknown, status = 200): NextResponse {
-  return NextResponse.json(data, { status });
+  return NextResponse.json(data, { status, headers: {"Cache-Control": "private, no-store"} });
 }
 
 export function apiError(code: string, message: string, status = 400): NextResponse {
-  return NextResponse.json({ error: message, code }, { status });
+  return NextResponse.json({ error: message, code }, { status, headers: {"Cache-Control": "private, no-store"} });
 }
 
 export function notFound(message = "Not found"): NextResponse {
