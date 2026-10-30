@@ -5,6 +5,7 @@ import BookingWidget from '../src/components/BookingWidget';
 import PropertyExperience from '../src/components/PropertyExperience';
 import GuestSelector,{guestSummary} from '../src/components/GuestSelector';
 import Footer from '../src/components/Footer';
+import Header from '../src/components/Header';
 import CancellationPage from '../src/app/policies/cancellation/page';
 import {getProperty} from '../src/lib/property';
 import {validateGuests} from '../src/lib/pricing';
@@ -19,3 +20,5 @@ it('known3BR and max8 remain visible but unconfirmed bed facts do not',()=>{vi.u
 it('infants consume the total headcount allowance in UI and validation',()=>{const guests={adults:7,children:0,infants:1};expect(()=>validateGuests(guests,property)).not.toThrow();expect(()=>validateGuests({...guests,infants:2},property)).toThrow('including infants');const html=renderToStaticMarkup(<GuestSelector value={guests} onChange={()=>{}} maxGuests={8}/>);expect(html).toContain('including infants and daytime visitors');expect(html).not.toContain("infants don");expect(html).toMatch(/aria-label="More infants" disabled/);expect(guestSummary(guests)).toBe('8 guests, including 1 infant');});
 it('parking photo uses a factual parking description',()=>{const photo=property.photos.find(p=>p.src.endsWith('-05.jpg'))!;expect(photo.room).toBe('Guest parking');expect(photo.alt).toContain('designated guest parking');expect(photo.alt).not.toMatch(/patio/i);});
 it('footer and approved cancellation page do not imply unapproved response or draft schedule',()=>{const footer=renderToStaticMarkup(<Footer/>);expect(footer).not.toMatch(/within the hour|reply within/i);expect(footer).toContain('Cancellation schedule confirmed');expect(footer).toContain('Terms of stay and privacy wording remain under review');const policy=renderToStaticMarkup(<CancellationPage/>);expect(policy).toContain('Cancellation refund schedule confirmed');expect(policy).not.toContain('Draft —');});
+
+it('property detail header leaves the only booking CTA to the rail/sticky bar, while retaining menu',()=>{const html=renderToStaticMarkup(<Header/>);expect(html).not.toContain('>Book<');expect(html).not.toContain('Check availability');expect(html).toContain('Open menu');expect(html).toContain('aria-label="Primary"');});

@@ -41,6 +41,7 @@ export default function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const isAdmin = pathname.startsWith("/admin");
+  const isPropertyDetail = /^\/properties\/[^/]+\/?$/.test(pathname);
 
   if (isAdmin) return null; // admin has its own chrome
 
@@ -63,14 +64,14 @@ export default function Header() {
               {item.label}
             </Link>
           ))}
-          <Link href="/properties" className="ml-2">
+          {!isPropertyDetail && <Link href="/properties" className="ml-2">
             <Button size="sm">Check availability</Button>
-          </Link>
+          </Link>}
         </nav>
         <div className="flex items-center gap-2 md:hidden">
-          <Link href="/properties">
+          {!isPropertyDetail && <Link href="/properties">
             <Button size="sm">Book</Button>
-          </Link>
+          </Link>}
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
