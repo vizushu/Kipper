@@ -4,14 +4,14 @@ import { getProperty } from "../src/lib/property";
 import { snapshotForStay } from "../src/lib/accommodation";
 const mocks = vi.hoisted(() => ({ getQuote: vi.fn(), create: vi.fn(), attach: vi.fn(), fail: vi.fn(), payment: vi.fn() }));
 vi.mock("@/lib/db", () => ({ getAdapter: () => ({ getQuote: mocks.getQuote, attachPaymentIntent: mocks.attach, failPendingBookingPayment: mocks.fail }) }));
-vi.mock("@/lib/booking-launch", () => ({ isBookingTestPreviewEnabled: () => true, BOOKING_LAUNCH_MESSAGE: "disabled" }));
+vi.mock("@/lib/booking-launch", () => ({ isBookingEnabled: () => true, BOOKING_LAUNCH_MESSAGE: "disabled" }));
 vi.mock("@/lib/bookings", () => ({ createBookingForQuote: mocks.create, guestSafeBooking: (b: unknown) => b }));
 vi.mock("@/lib/stripe", () => ({ createPaymentIntent: mocks.payment }));
 const quote = { id: "quote", propertyId: "casa-pacifica", checkIn: "2027-02-20", checkOut: "2027-02-22" };
 const request = () => POST(new Request("https://example.test/api/bookings", {
   method: "POST", body: JSON.stringify({ quoteId: "quote", guest: { name: "Test Guest", email: "test@example.test" }, idempotencyKey: "test-key-123" }),
 }));
-beforeEach(() => { vi.stubEnv("BOOKING_ACCESS_SECRET", "test-secret-at-least-thirty-two-bytes-long"); vi.clearAllMocks(); });
+beforeEach(() => { vi.stubEnv("BOOKING_TEST_MODE", "true"); vi.stubEnv("BOOKING_ACCESS_SECRET", "test-secret-at-least-thirty-two-bytes-long"); vi.clearAllMocks(); });
 afterEach(() => vi.unstubAllEnvs());
 it("rejects legacy quotes with no stay snapshot before booking creation", async () => {
   mocks.getQuote.mockResolvedValue(quote);

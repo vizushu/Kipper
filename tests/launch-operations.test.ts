@@ -19,7 +19,7 @@ describe('launch operations remain explicit and bounded',()=>{
   expect(await runMaintenance(a)).toEqual({disabled:false,expiredHolds:2,delivery:{disabled:true,claimed:0}});expect(mocks.processOutbox).toHaveBeenCalledWith(a,{limit:10});
  });
  it('operational status reveals only counts and review flag',async()=>{
-  vi.stubEnv('SITE_PREVIEW_MODE','false');const a={listOutbox:vi.fn().mockResolvedValue([{status:'dead',payload:{recovery:{token:'synthetic-private-code',recipient:'private@example.test'}}},{status:'pending'}])} as unknown as DataAdapter;
-  const result=await maintenanceSummary(a);expect(result).toMatchObject({needsReview:true,counts:{dead:1,pending:1}});expect(JSON.stringify(result)).not.toMatch(/private|token|recipient/);
+  vi.stubEnv('SITE_PREVIEW_MODE','false');const a={listPaymentExceptions:vi.fn().mockResolvedValue([{attentionRequired:true,paymentIntentId:'private-provider-id'}]),listOutbox:vi.fn().mockResolvedValue([{status:'dead',payload:{recovery:{token:'synthetic-private-code',recipient:'private@example.test'}}},{status:'pending'}])} as unknown as DataAdapter;
+  const result=await maintenanceSummary(a);expect(result).toMatchObject({needsReview:true,openPaymentReviews:1,counts:{dead:1,pending:1}});expect(JSON.stringify(result)).not.toMatch(/private|token|recipient/);
  });
 });

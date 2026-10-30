@@ -1,3 +1,5 @@
+import { validatePaymentException, type PaymentException, type PaymentExceptionInput } from "./payment-exceptions";
+import { storedPaymentMode } from "../payment-mode";
 import type { OutboxEnvelope, OutboxJob } from "./workflows";
 /**
  * Supabase (Postgres) DataAdapter, via the Supabase PostgREST REST API.
@@ -61,6 +63,7 @@ interface SnakeBooking {
   currency: "USD";
   status: Booking["status"];
   payment_status: Booking["paymentStatus"];
+  payment_mode?: Booking["paymentMode"];
   stripe_payment_intent_id: string | null;
   idempotency_key: string;
   created_at: string;
@@ -87,6 +90,7 @@ function toBooking(r: SnakeBooking): Booking {
     currency: r.currency,
     status: r.status,
     paymentStatus: r.payment_status,
+    paymentMode: storedPaymentMode(r.payment_mode),
     stripePaymentIntentId: r.stripe_payment_intent_id ?? undefined,
     idempotencyKey: r.idempotency_key,
     createdAt: r.created_at,
@@ -109,6 +113,19 @@ function toOutbox(row: SnakeOutbox): OutboxJob {
     payload:{...row.payload_json,...(booking?{booking}:{})} as OutboxJob['payload'],
     envelope:row.envelope_json??undefined,attempts:row.attempts,createdAt:row.created_at,nextAttemptAt:row.next_attempt_at,
     firstAttemptAt:row.first_attempt_at??undefined,leaseToken:row.lease_token??undefined,leaseUntil:row.lease_until??undefined,lastError:row.last_error??undefined};
+}
+
+interface SnakePaymentException {
+  id:string; payment_intent_id:string; payment_mode:'test'|'live'; booking_id:string|null;
+  amount_cents:number; amount_received_cents:number; currency:string; reason:PaymentException['reason'];
+  status:'open'|'reviewed'; first_seen_at:string; last_seen_at:string; event_count:number;
+  attention_required:boolean; reviewed_at:string|null; review_note:string|null;
+}
+function toPaymentException(row:SnakePaymentException):PaymentException {
+  return {id:row.id,paymentIntentId:row.payment_intent_id,paymentMode:row.payment_mode,bookingId:row.booking_id??undefined,
+    amountCents:row.amount_cents,amountReceivedCents:row.amount_received_cents,currency:row.currency,reason:row.reason,
+    status:row.status,firstSeenAt:row.first_seen_at,lastSeenAt:row.last_seen_at,eventCount:row.event_count,
+    attentionRequired:row.attention_required,reviewedAt:row.reviewed_at??undefined,reviewNote:row.review_note??undefined};
 }
 
 export class SupabaseAdapter implements DataAdapter {
@@ -152,6 +169,24 @@ export class SupabaseAdapter implements DataAdapter {
     return JSON.parse(text) as T;
   }
 
+  async recordPaymentException(input:PaymentExceptionInput):Promise<{exception:PaymentException;created:boolean}> {
+    validatePaymentException(input);
+    // Explicit projection: never forward an accidental provider payload or guest fields.
+    const evidence = {paymentIntentId:input.paymentIntentId,providerEventId:input.providerEventId,
+      bookingId:input.bookingId,paymentMode:input.paymentMode,amountCents:input.amountCents,
+      amountReceivedCents:input.amountReceivedCents,currency:input.currency.toLowerCase(),reason:input.reason};
+    const result = await this.req<{exception:SnakePaymentException;created:boolean}>('POST','/rpc/record_payment_exception',{p_input:evidence});
+    return {exception:toPaymentException(result.exception),created:result.created};
+  }
+  async listPaymentExceptions():Promise<PaymentException[]> {
+    return (await this.req<SnakePaymentException[]>('GET','/payment_exceptions?order=first_seen_at.desc,id.asc')).map(toPaymentException);
+  }
+  async reviewPaymentException(id:string,note:string,idempotencyKey:string):Promise<PaymentException|null> {
+    if(note.trim().length<10||note.length>1000||idempotencyKey.length<8||idempotencyKey.length>128)throw new Error('Review needs an explanatory note and idempotency key.');
+    const result = await this.req<SnakePaymentException|null>('POST','/rpc/review_payment_exception',{p_id:id,p_note:note.trim(),p_idempotency_key:idempotencyKey});
+    return result ? toPaymentException(result) : null;
+  }
+
   async ensureReceiptOutbox(bookingId: string): Promise<void> {
     await this.req('POST', '/rpc/ensure_receipt_outbox', {p_booking_id:bookingId});
   }
@@ -188,6 +223,7 @@ export class SupabaseAdapter implements DataAdapter {
       const res = await this.req<SnakeBooking[] | SnakeBooking>("POST", "/rpc/create_booking_if_available", {
         p_booking: {
           property_id: input.propertyId,
+          payment_mode: storedPaymentMode(input.paymentMode),
           check_in: input.checkIn,
           check_out: input.checkOut,
           nights: input.nights,

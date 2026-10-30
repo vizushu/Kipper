@@ -1,10 +1,10 @@
-import type { Booking } from '../types';
+import type { Booking, PaymentMode } from '../types';
 export type OutboxKind = 'guest_confirmation' | 'host_notification' | 'access_recovery';
 export type OutboxStatus = 'pending' | 'processing' | 'sent' | 'simulated' | 'suppressed' | 'dead';
 export interface OutboxEnvelope { from: string; to: string; subject: string; html: string }
 export interface OutboxJob {
   id:string; bookingId:string; kind:OutboxKind; dedupeKey:string; status:OutboxStatus;
-  payload:{booking?:Booking; recovery?:{recipient:string;token:string;reference:string;expiresAt:string}};
+  payload:{booking?:Booking; recovery?:{recipient:string;token:string;reference:string;expiresAt:string;paymentMode?:PaymentMode}};
   envelope?:OutboxEnvelope; attempts:number; createdAt:string; nextAttemptAt:string;
   firstAttemptAt?:string; leaseToken?:string; leaseUntil?:string; lastError?:string;
 }

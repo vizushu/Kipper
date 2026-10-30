@@ -30,10 +30,11 @@ an earlier date through a query parameter. Thirty- and fifteen-day boundaries us
 America/Los_Angeles wall time, including DST, at the accepted check-in cutoff.
 The current 3 PM cutoff still needs owner confirmation before real launch.
 
-Only `paid_test` bookings presently support this test calculation. Unpaid/failed
+Only mode-consistent paid records support this calculation: `paid_test` with test
+provenance, or `paid` with live provenance. Historical missing provenance is test. Unpaid/failed
 bookings do not imply refundable funds, and already-refunded records do not propose
 a further refund. Provider ledger reconciliation is always required before any
-future payment operation. Live payment state is intentionally not added here.
+future payment operation. A paid status is not independent proof of provider settlement; no refund is executed.
 
 ## Deliberately incomplete monetary total
 

@@ -1,4 +1,5 @@
-import { isBookingTestPreviewEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
+import { getBookingPaymentMode } from "@/lib/payment-mode";
+import { isBookingEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
 import { z } from "zod";
 import { assertRangeAvailable } from "@/lib/availability";
 import { computeQuote } from "@/lib/pricing";
@@ -24,7 +25,7 @@ const quoteSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  if (!isBookingTestPreviewEnabled()) return apiError("BOOKING_NOT_OPEN", BOOKING_LAUNCH_MESSAGE, 503);
+  if (!isBookingEnabled()) return apiError("BOOKING_NOT_OPEN", BOOKING_LAUNCH_MESSAGE, 503);
   const parsed = await parseBody(req, quoteSchema);
   if (!parsed.ok) return parsed.response;
   const body = parsed.data;
@@ -56,6 +57,7 @@ export async function POST(req: Request) {
       promoCode: body.promoCode,
     });
 
+    quote.paymentMode = getBookingPaymentMode()!;
     await ctx.adapter.saveQuote(quote);
     return json({ quote });
   } catch (e) {

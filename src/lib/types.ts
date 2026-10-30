@@ -180,6 +180,7 @@ export interface LineItem {
 }
 
 export interface Quote {
+  paymentMode?: PaymentMode; // Missing only on historical test quotes.
   staySnapshot?: StaySnapshot;
   id: string;
   propertyId: string;
@@ -203,7 +204,8 @@ export interface Quote {
 }
 
 export type BookingStatus = "pending_payment" | "confirmed" | "cancelled";
-export type PaymentStatus = "unpaid" | "paid_test" | "failed" | "refunded";
+export type PaymentMode = "test" | "live";
+export type PaymentStatus = "unpaid" | "paid_test" | "paid" | "failed" | "refunded";
 
 export interface BookingGuest {
   name: string;
@@ -212,6 +214,7 @@ export interface BookingGuest {
 }
 
 export interface Booking {
+  paymentMode?: PaymentMode; // Persisted provenance; historical records default to test.
   holdExpiresAt?: string;
   staySnapshot?: StaySnapshot;
   id: string;

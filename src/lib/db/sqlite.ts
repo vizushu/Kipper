@@ -1,3 +1,6 @@
+import { SqlitePaymentExceptions } from "./sqlite-payment-exceptions";
+import type { PaymentExceptionInput } from "./payment-exceptions";
+import { storedPaymentMode } from "../payment-mode";
 import { SqliteWorkflows } from "./sqlite-workflows";
 import type { OutboxEnvelope } from "./workflows";
 /**
@@ -59,6 +62,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   currency TEXT NOT NULL DEFAULT 'USD',
   status TEXT NOT NULL DEFAULT 'pending_payment',
   payment_status TEXT NOT NULL DEFAULT 'unpaid',
+  payment_mode TEXT NOT NULL DEFAULT 'test' CHECK(payment_mode IN ('test','live')),
   stripe_payment_intent_id TEXT,
   idempotency_key TEXT NOT NULL UNIQUE,
   created_at TEXT NOT NULL,
@@ -126,6 +130,7 @@ interface BookingRow {
   currency: "USD";
   status: BookingStatus;
   payment_status: PaymentStatus;
+  payment_mode: Booking["paymentMode"];
   stripe_payment_intent_id: string | null;
   idempotency_key: string;
   created_at: string;
@@ -152,6 +157,7 @@ function rowToBooking(r: BookingRow): Booking {
     currency: r.currency,
     status: r.status,
     paymentStatus: r.payment_status,
+    paymentMode: storedPaymentMode(r.payment_mode),
     stripePaymentIntentId: r.stripe_payment_intent_id ?? undefined,
     idempotencyKey: r.idempotency_key,
     createdAt: r.created_at,
@@ -172,6 +178,7 @@ const SETTING_KEYS = [
 export class SqliteAdapter implements DataAdapter {
   private db: SqliteDb;
   private workflows: SqliteWorkflows;
+  private paymentExceptions: SqlitePaymentExceptions;
 
   constructor(dbPath?: string) {
     this.db = new Database(resolveDbPath(dbPath));
@@ -181,6 +188,8 @@ export class SqliteAdapter implements DataAdapter {
     const columns = this.db.prepare("PRAGMA table_info(bookings)").all() as {name: string}[];
     if (!columns.some(c => c.name === "stay_snapshot_json")) this.db.exec("ALTER TABLE bookings ADD COLUMN stay_snapshot_json TEXT");
     if (!columns.some(c => c.name === "hold_expires_at")) this.db.exec("ALTER TABLE bookings ADD COLUMN hold_expires_at TEXT");
+    if (!columns.some(c => c.name === "payment_mode")) this.db.exec("ALTER TABLE bookings ADD COLUMN payment_mode TEXT NOT NULL DEFAULT 'test' CHECK(payment_mode IN ('test','live'))");
+    this.paymentExceptions = new SqlitePaymentExceptions(this.db);
     this.workflows = new SqliteWorkflows(this.db, (id) => {const row=this.db.prepare("SELECT * FROM bookings WHERE id=?").get(id) as BookingRow|undefined;return row?rowToBooking(row):null;});
     this.seedSettingsIfEmpty();
   }
@@ -281,8 +290,8 @@ export class SqliteAdapter implements DataAdapter {
             `INSERT INTO bookings (
                id, reference, property_id, check_in, check_out, nights,
                guests_json, pets, guest_json, line_items_json, total_cents,
-               currency, status, payment_status, idempotency_key, created_at, stay_snapshot_json, hold_expires_at
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', 'unpaid', ?, ?, ?, ?)`
+               currency, status, payment_status, idempotency_key, created_at, stay_snapshot_json, hold_expires_at, payment_mode
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_payment', 'unpaid', ?, ?, ?, ?, ?)`
           )
           .run(
             id,
@@ -300,7 +309,8 @@ export class SqliteAdapter implements DataAdapter {
             input.idempotencyKey,
             nowIso,
             input.staySnapshot ? JSON.stringify(input.staySnapshot) : null,
-            holdExpiresAt
+            holdExpiresAt,
+            storedPaymentMode(input.paymentMode)
           );
       } catch (err) {
         if (err instanceof Error && /UNIQUE constraint failed: bookings\.idempotency_key/.test(err.message)) {
@@ -365,13 +375,16 @@ export class SqliteAdapter implements DataAdapter {
       const block = this.db.prepare('SELECT id FROM blocks WHERE property_id = ? AND from_date < ? AND to_date > ? LIMIT 1').get(row.property_id, row.check_out, row.check_in);
       const overlap = this.db.prepare(`SELECT id FROM bookings WHERE id != ? AND property_id = ? AND status IN ('confirmed', 'pending_payment') AND check_in < ? AND check_out > ? LIMIT 1`).get(id, row.property_id, row.check_out, row.check_in);
       if (block || overlap) return null;
-      this.db.prepare(`UPDATE bookings SET status = 'confirmed', payment_status = 'paid_test', confirmed_at = ? WHERE id = ? AND status = 'pending_payment' AND stripe_payment_intent_id = ?`).run(confirmedAt, id, paymentIntentId);
+      this.db.prepare(`UPDATE bookings SET status = 'confirmed', payment_status = CASE WHEN payment_mode = 'live' THEN 'paid' ELSE 'paid_test' END, confirmed_at = ? WHERE id = ? AND status = 'pending_payment' AND stripe_payment_intent_id = ?`).run(confirmedAt, id, paymentIntentId);
       const confirmed = this.db.prepare('SELECT * FROM bookings WHERE id = ?').get(id) as BookingRow;
       this.workflows.queueReceipts(rowToBooking(confirmed), confirmedAt);
       return {booking: rowToBooking(confirmed), transitioned: true};
     }).immediate();
   }
 
+  recordPaymentException = (input:PaymentExceptionInput) => this.paymentExceptions.recordPaymentException(input);
+  listPaymentExceptions = () => this.paymentExceptions.listPaymentExceptions();
+  reviewPaymentException = (id:string,note:string,key:string) => this.paymentExceptions.reviewPaymentException(id,note,key);
   ensureReceiptOutbox = (id:string) => this.workflows.ensureReceiptOutbox(id);
   claimOutbox = (now:string,limit:number,jobId?:string) => this.workflows.claimOutbox(now,limit,jobId);
   prepareOutboxMessage = (id:string,lease:string,envelope:OutboxEnvelope,now:string) => this.workflows.prepareOutboxMessage(id,lease,envelope,now);

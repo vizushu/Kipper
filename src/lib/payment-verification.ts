@@ -1,6 +1,7 @@
 /** Payment evidence must belong to the exact reservation; amounts alone are not identity. */
 import Stripe from "stripe";
 import type { Booking } from "./types";
+import { storedPaymentMode, stripeKeyMode } from "./payment-mode";
 
 export interface PaymentEvidence {
   id: string;
@@ -36,8 +37,8 @@ export function assertPaymentBinding(booking: Booking, payment: PaymentEvidence)
   if (!booking.stripePaymentIntentId || payment.id !== booking.stripePaymentIntentId) {
     throw new PaymentVerificationError("Payment does not belong to this booking.");
   }
-  if (payment.livemode || payment.metadata.mode !== "test") {
-    throw new PaymentVerificationError("Only test-mode payments are supported.");
+  if (payment.livemode !== (storedPaymentMode(booking.paymentMode) === "live") || payment.metadata.mode !== storedPaymentMode(booking.paymentMode)) {
+    throw new PaymentVerificationError("Payment mode does not match the booking.");
   }
   if (payment.amountCents !== booking.totalCents || payment.currency !== booking.currency.toLowerCase()) {
     throw new PaymentVerificationError("Payment amount or currency does not match the booking.");
@@ -79,5 +80,17 @@ export function verifyTestWebhook(
     throw new PaymentVerificationError("Invalid webhook signature.");
   }
   if (event.livemode) throw new PaymentVerificationError("Live payment events are not supported.");
+  return event;
+}
+
+/** Signature/mode authentication stays independent of fulfillment gates for durable exception recording. */
+export function verifyStripeWebhook(rawBody: string, signature: string | null, key: string | undefined, webhookSecret: string | undefined): Stripe.Event {
+  const mode = stripeKeyMode(key);
+  if (!webhookSecret || !key || !mode) throw new PaymentVerificationError('Stripe signed webhook is not configured.', 503);
+  if (!signature) throw new PaymentVerificationError('Missing stripe-signature.');
+  let event: Stripe.Event;
+  try { event = new Stripe(key).webhooks.constructEvent(rawBody, signature, webhookSecret); }
+  catch { throw new PaymentVerificationError('Invalid webhook signature.'); }
+  if (event.livemode !== (mode === 'live')) throw new PaymentVerificationError('Webhook event mode does not match its credential.');
   return event;
 }

@@ -27,6 +27,7 @@ async function isAuthenticated(): Promise<boolean> {
 }
 
 const NAV = [
+  { href: "/admin/payment-review", label: "Payment review" },
   { href: "/admin", label: "Reservations" },
   { href: "/admin/calendar", label: "Calendar" },
   { href: "/admin/rates", label: "Rates" },

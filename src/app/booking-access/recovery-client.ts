@@ -2,7 +2,7 @@
 export interface RecoveredBooking {
   reference: string; propertyName: string; accommodation: string; checkIn: string; checkOut: string;
   totalCents: number; status: 'pending_payment' | 'confirmed' | 'cancelled';
-  paymentStatus: 'unpaid' | 'paid_test' | 'failed' | 'refunded'; cancellationPolicy: string;
+  paymentStatus: 'unpaid' | 'paid_test' | 'paid' | 'failed' | 'refunded'; cancellationPolicy: string;
 }
 export type RecoveryView = { phase: 'idle' | 'requesting' | 'requested' | 'verifying' | 'ready' | 'error'; message: string; booking?: RecoveredBooking };
 export const INITIAL_RECOVERY_VIEW: RecoveryView = { phase: 'idle', message: '' };
@@ -17,7 +17,7 @@ function bookingProjection(value: unknown, reference: string): RecoveredBooking 
       !/^\d{4}-\d{2}-\d{2}$/.test(b.checkIn) || !/^\d{4}-\d{2}-\d{2}$/.test(b.checkOut) ||
       !Number.isSafeInteger(b.totalCents) || (b.totalCents as number) < 0 || b.currency !== 'USD' ||
       !['pending_payment','confirmed','cancelled'].includes(String(b.status)) ||
-      !['unpaid','paid_test','failed','refunded'].includes(String(b.paymentStatus))) throw new Error('Invalid booking response');
+      !['unpaid','paid_test','paid','failed','refunded'].includes(String(b.paymentStatus))) throw new Error('Invalid booking response');
   const snapshot = b.staySnapshot && typeof b.staySnapshot === 'object' ? b.staySnapshot as Record<string, unknown> : {};
   return { reference, propertyName: shortText(snapshot.propertyName, 'Your booked accommodation'),
     accommodation: shortText(snapshot.label, 'Consult your original confirmation'), checkIn: b.checkIn, checkOut: b.checkOut,

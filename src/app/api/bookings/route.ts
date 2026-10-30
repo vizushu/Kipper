@@ -1,7 +1,8 @@
+import { getBookingPaymentMode, storedPaymentMode } from "@/lib/payment-mode";
 import { bookingSessionCookie } from "@/lib/booking-session";
 import { snapshotForStay } from "@/lib/accommodation";
 import { createBookingAccessToken, isBookingAccessConfigured } from "@/lib/booking-access";
-import { isBookingTestPreviewEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
+import { isBookingEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
 import { z } from "zod";
 import { createBookingForQuote, guestSafeBooking } from "@/lib/bookings";
 import { getAdapter } from "@/lib/db";
@@ -27,7 +28,7 @@ const bookingSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  if (!isBookingTestPreviewEnabled()) return apiError("BOOKING_NOT_OPEN", BOOKING_LAUNCH_MESSAGE, 503);
+  if (!isBookingEnabled()) return apiError("BOOKING_NOT_OPEN", BOOKING_LAUNCH_MESSAGE, 503);
   if (!isBookingAccessConfigured()) return apiError("BOOKING_NOT_OPEN", "Booking access is not configured.", 503);
   const parsed = await parseBody(req, bookingSchema);
   if (!parsed.ok) return parsed.response;
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
       )
     );
   }
+  if (storedPaymentMode(quote.paymentMode) !== getBookingPaymentMode()) return apiError("QUOTE_EXPIRED", "Payment mode changed. Please request a new quote.", 409);
   const property = getProperty(quote.propertyId);
   if (!property) return notFound("Property not found.");
 
@@ -55,7 +57,7 @@ export async function POST(req: Request) {
     const { booking } = await createBookingForQuote(adapter, quote, guest, idempotencyKey);
 
     let paymentIntentId: string | undefined;
-    // Create the test-mode PaymentIntent for the booking total.
+    // Create only in the immutable quote/booking payment mode, after explicit runtime gates.
     try {
       const pi = await createPaymentIntent(quote, booking.idempotencyKey, booking.id);
       paymentIntentId = pi.id;

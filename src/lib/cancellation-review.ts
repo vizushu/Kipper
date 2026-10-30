@@ -1,3 +1,4 @@
+import { storedPaymentMode } from "./payment-mode";
 /** Read-only cancellation review. Never imports payment providers or mutates a booking. */
 import { previewCancellation } from './cancellation';
 import type { AcceptedCancellationTerms, AcceptedPriceBreakdown, Booking, StaySnapshot } from './types';
@@ -57,9 +58,10 @@ export function reviewBookingCancellation(booking: Booking, now = new Date()): C
     reviewedAt: Number.isFinite(now.getTime()) ? now.toISOString() : '', taxAdjustment: 'manual_review', petFeeAdjustment: 'manual_review', currency: 'USD',
   };
   if (!Number.isFinite(now.getTime())) return result;
-  if (booking.paymentStatus !== 'paid_test') return { ...result, status: 'not_applicable', reason: booking.paymentStatus === 'refunded'
+  if (booking.paymentStatus !== 'paid_test' && booking.paymentStatus !== 'paid') return { ...result, status: 'not_applicable', reason: booking.paymentStatus === 'refunded'
     ? 'Payment is already marked refunded. Verify the provider ledger; no further refund is suggested.'
-    : 'No settled test payment is recorded. Verify payment status before considering any refund.' };
+    : 'No settled payment is recorded. Verify payment status before considering any refund.' };
+  if ((booking.paymentStatus === 'paid' && storedPaymentMode(booking.paymentMode) !== 'live') || (booking.paymentStatus === 'paid_test' && storedPaymentMode(booking.paymentMode) !== 'test')) return { ...result, reason: 'Payment status and stored mode require manual reconciliation.' };
   if (booking.status !== 'confirmed' && booking.status !== 'cancelled') return { ...result, reason: 'Booking/payment state requires manual reconciliation.' };
   const snapshot = booking.staySnapshot;
   if (!snapshot?.cancellationTerms || !snapshot.priceBreakdown || !validTerms(snapshot, snapshot.cancellationTerms) || !validPrices(booking, snapshot.priceBreakdown)) return result;
@@ -71,7 +73,7 @@ export function reviewBookingCancellation(booking: Booking, now = new Date()): C
     const terms = snapshot.cancellationTerms;
     const price = snapshot.priceBreakdown;
     const preview = previewCancellation(booking.checkIn, effective, price.accommodationNetCents, price.cleaningFeeCents, { ...terms, text: snapshot.cancellationPolicy });
-    return { ...result, status: 'review_available', reason: 'Test-payment calculation only. This review neither cancels the stay nor issues a refund. Tax and pet-fee adjustments require separate review.',
+    return { ...result, status: 'review_available', reason: 'Calculation only, not a provider-ledger reconciliation. This review neither cancels the stay nor issues a refund. Tax and pet-fee adjustments require separate review.',
       effectiveCancellationAt: effective.toISOString(), timeBasis: cancelled ? 'recorded_cancellation' : 'hypothetical_now',
       policyVersion: terms.version, checkInCutoff: { date: booking.checkIn, localTime: terms.checkInLocalTime, timezone: terms.timezone },
       accommodationPercent: preview.accommodationPercent, accommodationRefundCents: preview.accommodationRefundCents,

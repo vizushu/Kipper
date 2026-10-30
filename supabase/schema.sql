@@ -48,7 +48,7 @@ create table if not exists bookings (
   status                 text not null default 'pending_payment'
                          check (status in ('pending_payment','confirmed','cancelled')),
   payment_status         text not null default 'unpaid'
-                         check (payment_status in ('unpaid','paid_test','failed','refunded')),
+                         check (payment_status in ('unpaid','paid_test','paid','failed','refunded')),
   stripe_payment_intent_id text,
   idempotency_key        text not null unique,
   created_at             timestamptz not null default now(),
@@ -150,6 +150,10 @@ end;
 $$;
 
 alter table bookings add column if not exists stay_snapshot jsonb;
+-- Legacy rows were test-only. Never infer live provenance from current credentials.
+alter table bookings add column if not exists payment_mode text not null default 'test' check (payment_mode in ('test','live'));
+alter table bookings drop constraint if exists bookings_payment_status_check;
+alter table bookings add constraint bookings_payment_status_check check (payment_status in ('unpaid','paid_test','paid','failed','refunded'));
 
 -- Pending holds are bounded. Existing legacy holds remain NULL for manual review;
 -- never infer expiry for reservations created before this migration.
@@ -306,7 +310,7 @@ begin
  values(p_input->>'tokenHash',b.id,b.reference,expires,created);
  insert into delivery_outbox(id,booking_id,kind,dedupe_key,payload_json,created_at,next_attempt_at)
  values('mail_'||gen_random_uuid()::text,b.id,'access_recovery','recovery/'||(p_input->>'tokenHash'),
- jsonb_build_object('recovery',jsonb_build_object('recipient',p_notification->>'recipient','token',p_notification->>'token','reference',b.reference,'expiresAt',expires)),created,created);
+ jsonb_build_object('recovery',jsonb_build_object('recipient',p_notification->>'recipient','token',p_notification->>'token','reference',b.reference,'expiresAt',expires,'paymentMode',b.payment_mode)),created,created);
 end; $$;
 
 create or replace function consume_booking_recovery(p_token_hash text,p_now timestamptz)
@@ -340,7 +344,7 @@ begin
   end if;
   if exists(select 1 from blocks where property_id=v_property and from_date<v_row.check_out and to_date>v_row.check_in) then return null; end if;
   if exists(select 1 from bookings where id<>p_id and property_id=v_property and status in ('confirmed','pending_payment') and (status='confirmed' or hold_expires_at is null or hold_expires_at>now()) and check_in<v_row.check_out and check_out>v_row.check_in) then return null; end if;
-  update bookings set status='confirmed',payment_status='paid_test',confirmed_at=p_confirmed_at where id=p_id and status='pending_payment' returning * into v_row;
+  update bookings set status='confirmed',payment_status=case when payment_mode='live' then 'paid' else 'paid_test' end,confirmed_at=p_confirmed_at where id=p_id and status='pending_payment' returning * into v_row;
   perform ensure_receipt_outbox(v_row.id); -- Same transaction as successful confirmation.
   return jsonb_build_object('booking',to_jsonb(v_row),'transitioned',true);
 end; $$;
@@ -413,7 +417,7 @@ begin
       insert into bookings (
         id, reference, property_id, check_in, check_out, nights,
         guests, pets, guest, line_items, total_cents, currency,
-        status, payment_status, idempotency_key, stay_snapshot, hold_expires_at
+        status, payment_status, idempotency_key, stay_snapshot, hold_expires_at, payment_mode
       ) values (
         v_id, v_ref,
         p_booking->>'property_id',
@@ -427,7 +431,7 @@ begin
         (p_booking->>'total_cents')::int,
         coalesce(p_booking->>'currency', 'USD'),
         'pending_payment', 'unpaid',
-        p_booking->>'idempotency_key', p_booking->'stay_snapshot', now() + interval '15 minutes'
+        p_booking->>'idempotency_key', p_booking->'stay_snapshot', now() + interval '15 minutes', coalesce(p_booking->>'payment_mode','test')
       )
       returning * into v_row;
       exit insert_loop;
@@ -473,3 +477,129 @@ insert into properties (id, slug, data) values ('casa-pacifica','casa-pacifica',
 -- Lifecycle RPCs are server-only. No public booking mutations via Supabase SDK.
 revoke execute on function create_booking_if_available(jsonb), expire_pending_bookings(timestamptz), attach_payment_intent(text,text), confirm_booking_payment(text,text,timestamptz), cancel_booking(text) from public, anon, authenticated;
 grant execute on function create_booking_if_available(jsonb), expire_pending_bookings(timestamptz), attach_payment_intent(text,text), confirm_booking_payment(text,text,timestamptz), cancel_booking(text) to service_role;
+
+-- --------------------------------------------------------------------------
+-- Verified-money exception review. Private metadata only; never refunds or
+-- mutates bookings. Modes are isolated and provider callbacks are idempotent.
+-- --------------------------------------------------------------------------
+create table if not exists payment_exceptions (
+  id text primary key,
+  payment_intent_id text not null,
+  payment_mode text not null check (payment_mode in ('test','live')),
+  booking_id text,
+  amount_cents bigint not null check (amount_cents between 0 and 9007199254740991),
+  amount_received_cents bigint not null check (amount_received_cents between 1 and 9007199254740991),
+  currency text not null check (currency ~ '^[a-z]{3}$'),
+  reason text not null check (reason in ('cancelled_booking','expired_or_conflicting_hold','unmatched_payment','binding_mismatch','launch_gate_closed')),
+  status text not null default 'open' check (status in ('open','reviewed')),
+  first_seen_at timestamptz not null,
+  last_seen_at timestamptz not null,
+  event_count integer not null default 1 check (event_count > 0),
+  attention_required boolean not null default true,
+  reviewed_at timestamptz,
+  review_note text,
+  unique(payment_mode,payment_intent_id)
+);
+create table if not exists payment_exception_events (
+  payment_mode text not null check (payment_mode in ('test','live')),
+  event_id text not null,
+  exception_id text not null references payment_exceptions(id),
+  primary key(payment_mode,event_id)
+);
+create table if not exists payment_exception_reviews (
+  idempotency_key text primary key,
+  exception_id text not null unique references payment_exceptions(id),
+  note text not null,
+  created_at timestamptz not null
+);
+alter table payment_exceptions enable row level security;
+alter table payment_exception_events enable row level security;
+alter table payment_exception_reviews enable row level security;
+revoke all on payment_exceptions,payment_exception_events,payment_exception_reviews from public,anon,authenticated;
+grant select,insert,update,delete on payment_exceptions,payment_exception_events,payment_exception_reviews to service_role;
+
+create or replace function record_payment_exception(p_input jsonb)
+returns jsonb language plpgsql security invoker set search_path = public as $$
+declare
+  v_mode text := p_input->>'paymentMode';
+  v_pi text := p_input->>'paymentIntentId';
+  v_event text := p_input->>'providerEventId';
+  v_currency text := lower(p_input->>'currency');
+  v_amount numeric;
+  v_received numeric;
+  v_seen text;
+  v_row payment_exceptions%rowtype;
+  v_created boolean := false;
+  v_now timestamptz := clock_timestamp();
+begin
+  if jsonb_typeof(p_input) is distinct from 'object'
+    or v_mode is null or v_mode not in ('test','live')
+    or v_pi is null or v_pi !~ '^pi_[A-Za-z0-9_]{1,180}$'
+    or v_event is null or char_length(v_event) not between 1 and 250
+    or v_currency is null or v_currency !~ '^[a-z]{3}$'
+    or p_input->>'reason' is null or p_input->>'reason' not in ('cancelled_booking','expired_or_conflicting_hold','unmatched_payment','binding_mismatch','launch_gate_closed')
+    or jsonb_typeof(p_input->'amountCents') is distinct from 'number'
+    or jsonb_typeof(p_input->'amountReceivedCents') is distinct from 'number'
+  then raise exception 'Invalid verified payment exception evidence.'; end if;
+  v_amount := (p_input->>'amountCents')::numeric;
+  v_received := (p_input->>'amountReceivedCents')::numeric;
+  if v_amount < 0 or v_amount > 9007199254740991 or trunc(v_amount) <> v_amount
+    or v_received <= 0 or v_received > 9007199254740991 or trunc(v_received) <> v_received
+  then raise exception 'Invalid verified payment exception evidence.'; end if;
+
+  -- Always event lock before payment lock. A duplicate event cannot attach to
+  -- a different case while two unrelated events for one payment serialize.
+  perform pg_advisory_xact_lock(hashtextextended('payment-exception-event:'||v_mode||':'||v_event,0));
+  select exception_id into v_seen from payment_exception_events where payment_mode=v_mode and event_id=v_event;
+  if found then
+    select * into v_row from payment_exceptions where id=v_seen;
+    if v_row.payment_intent_id <> v_pi then raise exception 'Provider event is already associated with another payment.'; end if;
+    return jsonb_build_object('exception',to_jsonb(v_row),'created',false);
+  end if;
+  perform pg_advisory_xact_lock(hashtextextended('payment-exception-intent:'||v_mode||':'||v_pi,0));
+  select * into v_row from payment_exceptions where payment_mode=v_mode and payment_intent_id=v_pi for update;
+  v_now := clock_timestamp(); -- Timestamp after contention, not before waiting for the lock.
+  if not found then
+    insert into payment_exceptions(id,payment_intent_id,payment_mode,booking_id,amount_cents,amount_received_cents,currency,reason,first_seen_at,last_seen_at)
+      values('payreview_'||gen_random_uuid()::text,v_pi,v_mode,p_input->>'bookingId',v_amount::bigint,v_received::bigint,v_currency,p_input->>'reason',v_now,v_now)
+      returning * into v_row;
+    v_created := true;
+  else
+    if v_row.amount_cents <> v_amount or v_row.amount_received_cents <> v_received or v_row.currency <> v_currency then
+      raise exception 'Payment evidence changed; reconciliation required.';
+    end if;
+    update payment_exceptions set last_seen_at=greatest(last_seen_at,v_now),event_count=event_count+1 where id=v_row.id returning * into v_row;
+    -- Reviewed cases remain reviewed; a later duplicate is not a refund instruction.
+  end if;
+  insert into payment_exception_events(payment_mode,event_id,exception_id) values(v_mode,v_event,v_row.id);
+  return jsonb_build_object('exception',to_jsonb(v_row),'created',v_created);
+end; $$;
+
+create or replace function review_payment_exception(p_id text,p_note text,p_idempotency_key text)
+returns jsonb language plpgsql security invoker set search_path = public as $$
+declare
+  v_row payment_exceptions%rowtype;
+  v_prior payment_exception_reviews%rowtype;
+  v_note text := btrim(p_note);
+  v_now timestamptz := clock_timestamp();
+begin
+  if p_note is null or char_length(v_note)<10 or char_length(p_note)>1000
+    or p_idempotency_key is null or char_length(p_idempotency_key) not between 8 and 128
+  then raise exception 'Review needs an explanatory note and idempotency key.'; end if;
+  perform pg_advisory_xact_lock(hashtextextended('payment-exception-review:'||p_idempotency_key,0));
+  select * into v_row from payment_exceptions where id=p_id for update;
+  if not found then return null; end if;
+  select * into v_prior from payment_exception_reviews where idempotency_key=p_idempotency_key;
+  if found then
+    if v_prior.exception_id<>p_id or v_prior.note<>v_note then raise exception 'Review key belongs to another action.'; end if;
+    return to_jsonb(v_row);
+  end if;
+  if v_row.status<>'open' then raise exception 'This review case is already closed; no duplicate action was recorded.'; end if;
+  v_now := clock_timestamp();
+  insert into payment_exception_reviews(idempotency_key,exception_id,note,created_at) values(p_idempotency_key,p_id,v_note,v_now);
+  update payment_exceptions set status='reviewed',attention_required=false,reviewed_at=v_now,review_note=v_note
+    where id=p_id and status='open' returning * into v_row;
+  return to_jsonb(v_row);
+end; $$;
+revoke execute on function record_payment_exception(jsonb),review_payment_exception(text,text,text) from public,anon,authenticated;
+grant execute on function record_payment_exception(jsonb),review_payment_exception(text,text,text) to service_role;

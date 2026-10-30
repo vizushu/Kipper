@@ -96,8 +96,9 @@ describe('booking routes with real durable storage and synthetic provider bounda
   });
   it('mismatched amount cannot confirm or enqueue receipts, but corrected evidence succeeds', async () => {
     const { booking } = await reserve(await getQuote()); const intent = succeed(booking.stripePaymentIntentId!); intent.amount_received--;
-    expect((await confirmRoute(post('/confirm', { paymentIntentId: intent.id }), context(booking.id))).status).toBe(400);
-    expect((await webhookRoute(signedEvent(intent))).status).toBe(400);
+    expect((await confirmRoute(post('/confirm', { paymentIntentId: intent.id }), context(booking.id))).status).toBe(409);
+    expect((await webhookRoute(signedEvent(intent))).status).toBe(200);
+    expect(await adapter.listPaymentExceptions()).toHaveLength(1);
     expect((await adapter.getBooking(booking.id))?.status).toBe('pending_payment'); expect(await adapter.listOutbox()).toHaveLength(0);
     intent.amount_received = intent.amount; expect((await webhookRoute(signedEvent(intent, 'evt_corrected'))).status).toBe(200); expect(await adapter.listOutbox()).toHaveLength(2);
   });
@@ -105,7 +106,7 @@ describe('booking routes with real durable storage and synthetic provider bounda
     const original = (await reserve(await getQuote())).booking; const oldIntent = succeed(original.stripePaymentIntentId!);
     await adapter.cancelBooking(original.id);
     const replacement = (await reserve(await getQuote(), 'synthetic-replacement')).booking;
-    expect((await confirmRoute(post('/confirm', { paymentIntentId: oldIntent.id }), context(original.id))).status).toBe(400);
+    expect((await confirmRoute(post('/confirm', { paymentIntentId: oldIntent.id }), context(original.id))).status).toBe(409);
     expect((await webhookRoute(signedEvent(oldIntent, 'evt_late_cancelled'))).status).toBe(200);
     expect((await adapter.getBooking(original.id))?.status).toBe('cancelled'); expect((await adapter.getBooking(replacement.id))?.status).toBe('pending_payment');
     expect(await adapter.listOutbox()).toHaveLength(0);
@@ -117,6 +118,29 @@ describe('booking routes with real durable storage and synthetic provider bounda
     expect((await adapter.getBooking(booking.id))?.status).toBe('cancelled');
     expect((await webhookRoute(signedEvent(intent, 'evt_late_expiry'))).status).toBe(200); expect(await adapter.listOutbox()).toHaveLength(0);
     const replacement = await reserve(await getQuote(), 'synthetic-after-expiry'); expect(replacement.booking.id).not.toBe(booking.id);
+  });
+  it('closed fulfillment records verified success durably and deduplicates retries without confirming', async () => {
+    const {booking}=await reserve(await getQuote()); const intent=succeed(booking.stripePaymentIntentId!);
+    vi.stubEnv('BOOKING_PAYMENT_MODE','closed');
+    const response=await webhookRoute(signedEvent(intent,'evt_after_gate_close'));
+    expect(response.status).toBe(200);expect(await response.json()).toMatchObject({reviewRequired:true});
+    expect((await webhookRoute(signedEvent(intent,'evt_after_gate_close'))).status).toBe(200);
+    const cases=await adapter.listPaymentExceptions();expect(cases).toHaveLength(1);expect(cases[0]).toMatchObject({reason:'launch_gate_closed',eventCount:1,attentionRequired:true});
+    expect((await adapter.getBooking(booking.id))?.status).toBe('pending_payment');expect(await adapter.listOutbox()).toHaveLength(0);
+  });
+  it('retries a verified late event when durable review storage fails, then acknowledges after persistence', async () => {
+    const {booking}=await reserve(await getQuote());const intent=succeed(booking.stripePaymentIntentId!);await adapter.cancelBooking(booking.id);
+    const spy=vi.spyOn(adapter,'recordPaymentException').mockRejectedValueOnce(new Error('synthetic unavailable storage'));
+    expect((await webhookRoute(signedEvent(intent,'evt_storage_retry'))).status).toBe(503);
+    expect((await webhookRoute(signedEvent(intent,'evt_storage_retry'))).status).toBe(200);
+    expect(await adapter.listPaymentExceptions()).toHaveLength(1);expect(await adapter.listOutbox()).toHaveLength(0);spy.mockRestore();
+  });
+  it('records unmatched property payments but not unrelated account payments',async()=>{
+    const {booking}=await reserve(await getQuote());const intent={...succeed(booking.stripePaymentIntentId!),id:'pi_orphan_synthetic'};
+    expect((await webhookRoute(signedEvent(intent,'evt_orphan'))).status).toBe(200);
+    expect(await adapter.listPaymentExceptions()).toHaveLength(1);
+    expect((await webhookRoute(signedEvent({...intent,id:'pi_other_account',metadata:{property_id:'other'}},'evt_unrelated'))).status).toBe(200);
+    expect(await adapter.listPaymentExceptions()).toHaveLength(1);
   });
   it('a tampered unsigned webhook cannot mutate a legitimate pending booking', async () => {
     const { booking } = await reserve(await getQuote()); const intent = succeed(booking.stripePaymentIntentId!);

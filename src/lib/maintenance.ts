@@ -13,5 +13,7 @@ export async function maintenanceSummary(adapter:DataAdapter){
  const jobs=await adapter.listOutbox();
  const counts={pending:0,processing:0,sent:0,simulated:0,suppressed:0,dead:0};
  for(const job of jobs)counts[job.status]++;
- return {disabled:false,counts,needsReview:counts.dead>0};
+ const paymentCases=await adapter.listPaymentExceptions();
+ const openPaymentReviews=paymentCases.filter(item=>item.attentionRequired).length;
+ return {disabled:false,counts,openPaymentReviews,needsReview:counts.dead>0||openPaymentReviews>0};
 }

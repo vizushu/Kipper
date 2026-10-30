@@ -90,3 +90,9 @@ No live reservations or payments are enabled by this branding correction.
 
 ## Launch safety checkpoint
 See `LAUNCH-SAFETY-MILESTONE.md` and `CANCELLATION-REVIEW.md` for the recovery UI, cookie-scoped confirmation, public block-reason privacy fix, conservative offline calendar preview, accepted refund-review snapshots, read-only readiness report and bounded maintenance step. These do not enable real bookings or refunds.
+
+### M2 payment mode and exception capability (not activation)
+- Explicit closed/test/live mode, historical test provenance and preview override are implemented. No approval flags or credentials were configured.
+- Verified payments that cannot fulfill a booking enter the durable private review queue; persistence failure asks the provider to retry. Admin review records reconciliation only, not refunds or cancellations. See `PAYMENT-EXCEPTION-OPERATIONS.md`.
+- Current live capability recognizes only a separately approved exclusive-direct inventory policy. The user has not chosen that policy; do not infer Airbnb delisting. OTA/manual-approval design remains an owner/engineering decision.
+- Stronger server-expiring/revocable admin sessions, persisted abuse controls, actual provider/device QA, production persistence/monitoring and final guest terms/rates remain required before live activation.

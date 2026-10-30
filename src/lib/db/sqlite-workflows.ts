@@ -1,3 +1,4 @@
+import { storedPaymentMode } from "../payment-mode";
 import type Database from 'better-sqlite3';
 import {newId} from '../ids';
 import type {Booking} from '../types';
@@ -59,7 +60,7 @@ export class SqliteWorkflows implements WorkflowStore {
   this.db.prepare('UPDATE booking_recovery SET consumed_at=? WHERE booking_id=? AND consumed_at IS NULL').run(input.createdAt,input.bookingId);
   this.db.prepare(`UPDATE delivery_outbox SET status='suppressed',payload_json='{}',envelope_json=NULL,lease_token=NULL,lease_until=NULL WHERE booking_id=? AND kind='access_recovery' AND status IN ('pending','processing')`).run(input.bookingId);
   this.db.prepare('INSERT INTO booking_recovery(token_hash,booking_id,reference,expires_at,created_at) VALUES(?,?,?,?,?)').run(input.tokenHash,input.bookingId,input.reference,input.expiresAt,input.createdAt);
-  this.db.prepare(`INSERT INTO delivery_outbox(id,booking_id,kind,dedupe_key,payload_json,created_at,next_attempt_at) VALUES(?,?,'access_recovery',?,?,?,?)`).run(newId('mail'),input.bookingId,`recovery/${input.tokenHash}`,JSON.stringify({recovery:{...notification,reference:input.reference,expiresAt:input.expiresAt}}),input.createdAt,input.createdAt);
+  this.db.prepare(`INSERT INTO delivery_outbox(id,booking_id,kind,dedupe_key,payload_json,created_at,next_attempt_at) VALUES(?,?,'access_recovery',?,?,?,?)`).run(newId('mail'),input.bookingId,`recovery/${input.tokenHash}`,JSON.stringify({recovery:{...notification,reference:input.reference,expiresAt:input.expiresAt,paymentMode:storedPaymentMode(b.paymentMode)}}),input.createdAt,input.createdAt);
  }).immediate();}
  async consumeBookingRecovery(hash:string,now:string):Promise<{reference:string}|null>{return this.db.transaction(()=>{
   const row=this.db.prepare('SELECT r.reference FROM booking_recovery r JOIN bookings b ON b.id=r.booking_id WHERE r.token_hash=? AND r.consumed_at IS NULL AND r.expires_at>?').get(hash,now) as {reference:string}|undefined;if(!row)return null;

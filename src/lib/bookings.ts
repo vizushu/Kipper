@@ -1,3 +1,4 @@
+import { storedPaymentMode } from "./payment-mode";
 /**
  * Booking orchestration shared by the API routes.
  *
@@ -48,6 +49,7 @@ export async function createBookingForQuote(
   if (existing) { assertSameRequest(existing, quote, guest); return { booking: existing, duplicate: true }; }
 
   const input: NewBookingInput = {
+    paymentMode: storedPaymentMode(quote.paymentMode),
     staySnapshot: quote.staySnapshot,
     propertyId: quote.propertyId,
     checkIn: quote.checkIn,
@@ -76,7 +78,7 @@ export async function createBookingForQuote(
 }
 
 function assertSameRequest(booking: Booking, quote: Quote, guest: BookingGuest): void {
-  if (booking.propertyId !== quote.propertyId || booking.checkIn !== quote.checkIn || booking.checkOut !== quote.checkOut || booking.totalCents !== quote.totalCents || booking.currency !== quote.currency || booking.pets !== quote.pets || JSON.stringify(booking.guests) !== JSON.stringify(quote.guests) || JSON.stringify(booking.guest) !== JSON.stringify(guest) || JSON.stringify(booking.lineItems) !== JSON.stringify(quote.lineItems) || JSON.stringify(booking.staySnapshot) !== JSON.stringify(quote.staySnapshot)) {
+  if (storedPaymentMode(booking.paymentMode) !== storedPaymentMode(quote.paymentMode) || booking.propertyId !== quote.propertyId || booking.checkIn !== quote.checkIn || booking.checkOut !== quote.checkOut || booking.totalCents !== quote.totalCents || booking.currency !== quote.currency || booking.pets !== quote.pets || JSON.stringify(booking.guests) !== JSON.stringify(quote.guests) || JSON.stringify(booking.guest) !== JSON.stringify(guest) || JSON.stringify(booking.lineItems) !== JSON.stringify(quote.lineItems) || JSON.stringify(booking.staySnapshot) !== JSON.stringify(quote.staySnapshot)) {
     throw new BookingError("DUPLICATE", "This request key belongs to a different booking. Please restart checkout.");
   }
   if (booking.status === 'cancelled') throw new BookingError('UNAVAILABLE', 'This booking was cancelled. Please request a new quote.');

@@ -1,3 +1,4 @@
+import type { PaymentExceptionStore } from "./payment-exceptions";
 import type { WorkflowStore } from "./workflows";
 /**
  * DataAdapter — persistence interface for bookings, blocks, rate overrides,
@@ -41,6 +42,7 @@ export interface SettingsPatch {
 
 /** Everything needed to create a booking; id/createdAt are assigned by the adapter. */
 export interface NewBookingInput {
+  paymentMode?: Booking["paymentMode"];
   staySnapshot?: Booking["staySnapshot"];
   propertyId: string;
   checkIn: string;
@@ -69,7 +71,7 @@ export interface UpdateBookingPatch {
   adminNotes?: string;
 }
 
-export interface DataAdapter extends WorkflowStore {
+export interface DataAdapter extends WorkflowStore, PaymentExceptionStore {
   // ---- bookings ---------------------------------------------------------
   /**
    * Atomically: re-check that [checkIn, checkOut) has no overlapping

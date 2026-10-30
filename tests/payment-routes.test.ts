@@ -6,7 +6,7 @@ import { POST as webhook } from "../src/app/api/webhooks/stripe/route";
 
 const mocks = vi.hoisted(() => ({
   tryProcessOutbox: vi.fn(), getBooking: vi.fn(), getBookingByPaymentIntentId: vi.fn(), updateBooking: vi.fn(),
-  confirmBookingPayment: vi.fn(), failPendingBookingPayment: vi.fn(),
+  confirmBookingPayment: vi.fn(), failPendingBookingPayment: vi.fn(), recordPaymentException: vi.fn(),
   verifyPaymentIntent: vi.fn(), sendBookingConfirmation: vi.fn(), sendHostNotification: vi.fn(),
 }));
 vi.mock("@/lib/db", () => ({ getAdapter: () => mocks }));
@@ -45,8 +45,10 @@ function eventRequest(object = pi, type = "payment_intent.succeeded", signed = t
 }
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.stubEnv("BOOKING_TEST_MODE", "true");
   vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_fixture");
   vi.stubEnv("STRIPE_WEBHOOK_SECRET", "whsec_fixture");
+  mocks.recordPaymentException.mockResolvedValue({created:true});
   mocks.getBooking.mockResolvedValue({ ...booking });
   mocks.getBookingByPaymentIntentId.mockResolvedValue({ ...booking });
   mocks.confirmBookingPayment.mockResolvedValue({ booking: { ...booking, status: "confirmed", paymentStatus: "paid_test" }, transitioned: true });
@@ -69,7 +71,8 @@ describe("confirmation route", () => {
   });
   it("rejects cancelled reservations without mutation", async () => {
     mocks.getBooking.mockResolvedValue({ ...booking, status: "cancelled" });
-    expect((await confirmation()).status).toBe(400);
+    expect((await confirmation()).status).toBe(409);
+    expect(mocks.recordPaymentException).toHaveBeenCalled();
     expect(mocks.updateBooking).not.toHaveBeenCalled();
     expect(mocks.confirmBookingPayment).not.toHaveBeenCalled();
   });
@@ -101,7 +104,8 @@ describe("webhook route", () => {
     expect(mocks.getBookingByPaymentIntentId).not.toHaveBeenCalled();
   });
   it("rejects signed but mismatched amounts without mutation", async () => {
-    expect((await webhook(eventRequest({ ...pi, amount: 100 }))).status).toBe(400);
+    expect((await webhook(eventRequest({ ...pi, amount: 100 }))).status).toBe(200);
+    expect(mocks.recordPaymentException).toHaveBeenCalled();
     expect(mocks.updateBooking).not.toHaveBeenCalled();
     expect(mocks.confirmBookingPayment).not.toHaveBeenCalled();
   });
@@ -138,7 +142,8 @@ describe("atomic payment lifecycle races", () => {
   });
   it("rejects a webhook if cancellation or hold expiry wins after the initial read", async () => {
     mocks.confirmBookingPayment.mockResolvedValue(null);
-    expect((await webhook(eventRequest())).status).toBe(409);
+    expect((await webhook(eventRequest())).status).toBe(200);
+    expect(mocks.recordPaymentException).toHaveBeenCalled();
     expect(mocks.sendBookingConfirmation).not.toHaveBeenCalled();
     expect(mocks.updateBooking).not.toHaveBeenCalled();
   });

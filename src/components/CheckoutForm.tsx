@@ -52,7 +52,7 @@ export default function CheckoutForm({
   // Load Stripe.js once the booking (clientSecret) exists.
   useEffect(() => {
     if (!clientSecret) return;
-    if (!publishableKey?.startsWith("pk_test_")) {
+    if (!publishableKey?.startsWith((quote.paymentMode ?? "test") === "live" ? "pk_live_" : "pk_test_")) {
       setKeyMissing(true);
       return;
     }
@@ -125,7 +125,7 @@ export default function CheckoutForm({
       cardElementRef.current?.destroy();
       cardElementRef.current = null;
     };
-  }, [clientSecret, publishableKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clientSecret, quote.paymentMode, publishableKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function payWithCard() {
     if (!stripe || !cardElementRef.current || !clientSecret) return;
@@ -153,7 +153,7 @@ export default function CheckoutForm({
       <div className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-6 text-center">
         <p className="font-medium text-ink">Payments aren't switched on yet</p>
         <p className="mx-auto mt-2 max-w-md text-sm text-stone-600">
-          This site is in test mode and the payment key isn't configured. Your dates
+          The payment key does not match this quote's payment mode. Your dates
           are not guaranteed by a quote — please contact Casa Pacifica for assistance.
         </p>
       </div>
@@ -227,7 +227,7 @@ export default function CheckoutForm({
         {paying ? "Processing…" : `Pay ${formatCents(quote.totalCents)}`}
       </Button>
       <p className="text-center text-xs text-stone-500">
-        Test mode — use a Stripe test card. Real charges are never made in test mode.
+        {(quote.paymentMode ?? "test") === "test" ? "Test mode — use a Stripe test card. Real charges are never made in test mode." : "Live payment — confirm the stay details and total before paying."}
       </p>
     </div>
   );
