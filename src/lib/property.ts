@@ -98,6 +98,7 @@ const CASA_PACIFICA: Property = {
         "2 TVs",
         "Sound system",
         "Board games",
+        "Pool table",
         "Books",
       ],
     },

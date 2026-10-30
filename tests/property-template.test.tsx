@@ -24,7 +24,7 @@ describe('date-aware property template', () => {
     expect(html).toContain('STR-13982L');
     expect(html).toContain('A quote does not reserve dates.');
     expect(html).not.toContain(property.address);
-    expect(html).not.toMatch(/best rate|free cancellation|Guest reviews|383 stays/i);
+    expect(html).not.toMatch(/best rate|free cancellation|383 stays/i);
     expect(html).not.toContain('$349');
   });
   it('does not inherit the old photos, capacity, bed map or amenities for the future configuration', () => {

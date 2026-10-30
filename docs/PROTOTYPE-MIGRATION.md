@@ -49,3 +49,19 @@ close/reopen, explorer handoff, narrow viewport and exact March transition.
 Synthetic/local checks do not establish real Stripe/Apple Pay device behavior,
 email delivery, production persistence, cross-platform inventory or concierge
 integration. Those existing launch gates are unchanged.
+
+## October 30 visual simplification
+
+Applied the owner's four screenshot references: no menu icon, smaller translucent
+video label and transparent white gallery/share controls (44px hit areas retained),
+exact requested headline, compact highlights and six amenity icons, room cards,
+policy summary/disclosure, neighborhood-only location and empty verified-review
+panel. Full property/rules/FAQ information remains accessible in disclosures.
+The intro's requested 15 guests / 5 bedrooms / 3 baths is explicitly labelled as
+the March 1, 2027 expansion, not current inventory approval. Current 8-person cap,
+three bedrooms/two baths and all future checkout gates remain unchanged. Pool table
+is supported by existing property context and photography; unsupported Wi-Fi radio
+specifications and staffed-hotel claims were not copied. Bedroom cards use existing
+room-labelled photographs only; no bed sizes or layouts are asserted. The prototype's
+exact-address map was not copied because the application withholds the precise
+address until verified guest access. The public neighborhood link remains general.

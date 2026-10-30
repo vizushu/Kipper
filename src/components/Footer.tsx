@@ -1,101 +1,11 @@
 "use client";
-/**
- * Site footer: contact, policies, FAQ, legal.
- * Policy pages are marked as drafts pending Renier's review.
- */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { IconPin } from "@/components/icons";
-
-const POLICY_LINKS = [
-  { href: "/policies/cancellation", label: "Cancellation policy" },
-  { href: "/policies/terms", label: "Terms of stay" },
-  { href: "/policies/privacy", label: "Privacy policy" },
-];
-
 export default function Footer() {
-  const pathname = usePathname();
-  if (pathname.startsWith("/admin")) return null;
-
-  return (
-    <footer className="border-t border-stone-200 bg-paper">
-      <div className="mx-auto max-w-6xl px-4 pb-32 pt-10 sm:px-6">
-        <div className="grid gap-10 md:grid-cols-4">
-          <div className="md:col-span-2">
-            <p className="font-display text-[27px] font-normal tracking-[-1px] text-ink">casa pacifica</p>
-            <p className="mt-1 text-sm text-stone-500">
-              Mira Mesa · San Diego
-            </p>
-            <address className="mt-4 flex items-start gap-2 text-sm not-italic leading-relaxed text-stone-600">
-              <IconPin className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
-              <span>
-                Mira Mesa
-                <br />
-                San Diego, CA 92126 · Mira Mesa
-              </span>
-            </address>
-            <p className="mt-4 text-sm text-stone-600">
-              Kipper concierge AI is in development. This Casa Pacifica preview does not accept reservations or payments.
-            </p>
-          </div>
-          <nav aria-label="Policies">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
-              Policies
-            </p>
-            <ul className="mt-3 space-y-2">
-              {POLICY_LINKS.map((l) => (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    className="text-sm text-stone-600 underline-offset-4 hover:text-ink hover:underline"
-                  >
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3">
-              <span className="text-xs text-stone-500">Cancellation schedule confirmed. Terms of stay and privacy wording remain under review.</span>
-            </p>
-          </nav>
-          <nav aria-label="Explore">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
-              Explore
-            </p>
-            <ul className="mt-3 space-y-2">
-              <li>
-                <Link href="/properties" className="text-sm text-stone-600 underline-offset-4 hover:text-ink hover:underline">
-                  Browse stays
-                </Link>
-              </li>
-              <li>
-                <Link href="/about" className="text-sm text-stone-600 underline-offset-4 hover:text-ink hover:underline">
-                  About Casa Pacifica
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-sm text-stone-600 underline-offset-4 hover:text-ink hover:underline">
-                  Contact us
-                </Link>
-              </li>
-              <li>
-                <Link href="/faq" className="text-sm text-stone-600 underline-offset-4 hover:text-ink hover:underline">
-                  Frequently asked questions
-                </Link>
-              </li>
-              <li>
-                <Link href="/" className="text-sm text-stone-600 underline-offset-4 hover:text-ink hover:underline">
-                  Why book direct
-                </Link>
-              </li>
-            </ul>
-          </nav>
-        </div>
-        <div className="mt-10 flex flex-col gap-3 border-t border-stone-300/60 pt-6 text-xs text-stone-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Casa Pacifica. All rights reserved.</p>
-          <p>Casa Pacifica property · San Diego STRO Tier-2 License STR-13982L · TOT 660372</p>
-        </div>
-      </div>
-    </footer>
-  );
+  const pathname=usePathname();
+  if(pathname.startsWith("/admin")) return null;
+  return <footer className="border-t border-line bg-paper px-5 pb-28 pt-7 text-xs text-moss"><div className="mx-auto max-w-[816px]">
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3"><p>Casa Pacifica · A little more room to unwind.</p><nav aria-label="Footer" className="flex flex-wrap gap-4"><Link href="/properties" className="py-2 underline underline-offset-4">Plan your stay</Link><Link href="/booking-access" className="py-2 underline underline-offset-4">Your booking</Link><Link href="/contact" className="py-2 underline underline-offset-4">Ask Kipper</Link></nav></div>
+    <details className="mt-4"><summary className="w-fit cursor-pointer py-2">Policies &amp; property information</summary><div className="mt-3 space-y-3 leading-6"><nav aria-label="Policies" className="flex flex-wrap gap-4"><Link href="/policies/cancellation" className="underline">Cancellation policy</Link><Link href="/policies/terms" className="underline">Terms of stay</Link><Link href="/policies/privacy" className="underline">Privacy policy</Link><Link href="/faq" className="underline">Frequently asked questions</Link></nav><p>Cancellation schedule confirmed. Terms of stay and privacy wording remain under review.</p><p>Casa Pacifica property · San Diego STRO Tier-2 License STR-13982L · TOT 660372</p><p>Kipper concierge AI is in development. This Casa Pacifica preview does not accept reservations or payments.</p><p>© 2026 Casa Pacifica.</p></div></details>
+  </div></footer>;
 }

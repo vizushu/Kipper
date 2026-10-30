@@ -59,13 +59,13 @@ export default function PhotoGallery({ photos, propertyName }: { photos: Photo[]
       <button type="button" onClick={() => setView("albums")} className="relative block h-[clamp(260px,66vw,540px)] w-full focus-visible:outline-offset-[-5px]" aria-label="Open all photo albums">
         <Image src={active.src} alt={active.alt} fill priority sizes="100vw" className="object-cover" />
       </button>
-      <button type="button" onClick={() => setView("video")} className="absolute left-4 top-4 flex min-h-11 items-center gap-2 rounded-lg bg-paper/95 px-3 text-xs font-medium text-ink shadow-sm md:left-6 md:top-6">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4" aria-hidden="true"><path d="m8 4 12 8-12 8Z" /></svg>Video tour
+      <button type="button" onClick={() => setView("video")} className="absolute left-4 top-4 flex min-h-11 items-center gap-1.5 rounded-md bg-transparent px-1 text-[11px] font-medium text-white drop-shadow md:left-6 md:top-6">
+        <span className="flex items-center gap-1.5 rounded bg-black/25 px-2 py-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-3 w-3" aria-hidden="true"><path d="m8 4 12 8-12 8Z" /></svg>Video tour</span>
       </button>
       <ShareStay propertyName={propertyName} />
       {photos.length > 1 && <>
-        <button type="button" aria-label="Previous home photo" onClick={() => setHero(current => nextPhotoIndex(current, -1, photos.length))} className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-paper/90 text-ink md:left-5"><IconChevronLeft className="h-5 w-5" /></button>
-        <button type="button" aria-label="Next home photo" onClick={() => setHero(current => nextPhotoIndex(current, 1, photos.length))} className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-paper/90 text-ink md:right-5"><IconChevronRight className="h-5 w-5" /></button>
+        <button type="button" aria-label="Previous home photo" onClick={() => setHero(current => nextPhotoIndex(current, -1, photos.length))} className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] md:left-5"><IconChevronLeft className="h-5 w-5" /></button>
+        <button type="button" aria-label="Next home photo" onClick={() => setHero(current => nextPhotoIndex(current, 1, photos.length))} className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-transparent text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] md:right-5"><IconChevronRight className="h-5 w-5" /></button>
       </>}
       <div aria-hidden="true" className="pointer-events-none absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-1 rounded-full bg-black/15 px-2 py-1.5">{photos.map((item, index) => <span key={item.src} className={`h-1.5 w-1.5 rounded-full ${index === hero ? "bg-white" : "bg-white/50"}`} />)}</div>
       <span className="pointer-events-none absolute bottom-4 right-4 rounded-md bg-ink/85 px-2 py-1 text-xs text-paper" aria-live="polite">{hero + 1} / {photos.length}<span className="sr-only"> photos · {active.room ?? active.alt}</span></span>

@@ -14,9 +14,9 @@ it('curates actual interior assets and keeps annotated parking out of the hero',
   expect(property.photos.some(p => p.src.endsWith('-01.jpg'))).toBe(false);
   expect(property.photos.find(p => p.src.endsWith('-08.jpg'))?.room).toBe('Hallway');
 });
-it('shows eight exact verified amenities with every original detail in a native closed disclosure', () => {
+it('shows six exact verified amenities with every original detail in a native closed disclosure', () => {
   const highlights = selectAmenityHighlights(property.amenities);
-  expect(highlights).toHaveLength(8);
+  expect(highlights).toHaveLength(6);
   for (const item of highlights) expect(property.amenities.flatMap(g => g.items)).toContain(item);
   const html = renderToStaticMarkup(<AmenityHighlights groups={property.amenities} />);
   expect(html).toContain('Show all amenities');

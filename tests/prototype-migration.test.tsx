@@ -13,9 +13,9 @@ it('root is the actual date-aware property controller, with no demo prices or pr
   const html = renderToStaticMarkup(await HomePage({ searchParams: Promise.resolve({ checkIn:'2027-02-20',checkOut:'2027-02-22',adults:'2',children:'0',infants:'1' }) }));
   expect(html).toContain('value="2027-02-20"'); expect(html).toContain('3 guests, including 1 infant');
   expect(html).toContain('8 guests'); expect(html).toContain('2 baths');
-  expect(html).toContain('Open all photo albums'); expect(html).toContain('The ease of a San Diego getaway');
+  expect(html).toContain('Open all photo albums'); expect(html).toContain('Experience authentic San Diego beach culture');
   expect(html).not.toContain(getProperty('casa-pacifica')!.address);
-  expect(html).not.toMatch(/\$449|\$1,215|15 guests|3 full bathrooms|CP-DEMO|Alex Rivera/);
+  expect(html).not.toMatch(/\$449|\$1,215|3 full bathrooms|CP-DEMO|Alex Rivera/);
 });
 it('keeps future and crossing configurations blocked in the new presentation', () => {
   vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-30T12:00:00Z'));
