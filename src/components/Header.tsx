@@ -20,7 +20,7 @@ const NAV = [
 
 function BrandMark() {
   return (
-    <Link href="/" className="flex items-center gap-2.5" aria-label="Kipper Property Management home">
+    <Link href="/" className="flex items-center gap-2.5" aria-label="Kipper Stays home">
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-paper">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden className="h-5 w-5">
           <circle cx="12" cy="12" r="4.5" />
@@ -30,7 +30,7 @@ function BrandMark() {
       <span className="leading-tight">
         <span className="block font-display text-lg font-medium text-ink">Kipper</span>
         <span className="block text-[11px] uppercase tracking-[0.12em] text-stone-500">
-          Property Management
+          Stays
         </span>
       </span>
     </Link>

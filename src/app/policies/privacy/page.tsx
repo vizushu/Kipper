@@ -11,9 +11,7 @@ export default function PrivacyPage() {
   return (
     <PolicyShell title="Privacy policy" updated="October 13, 2026">
       <p>
-        Kipper Property Management operates this website to take direct bookings
-        for Casa Pacifica. This policy explains what information we collect and how
-        we use it.
+        This is a draft privacy policy for the Kipper Stays preview. Kipper is a concierge-AI startup. Booking, payment, and contact submissions are disabled in this preview. Before launch, the responsible data controller and any homeowner or service-provider data sharing must be identified. The sections below describe proposed handling, not enabled booking services.
       </p>
       <h2>What we collect</h2>
       <ul>
@@ -32,9 +30,7 @@ export default function PrivacyPage() {
       </ul>
       <h2>Payments</h2>
       <p>
-        Payments are processed securely by Stripe. Your card details go directly
-        to Stripe — we never see, store, or have access to your full card number.
-        See Stripe's privacy policy for how they handle payment data.
+        No payments are accepted in this preview. Any future payment provider and recipient must be verified and disclosed before booking opens.
       </p>
       <h2>How we use your information</h2>
       <ul>

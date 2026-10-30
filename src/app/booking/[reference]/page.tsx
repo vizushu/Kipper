@@ -126,8 +126,7 @@ export default async function BookingConfirmationPage({
 
         <div className="rounded-2xl bg-cream px-6 py-5 text-center">
           <p className="text-sm text-stone-600">
-            Need to change something? Your host <strong className="font-medium text-ink">Kipper</strong> is
-            one message away — reply to your confirmation email and we'll sort it out.
+            For changes to an existing stay, consult the verified host contact in your original confirmation.
           </p>
           <Link href="/" className="mt-4 inline-block">
             <Button variant="secondary">Back to home</Button>

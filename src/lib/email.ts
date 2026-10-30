@@ -47,7 +47,7 @@ function shell(title: string, body: string): string {
 <h1 style="font-size:22px;">${esc(title)}</h1>
 ${body}
 <hr style="border:none;border-top:1px solid #ddd;margin:24px 0;">
-<p style="font-size:12px;color:#888;">${esc("Casa Pacifica · Operated by Kipper Property Management")}</p>
+<p style="font-size:12px;color:#888;">${esc("Casa Pacifica · Kipper Stays")}</p>
 </body></html>`;
 }
 
@@ -72,7 +72,7 @@ function guestHtml(booking: Booking, property: Property): string {
 <p>Cancellation: ${esc(booking.staySnapshot?.cancellationPolicy ?? "See original booking terms")}</p>
 <h2 style="font-size:16px;">Good to know</h2>
 <ul><li>Quiet hours: ${esc(property.quietHours)}</li><li>Wifi details are in this email's follow-up before arrival.</li><li>Please review the house rules in your booking details.</li></ul>
-<p>We look forward to hosting you!<br>— Kipper, Kipper Property Management</p>`
+<p>For stay questions, consult your verified host contact.<br>— Kipper Stays</p>`
   );
 }
 
@@ -132,7 +132,7 @@ export async function sendContactMessage(
       `New contact message from ${esc(name)}`,
       `<p><strong>From:</strong> ${esc(name)} &lt;${esc(email)}&gt;</p>` +
         `<p>${esc(message).replace(/\n/g, "<br>")}</p>` +
-        `<p style="font-size:12px;color:#888;">Sent via the Kipper Property Management contact form.</p>`,
+        `<p style="font-size:12px;color:#888;">Sent via the Kipper Stays contact form.</p>`,
     );
     await deliver(
       hostAddress(),

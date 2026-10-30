@@ -1,3 +1,5 @@
+> Positioning correction (October 30, 2026): Kipper is a concierge-AI startup, not identified as property manager, legal host, or merchant. Hide host cards until homeowner/host identity is verified. This supersedes older hosting language. Reservations and payments remain disabled.
+
 # Phase 3 Spec — Repeatable Property Page Template
 
 **Status:** Ready for builder review (review-duty gate applies — see §12)
@@ -37,7 +39,7 @@ Guiding principle (Astra): *"Photography earns attention. Clear information buil
 | 1 | Hero gallery | `PhotoGallery` | keep | `property.photos` (13, captioned, counter "n / 13") |
 | 2 | Title block (centered) | `TitleBlock` | **new** | name → place line ("Entire downstairs home in Mira Mesa, San Diego") → fact row (`8 guests · 3 bedrooms · 4 beds · 2 baths`) → rating line **only if §4.2 passes** |
 | 3 | Trust strip (one badge max) | `TrustStrip` | **new** | "Licensed San Diego short-term rental · STR-13982L" (verified fact, not a claim) |
-| 4 | Host card | `HostCard` | **new** | "Hosted by Kipper" + truthful credibility line ("Independent host · San Diego"). No Superhost or years-hosting claims |
+| 4 | Host card | `HostCard` | **new** | "Hosted by [verified homeowner/host]" + truthful credibility line ("Verified host details only"). No Superhost or years-hosting claims |
 | 5 | Highlights (3 max) | `HighlightCard` | **new** | icon + bold lead + ≤2 lines muted; Casa Pacifica: private pool (heating included), game & billiards room, near La Jolla & beaches |
 | 6 | The space | section | restyle | Exactly what guests book: the entire downstairs; upstairs is a separate ADU with its own entrance — no shared indoor spaces. Material limitations stated, not hidden |
 | 7 | Sleeping arrangements | section | keep/restyle | Per-room beds from `property.sleeping` (values in §6) |

@@ -6,16 +6,16 @@ import { isPublicPreview } from "@/lib/booking-launch";
 export const metadata: Metadata = {
   title: "Contact",
   description:
-    "Get in touch with Kipper Property Management — questions about a stay, your dates, or anything else.",
+    "Get in touch with Kipper Stays — questions about a stay, your dates, or anything else.",
 };
 
 export default function ContactPage() {
-  if (isPublicPreview()) return <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6"><TitleBlock name="Contact preview" place="Kipper Property Management" /><p className="mt-8 rounded-2xl border border-stone-200 bg-cream p-6 text-center text-sm leading-relaxed">This is a website preview. Contact submissions are disabled and no guest details are collected here.</p></div>;
+  if (isPublicPreview()) return <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6"><TitleBlock name="Contact preview" place="Kipper Stays" /><p className="mt-8 rounded-2xl border border-stone-200 bg-cream p-6 text-center text-sm leading-relaxed">This is a website preview. Contact submissions are disabled and no guest details are collected here.</p></div>;
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16">
       <TitleBlock
         name="Contact us"
-        place="Kipper Property Management · San Diego"
+        place="Kipper Stays · San Diego"
         facts={["We read every message"]}
       />
       <div className="mt-10">

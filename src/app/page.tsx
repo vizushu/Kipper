@@ -16,31 +16,31 @@ import {
 import { getProperties } from "@/data/api";
 
 export const metadata: Metadata = {
-  title: "Kipper Property Management — Book direct in San Diego",
+  title: "Kipper Stays — Book direct in San Diego",
   description:
-    "Kipper Property Management — an independent San Diego host. Browse our vacation stays, including Casa Pacifica (3BR, sleeps 8, private pool), and explore direct-booking options.",
+    "Explore Casa Pacifica on Kipper Stays, a preview from concierge-AI startup Kipper. Reservations and payments are not open.",
 };
 
 const WHY_DIRECT = [
   {
     icon: IconShield,
-    title: "Best-rate promise",
-    body: "The rate you see here is the rate we set — no platform markup, no surprises at checkout.",
+    title: "Clear accommodation details",
+    body: "Explore the accommodation before booking opens. Live pricing is not available in this preview.",
   },
   {
     icon: IconCheck,
-    title: "Direct host support",
-    body: "Ask Kipper about your stay, dates, and accommodation.",
+    title: "Concierge AI in development",
+    body: "Kipper is building concierge tools for guests and homeowners.",
   },
   {
     icon: IconMessage,
     title: "Direct line to Kipper",
-    body: "Questions before or during your stay go straight to your host — no ticket queues.",
+    body: "Guest communication tools are in development. No operational response time is promised in this preview.",
   },
   {
     icon: IconPool,
     title: "Flexible communication",
-    body: "Early check-in, late checkout, local tips — just ask. We'd rather say yes.",
+    body: "Stay requests and any exceptions require approval from the verified homeowner or host.",
   },
 ];
 
@@ -67,11 +67,10 @@ export default async function HomePage() {
                 San Diego, California
               </Badge>
               <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-tight text-white">
-                Kipper Property Management
+                Kipper Stays
               </h1>
               <p className="mt-3 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
-                A portfolio of San Diego vacation homes you can book direct —
-                one host to help plan your stay.
+                Explore homeowner accommodation in San Diego, with concierge AI tools in development. Reservations are not open.
               </p>
             </div>
           </div>
@@ -84,11 +83,11 @@ export default async function HomePage() {
       </section>
 
       {/* Listings index */}
-      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6" aria-label="Our stays">
+      <section className="mx-auto max-w-6xl px-4 py-14 sm:px-6" aria-label="Explore stays">
         <SectionHeading
-          eyebrow="Our stays"
-          title="One portfolio, every stay bookable here"
-          lede="Every home below is hosted directly by Kipper — same stay as the marketplaces, without their fees."
+          eyebrow="Explore stays"
+          title="Explore Casa Pacifica"
+          lede="A homeowner listing presented on Kipper Stays. Final booking and payment setup is not yet complete."
         />
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((p) => (
@@ -110,8 +109,8 @@ export default async function HomePage() {
         <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
           <SectionHeading
             eyebrow="Why book direct"
-            title="The same stay, without the middleman"
-            lede="When you book here instead of a marketplace, more of what you pay goes to the home — and you get a direct line to the people who run it."
+            title="A clearer way to explore a stay"
+            lede="Our goal is to help guests explore homeowner listings directly. This preview is not an active booking or payment service."
           />
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {WHY_DIRECT.map((item) => (
@@ -169,28 +168,6 @@ export default async function HomePage() {
             </div>
           </div>
         </Card>
-      </section>
-
-      {/* Trust strip — genuine Airbnb track record */}
-      <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-6" aria-label="Host track record">
-        <div className="rounded-2xl border border-stone-200 bg-white px-6 py-10 text-center shadow-card sm:px-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">
-            Host track record
-          </p>
-          <p className="mx-auto mt-3 max-w-2xl font-display text-2xl font-medium leading-snug text-ink sm:text-3xl">
-            9 years hosting on Airbnb · 383 stays welcomed
-          </p>
-          <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-stone-500">
-            This is our genuine hosting history on Airbnb — 383 guest stays over 9
-            years. Guest reviews from direct stays will appear here as they come in.
-          </p>
-          <Link
-            href="/about"
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-ink px-7 py-3.5 text-sm font-medium text-paper transition-colors hover:bg-espresso"
-          >
-            About Kipper
-          </Link>
-        </div>
       </section>
 
       {/* Contact CTA */}

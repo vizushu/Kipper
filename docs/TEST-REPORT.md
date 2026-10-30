@@ -1,3 +1,5 @@
+> Historical test reports below predate the October 30 positioning correction. Kipper is a concierge-AI startup; earlier host/operator branding is superseded and must not be used as current positioning.
+
 # Test report — Casa Pacifica direct-booking site
 
 Date: 2026-10-13. Verified by the build coordinator (independent re-run).
@@ -69,18 +71,18 @@ faked at any point. No real payment was processed. Availability starts fully
 open with no seeded bookings or blocks. Every number a guest sees is computed
 server-side from the seeded rate rules + admin settings.
 
-## Phase 2 — portfolio site (Kipper Property Management)
+## Phase 2 — portfolio site (Kipper Stays)
 
 Date: 2026-10-14. All checks re-run after the Phase 2 changes.
 
 ### What changed
 - Home (`/`) restructured into the company portfolio home: brand hero
-  (Kipper Property Management + one-line positioning), listings index
+  (Kipper Stays + one-line positioning), listings index
   (portfolio cards from the `getProperties()` listings array — multi-property
   ready), TrustStrip ("Book direct" badge), why-book-direct strip, Concierge
   AI teaser (honest "In development" badge, no fake functionality), contact
   CTA. Booking search still routes to `/properties`.
-- New pages: `/about` (Kipper Property Management — verified facts only:
+- New pages: `/about` (Kipper Stays — verified facts only:
   founder Renier De La Cruz, San Diego, Casa Pacifica 3BR/2BA sleeps 8,
   9yr/383-stay genuine Airbnb track record; everything else omitted or TBD),
   `/contact` (validated contact form; no business email/phone/address published).
@@ -88,7 +90,7 @@ Date: 2026-10-14. All checks re-run after the Phase 2 changes.
   honeypot spam discard, delivers via Resend or the dev email file logger.
   Never throws.
 - Nav: Home / Stays / About / Contact / FAQ (mobile menu works). Brand mark
-  and layout metadata updated to Kipper Property Management.
+  and layout metadata updated to Kipper Stays.
 - New design-system components per `docs/DESIGN-SYSTEM.md`: `TitleBlock`,
   `TrustStrip`, `HostCard`, `HighlightCard` (used on About/Contact/Home).
 - Untouched: Casa Pacifica booking flow (`/properties/casa-pacifica` →

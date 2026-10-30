@@ -11,9 +11,7 @@ export default function TermsPage() {
   return (
     <PolicyShell title="Terms of stay" updated="October 13, 2026">
       <p>
-        These terms apply to every reservation made directly through this website
-        for Casa Pacifica, operated by Kipper Property Management ("we", "us").
-        By completing a booking, you ("the guest") agree to the following.
+        These draft stay terms describe Casa Pacifica. No reservations or payments are accepted in this preview. Final contracting and merchant details will be disclosed before booking opens; Kipper is a concierge-AI startup, not identified here as the property manager or host.
       </p>
       <h2>The property</h2>
       <p>
@@ -47,14 +45,11 @@ export default function TermsPage() {
       <p>
         Please report accidental damage promptly — accidents happen, and quick
         communication helps everyone. You are responsible for damage beyond normal
-        wear caused by you, your guests, or your pet during the stay. We are not
-        liable for personal injury, loss, or theft except where required by law.
+        wear caused by you, your guests, or your pet during the stay. Final liability terms and the responsible contracting party remain under review.
       </p>
       <h2>Entry</h2>
       <p>
-        We respect your privacy and will not enter the downstairs guest areas
-        during your stay except in an emergency, or with your prior agreement
-        (for example, an urgent repair).
+        The homeowner or verified host must confirm the entry policy before booking opens. Kipper is not represented as having property-entry authority.
       </p>
       <h2>Cancellation</h2>
       <p>

@@ -20,16 +20,16 @@ const siteMetadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? process.env.RENDER_EXTERNAL_URL ?? "http://localhost:3000",
   ),
   title: {
-    default: "Kipper Property Management — Book direct in San Diego",
+    default: "Kipper Stays — Book direct in San Diego",
     template: "%s · Kipper",
   },
   description:
-    "Kipper Property Management — an independent San Diego host. Explore our vacation stays and select dates to see accommodation details and direct-booking options.",
+    "Kipper Stays — a homeowner-stay preview from Kipper, a concierge-AI startup. Explore accommodation details; reservations and payments are not open.",
   openGraph: {
     type: "website",
-    title: "Kipper Property Management — Book direct in San Diego",
+    title: "Kipper Stays — Book direct in San Diego",
     description:
-      "San Diego vacation stays hosted by Kipper — including Casa Pacifica, a private pool retreat.",
+      "Explore Casa Pacifica in San Diego on Kipper Stays. Reservations and payments are not open.",
     images: [{ url: "/photos/casa-pacifica-02.jpg", alt: "Casa Pacifica living room" }],
   },
 };

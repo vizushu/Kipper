@@ -44,3 +44,11 @@ Target: reviewable site before end of Sunday November 1, Pacific time. This bran
 - Browser/visual QA did NOT pass: local Chromium socket operations denied; supported cloud browser could not reach isolated listener. HTTP200 tests and service-worker VM tests are partial coverage only.
 - No PostgreSQL executable/service available: SQL migration and concurrent RPC runtime tests NOT run. No Stripe account/domain/wallet test available: live/test network payments NOT run. No backups/restores or hosting persistence drill run.
 - Public-preview release must use SITE_PREVIEW_MODE=true before build and at runtime; it overrides test checkout and disables contact/guest/admin data. No deploy/push without parent approval.
+
+## Positioning correction — October 30, 2026
+
+Kipper is a concierge-AI startup, not identified as property manager, legal host,
+or payment recipient. Kipper Stays is the neutral preview brand. Final contracting details, regulatory review, and merchant/payment
+configuration must be completed before booking opens. Casa Pacifica's STRO/TOT records
+are property-specific, not evidence of a Kipper brokerage/property-management license.
+No live reservations or payments are enabled by this branding correction.

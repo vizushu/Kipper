@@ -8,12 +8,12 @@ import Link from "next/link";
 import { cn } from "@/components/cn";
 
 export default function HostCard({
-  hostName = "Kipper",
-  credibility = "Independent host · San Diego",
+  hostName,
+  credibility,
   href,
   className,
 }: {
-  hostName?: string;
+  hostName: string;
   credibility?: string;
   href?: string;
   className?: string;
@@ -24,7 +24,7 @@ export default function HostCard({
         aria-hidden
         className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-ink font-display text-xl font-medium text-paper"
       >
-        K
+        {hostName.charAt(0)}
       </span>
       <span className="min-w-0">
         <span className="block text-base font-semibold text-ink">

@@ -78,7 +78,7 @@ export interface Property {
   id: string;
   slug: string;
   name: string;
-  brandLine: string; // "Casa Pacifica · Operated by Kipper Property Management"
+  brandLine: string; // "Casa Pacifica · Kipper Stays"
   tagline: string;
   address: string;
   city: string;

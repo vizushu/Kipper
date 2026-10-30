@@ -16,7 +16,7 @@ import type { Property, PropertySummary } from "./types";
 const CASA_PACIFICA: Property = {
   license: "STR-13982L",
   taxPolicyVersion: "san-diego-zone2-2025-05-01",
-  hostName: "Kipper",
+  // Legal host/homeowner identity must be verified before displaying a host card.
   configurations: [
     { id: "casa-pacifica-3br", label: "3-bedroom accommodation", effectiveFrom: "2020-01-01", effectiveTo: "2027-03-01", bedrooms: 3, maxGuests: 8, maxTotalOccupancy: 8, checkoutApproved: true },
     { id: "casa-pacifica-5br", label: "5-bedroom accommodation", effectiveFrom: "2027-03-01", bedrooms: 5, checkoutApproved: false },
@@ -24,7 +24,7 @@ const CASA_PACIFICA: Property = {
   id: "casa-pacifica",
   slug: "casa-pacifica",
   name: "Casa Pacifica",
-  brandLine: "Casa Pacifica · Operated by Kipper Property Management",
+  brandLine: "Casa Pacifica · Kipper Stays",
   tagline: "A private pool retreat in the heart of San Diego",
   address: "10840 New Salem Point",
   city: "San Diego",

@@ -35,7 +35,7 @@ export default function PropertyExperience({ property, publicPreview = false }: 
     <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">
       <div className="min-w-0">
         {property.license && <TrustStrip badge="Licensed stay" body={`Short-term rental license · ${property.license}`} className="mb-5" />}
-        {property.hostName && <HostCard hostName={property.hostName} credibility={`Independent host · ${property.city}`} className="mb-8" />}
+        {property.hostName && <HostCard hostName={property.hostName} credibility={property.city} className="mb-8" />}
         {showDetails ? <>
           {property.highlights.length > 0 && <div className="mb-8 grid gap-6">{property.highlights.slice(0, 3).map(item => <HighlightCard key={item.title} icon={IconCheck} title={item.title} body={item.body} />)}</div>}
           <Section title="The space"><p className="whitespace-pre-line text-sm leading-7 text-stone-600">{property.description}</p><p className="mt-4 whitespace-pre-line text-sm leading-7 text-stone-600">{property.guestAccess}</p></Section>
