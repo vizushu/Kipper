@@ -37,3 +37,9 @@ it("requires capability before lookup", async () => {
   await expect(Page(args)).rejects.toThrow("NOT_FOUND");
   expect(mock.lookup).not.toHaveBeenCalled();
 });
+it("distinguishes synthetic confirmation from a real paid reservation", async () => {
+ mock.lookup.mockResolvedValue({...booking,status:'confirmed',paymentStatus:'paid_test',paymentMode:'test'});
+ expect(renderToStaticMarkup(await Page(args))).toContain('Test booking confirmed — no real reservation');
+ mock.lookup.mockResolvedValue({...booking,status:'confirmed',paymentStatus:'paid',paymentMode:'live'});
+ expect(renderToStaticMarkup(await Page(args))).toContain('Your booking is confirmed');
+});

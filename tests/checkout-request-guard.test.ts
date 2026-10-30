@@ -28,3 +28,6 @@ it("late resolution cannot overwrite a newly rechecked result", async () => {
   resolveOld("stale-price"); await pending;
   expect(visible).toBe("fresh-price");
 });
+it("a confirmation observes rather than revives an invalidated flow", () => {
+ const guard=createCheckoutRequestGuard();guard.begin();const observed=guard.snapshot();guard.invalidate();expect(guard.isCurrent(observed)).toBe(false);
+});

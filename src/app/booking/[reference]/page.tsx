@@ -1,3 +1,4 @@
+import { bookingStatusHeading } from "@/lib/booking-flow-state";
 import { cookies } from "next/headers";
 import { BOOKING_SESSION_COOKIE } from "@/lib/booking-session";
 import type { Metadata } from "next";
@@ -42,10 +43,10 @@ export default async function BookingConfirmationPage({
   const propertyName = snapshot?.propertyName ?? "Your booked property (see original confirmation)";
 
   const statusTone =
-    booking.status === "confirmed" ? "moss" : booking.status === "cancelled" ? "clay" : "stone";
+    booking.status === "confirmed" && ["paid", "paid_test"].includes(booking.paymentStatus) ? "moss" : booking.status === "cancelled" ? "clay" : "stone";
   const statusLabel =
     booking.status === "confirmed"
-      ? "Confirmed"
+      ? booking.paymentStatus === "paid_test" || booking.paymentMode !== "live" ? "Test confirmation" : booking.paymentStatus === "paid" ? "Confirmed" : "Payment review"
       : booking.status === "cancelled"
         ? "Cancelled"
         : "Pending payment";
@@ -57,7 +58,7 @@ export default async function BookingConfirmationPage({
           <IconCheck className="h-7 w-7" />
         </span>
         <h1 className="mt-4 font-display text-3xl font-medium text-ink">
-          {booking.status === "confirmed" ? "Your booking is confirmed" : "Your booking details"}
+          {bookingStatusHeading(booking)}
         </h1>
         <p className="mt-2 text-stone-600">
           Guest contact: {booking.guest.email}.

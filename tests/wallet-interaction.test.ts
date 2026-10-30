@@ -32,3 +32,31 @@ it("completes wallet failure once without confirming the booking", async () => {
   expect(complete).toHaveBeenCalledExactlyOnceWith("fail");
   expect(serverConfirm).not.toHaveBeenCalled();
 });
+it("rejects an expired or unmounted wallet callback before contacting the provider", async () => {
+ const provider=vi.fn();const complete=vi.fn();const server=vi.fn();
+ await expect(confirmWalletPayment({confirmCardPayment:provider} as unknown as Stripe,'synthetic_secret',{paymentMethod:{id:'pm_synthetic'},complete} as unknown as PaymentRequestPaymentMethodEvent,server,()=>false)).rejects.toThrow('expired or was closed');
+ expect(complete).toHaveBeenCalledExactlyOnceWith('fail');expect(provider).not.toHaveBeenCalled();expect(server).not.toHaveBeenCalled();
+});
+it("still reconciles a payment already submitted before the UI closes", async () => {
+ let active=true;const complete=vi.fn();const server=vi.fn();
+ const provider=vi.fn().mockImplementation(async()=>{active=false;return {paymentIntent:{id:'pi_synthetic',status:'succeeded'}};});
+ await confirmWalletPayment({confirmCardPayment:provider} as unknown as Stripe,'synthetic_secret',{paymentMethod:{id:'pm_synthetic'},complete} as unknown as PaymentRequestPaymentMethodEvent,server,()=>active);
+ expect(server).toHaveBeenCalledExactlyOnceWith('pi_synthetic');
+});
+it("does not begin a new authentication action after the hold becomes inactive", async () => {
+ let active=true;const complete=vi.fn();const server=vi.fn();
+ const provider=vi.fn().mockImplementation(async()=>{active=false;return {paymentIntent:{id:'pi_synthetic',status:'requires_action'}};});
+ await expect(confirmWalletPayment({confirmCardPayment:provider} as unknown as Stripe,'synthetic_secret',{paymentMethod:{id:'pm_synthetic'},complete} as unknown as PaymentRequestPaymentMethodEvent,server,()=>active)).rejects.toThrow('closed before authentication');
+ expect(provider).toHaveBeenCalledTimes(1);expect(server).not.toHaveBeenCalled();
+});
+it("reconciles old in-flight success without mutating a newer flow or its unresolved marker", async () => {
+ const {createCheckoutRequestGuard}=await import('../src/app/checkout/CheckoutClient');
+ const guard=createCheckoutRequestGuard();guard.begin();const capturedGeneration=guard.snapshot();
+ let resolve!: (value:unknown)=>void;
+ const pending=new Promise(resolvePromise=>{resolve=resolvePromise;});
+ const server=vi.fn().mockResolvedValue(undefined);const updateUI=vi.fn();const clearMarker=vi.fn();
+ const onConfirm=async(id:string)=>{await server(id);if(!guard.isCurrent(capturedGeneration))return;updateUI();clearMarker();};
+ const work=confirmWalletPayment({confirmCardPayment:vi.fn().mockReturnValue(pending)} as unknown as Stripe,'synthetic_secret',{paymentMethod:{id:'pm_synthetic'},complete:vi.fn()} as unknown as PaymentRequestPaymentMethodEvent,onConfirm);
+ guard.invalidate();guard.begin();resolve({paymentIntent:{id:'pi_old_synthetic',status:'succeeded'}});await work;
+ expect(server).toHaveBeenCalledExactlyOnceWith('pi_old_synthetic');expect(updateUI).not.toHaveBeenCalled();expect(clearMarker).not.toHaveBeenCalled();
+});

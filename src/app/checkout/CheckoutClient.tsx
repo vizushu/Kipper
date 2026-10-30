@@ -13,12 +13,13 @@
  * States: loading quote, quote error (with code-aware messaging),
  * guest form, payment, processing, success redirect, failure + retry.
  */
+import { bookingFlowNotice, quoteIsCurrent } from "@/lib/booking-flow-state";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import CheckoutForm from "@/components/CheckoutForm";
 import PriceBreakdown from "@/components/PriceBreakdown";
-import { Button, Card, Field, SampleBadge } from "@/components/ui";
+import { Button, Card, Field } from "@/components/ui";
 import { IconAlert, IconArrowRight, IconCheck, IconLock } from "@/components/icons";
 import { confirmBooking, createBooking, getProperty, requestQuote } from "@/data/client-api";
 import { track } from "@/analytics";
@@ -38,10 +39,10 @@ function fmtDate(iso: string): string {
 const CODE_MESSAGES: Record<string, string> = {
   INVALID_DATES: "Those dates don't work — please pick new dates.",
   UNAVAILABLE: "Some of those nights just got booked. Please pick different dates.",
-  GUEST_LIMIT: "That guest count exceeds this home's overnight limit.",
+  GUEST_LIMIT: "That guest count exceeds this home's total occupancy limit, including infants and visitors.",
   MIN_STAY: "This stay doesn't meet the minimum-night requirement.",
   MAX_STAY: "This stay exceeds the maximum-night limit.",
-  QUOTE_EXPIRED: "Your price hold expired — we've refreshed it below.",
+  QUOTE_EXPIRED: "Your quote expired. Recheck availability and price; a quote does not hold dates.",
 };
 
 export default function CheckoutClient() {
@@ -57,6 +58,7 @@ export function createCheckoutRequestGuard() {
   return {
     invalidate: () => { generation += 1; },
     begin: () => ++generation,
+    snapshot: () => generation,
     isCurrent: (request: number) => request === generation,
   };
 }
@@ -102,6 +104,7 @@ function CheckoutFlow() {
 
   const requestGuard = useRef(createCheckoutRequestGuard());
   const paymentRisk = useRef(false);
+  const mounted = useRef(true);
   const [online, setOnline] = useState(true);
   const [needsRecheck, setNeedsRecheck] = useState(false);
   const [paymentWarning, setPaymentWarning] = useState("");
@@ -158,6 +161,7 @@ function CheckoutFlow() {
   }, [inputKey, validInputs]);
 
   useEffect(() => {
+    mounted.current = true;
     const invalidate = () => {
       requestGuard.current.invalidate();
       setQuote(null); setBooking(null); setClientSecret(null); setAccessToken(null);
@@ -169,7 +173,7 @@ function CheckoutFlow() {
     setOnline(navigator.onLine);
     window.addEventListener("offline", offline);
     window.addEventListener("online", reconnect);
-    return () => { window.removeEventListener("offline", offline); window.removeEventListener("online", reconnect); };
+    return () => { mounted.current = false; window.removeEventListener("offline", offline); window.removeEventListener("online", reconnect); };
   }, []);
 
   useEffect(() => {
@@ -188,6 +192,18 @@ function CheckoutFlow() {
     }
     return () => requestGuard.current.invalidate();
   }, [loadQuote]);
+
+  useEffect(() => {
+    if (!quote) return;
+    const expiry = booking?.holdExpiresAt ?? quote.expiresAt;
+    const timer = setTimeout(() => {
+      if (booking || paymentRisk.current) {
+        setClientSecret(null);
+        setPaymentWarning("The temporary payment hold expired. This is not a confirmed booking. If you attempted payment, do not pay again; verify the outcome through booking access recovery or the booking support contact.");
+      } else { requestGuard.current.invalidate(); setQuote(null); setNeedsRecheck(true); }
+    }, Math.max(0, Date.parse(expiry) - Date.now()));
+    return () => clearTimeout(timer);
+  }, [quote, booking]);
 
   function idempotencyKey(): string {
     // One key per checkout attempt, kept across reloads of this page.
@@ -210,7 +226,7 @@ function CheckoutFlow() {
   }
 
   async function handleCreateBooking() {
-    if (!quote || quoteInputKey !== inputKey || !navigator.onLine || needsRecheck || paymentRisk.current || !validateDetails()) return;
+    if (!quote || !quoteIsCurrent(quote) || quoteInputKey !== inputKey || !navigator.onLine || needsRecheck || paymentRisk.current || !validateDetails()) return;
     const generation = requestGuard.current.begin();
     setCreating(true);
     setConfirmError("");
@@ -243,15 +259,19 @@ function CheckoutFlow() {
     }
   }
 
+  const confirmationGeneration = requestGuard.current.snapshot();
   async function handleConfirmPayment(paymentIntentId: string) {
     if (!booking || !accessToken) return;
+    const generation = confirmationGeneration;
     if (!navigator.onLine) {
+      if (!mounted.current || !requestGuard.current.isCurrent(generation)) return;
       setPaymentWarning(`Payment may have completed for ${booking.reference}. Do not pay again. Reconnect and contact Casa Pacifica with your receipt.`);
       return;
     }
-    setConfirmError("");
+    if (mounted.current && requestGuard.current.isCurrent(generation)) setConfirmError("");
     try {
       const { booking: confirmedBooking } = await confirmBooking(booking.id, paymentIntentId);
+      if (!mounted.current || !requestGuard.current.isCurrent(generation)) return;
       track("booking_completed", {
         bookingId: confirmedBooking.id,
         totalCents: confirmedBooking.totalCents,
@@ -265,6 +285,7 @@ function CheckoutFlow() {
       );
       router.push(`/booking/${encodeURIComponent(confirmedBooking.reference)}`);
     } catch (e) {
+      if (!mounted.current || !requestGuard.current.isCurrent(generation)) return;
       setPaymentWarning(`Payment may have completed for ${booking.reference}. Contact Casa Pacifica with your receipt — do not pay again. ${e instanceof Error ? e.message : "Confirmation could not be verified."}`);
     }
   }
@@ -272,7 +293,7 @@ function CheckoutFlow() {
   if (paymentWarning) return <div role="alert" className="mx-auto max-w-xl px-4 py-16 text-center">
     <h1 className="font-display text-2xl">Verify your payment attempt</h1>
     <p className="mt-4">{paymentWarning}</p>
-    <p className="mt-3 text-sm">Nothing will be queued or retried automatically.</p>
+    <p className="mt-3 text-sm">Nothing will be queued or retried automatically.</p><Link href="/booking-access" className="mt-5 inline-block underline">Recover booking access</Link>
   </div>;
   if (!online || needsRecheck) return <div role="status" className="mx-auto max-w-xl px-4 py-16 text-center">
     <h1 className="font-display text-2xl">{online ? "Recheck your stay before continuing" : "You’re offline"}</h1>
@@ -337,7 +358,7 @@ function CheckoutFlow() {
                 placeholder="jane@example.com"
                 autoComplete="email"
                 error={formErrors.email}
-                hint="Your confirmation and smart-lock code go here."
+                hint="Used for booking confirmation and access recovery when delivery is enabled."
                 disabled={detailsConfirmed}
               />
               <Field
@@ -372,6 +393,7 @@ function CheckoutFlow() {
             )}
           </Card>
 
+          <p role="status" className="rounded-xl bg-cream p-4 text-sm">{booking ? `${booking.paymentMode === 'live' ? 'Temporary hold' : 'Test hold'} ${booking.reference}. Payment is not yet verified; this is not a confirmed reservation.` : bookingFlowNotice(quote)}</p>
           {/* Payment */}
           <Card className="p-6">
             <h2 className="flex items-center gap-2 font-display text-xl font-medium text-ink">
@@ -399,8 +421,10 @@ function CheckoutFlow() {
                   quote={quote}
                   clientSecret={clientSecret}
                   creating={creating}
+                  paymentExpiresAt={booking?.holdExpiresAt}
                   onCreateBooking={handleCreateBooking}
                   onConfirmPayment={handleConfirmPayment}
+                  onPaymentUncertain={setPaymentWarning}
                 />
               </div>
             )}
@@ -415,7 +439,7 @@ function CheckoutFlow() {
             <Link href="/policies/cancellation" className="underline underline-offset-4 hover:text-ink">
               cancellation policy
             </Link>{" "}
-            <SampleBadge className="ml-1" /> (drafts — under Renier's review).
+            {quote.paymentMode === "live" ? "The accepted terms are saved with your reservation." : "The stated cancellation terms apply; final terms-of-stay review remains a launch prerequisite."}
           </p>
         </div>
 
@@ -424,13 +448,13 @@ function CheckoutFlow() {
           <Card className="p-6 lg:sticky lg:top-24">
             <h2 className="font-display text-xl font-medium text-ink">Price breakdown</h2>
             <div className="mt-2">
-              <PriceBreakdown quote={quote} showSampleBadge />
+              <PriceBreakdown quote={quote} showSampleBadge={quote.paymentMode !== "live"} />
             </div>
             <div className="mt-4 rounded-xl bg-cream px-4 py-3 text-xs leading-relaxed text-stone-500">
               {quote.nights} night{quote.nights === 1 ? "" : "s"} · {fmtDate(quote.checkIn)} →{" "}
               {fmtDate(quote.checkOut)}
               <br />
-              Check-in from 3:00 PM · check-out by 11:00 AM
+              {quote.staySnapshot ? `Check-in from ${quote.staySnapshot.checkInTime} · check-out by ${quote.staySnapshot.checkOutTime}` : "Consult the accepted stay terms for arrival times."}
             </div>
           </Card>
         </aside>

@@ -22,7 +22,7 @@ describe('date-aware property template', () => {
     expect(html).toContain('8 guests');
     expect(html).toContain('March 1, 2027');
     expect(html).toContain('STR-13982L');
-    expect(html).toContain('Test booking preview only');
+    expect(html).toContain('A quote does not reserve dates.');
     expect(html).not.toContain(property.address);
     expect(html).not.toMatch(/best rate|free cancellation|Guest reviews|383 stays/i);
     expect(html).not.toContain('$349');

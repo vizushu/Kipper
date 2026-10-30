@@ -21,25 +21,32 @@ import { Button } from "@/components/ui";
 import { IconAlert, IconCard, IconLock } from "@/components/icons";
 import { formatCents, type Quote } from "@/lib/types";
 
+import { PAYMENT_UNCERTAIN_NOTICE } from "@/lib/booking-flow-state";
+
 interface Props {
   quote: Quote;
   clientSecret: string | null;
   creating: boolean;
+  paymentExpiresAt?: string;
   onCreateBooking: () => Promise<void>;
   onConfirmPayment: (paymentIntentId: string) => Promise<void>;
+  onPaymentUncertain?: (message:string) => void;
 }
 
 export default function CheckoutForm({
   quote,
   clientSecret,
   creating,
+  paymentExpiresAt,
   onCreateBooking,
   onConfirmPayment,
+  onPaymentUncertain,
 }: Props) {
   const [stripe, setStripe] = useState<Stripe | null>(null);
   const [canPayRequest, setCanPayRequest] = useState(false);
   const [payRequestLabel, setPayRequestLabel] = useState("Pay");
   const [paying, setPaying] = useState(false);
+  const [uncertain, setUncertain] = useState(false);
   const [error, setError] = useState("");
   const [stripeReady, setStripeReady] = useState(false);
   const [keyMissing, setKeyMissing] = useState(false);
@@ -85,15 +92,16 @@ export default function CheckoutForm({
           else if (result.googlePay) setPayRequestLabel("Pay with Google Pay");
           else setPayRequestLabel("Pay");
           pr.on("paymentmethod", async (ev) => {
+            if (cancelled) { ev.complete("fail"); return; }
             setPaying(true);
             setError("");
             try {
-              await confirmWalletPayment(s, clientSecret, ev, onConfirmPayment);
+              await confirmWalletPayment(s, clientSecret, ev, onConfirmPayment, () => !cancelled && (!paymentExpiresAt || Date.parse(paymentExpiresAt) > Date.now()));
 
             } catch {
-              setError("Payment failed or confirmation could not be completed. Check your receipt before trying again.");
+              if (!cancelled) { setUncertain(true); setError(PAYMENT_UNCERTAIN_NOTICE); onPaymentUncertain?.(PAYMENT_UNCERTAIN_NOTICE); }
             } finally {
-              setPaying(false);
+              if (!cancelled) setPaying(false);
             }
           });
         }
@@ -125,10 +133,11 @@ export default function CheckoutForm({
       cardElementRef.current?.destroy();
       cardElementRef.current = null;
     };
-  }, [clientSecret, quote.paymentMode, publishableKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clientSecret, quote.paymentMode, publishableKey, paymentExpiresAt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function payWithCard() {
-    if (!stripe || !cardElementRef.current || !clientSecret) return;
+    if (uncertain || !stripe || !cardElementRef.current || !clientSecret) return;
+    if (paymentExpiresAt && !(Date.parse(paymentExpiresAt) > Date.now())) { setUncertain(true); setError(PAYMENT_UNCERTAIN_NOTICE); onPaymentUncertain?.(PAYMENT_UNCERTAIN_NOTICE); return; }
     setPaying(true);
     setError("");
     try {
@@ -137,12 +146,14 @@ export default function CheckoutForm({
         { payment_method: { card: cardElementRef.current } },
       );
       if (confirmError) {
-        setError(confirmError.message ?? "Card payment failed. Please try again.");
+        if (confirmError.type === 'card_error' || confirmError.type === 'validation_error') setError(confirmError.message ?? "Payment was not accepted. Check the payment details.");
+        else { setUncertain(true); setError(PAYMENT_UNCERTAIN_NOTICE); onPaymentUncertain?.(PAYMENT_UNCERTAIN_NOTICE); }
       } else {
         await onConfirmPayment(paymentIntent.id);
       }
     } catch {
-      setError("Card payment failed. Please try again.");
+      setUncertain(true); setError(PAYMENT_UNCERTAIN_NOTICE);
+      onPaymentUncertain?.(PAYMENT_UNCERTAIN_NOTICE);
     } finally {
       setPaying(false);
     }
@@ -174,7 +185,7 @@ export default function CheckoutForm({
           {creating ? "Preparing secure payment…" : `Continue to payment · ${formatCents(quote.totalCents)}`}
         </Button>
         <p className="mt-3 text-center text-xs text-stone-500">
-          You'll pay {formatCents(quote.totalCents)} now. Nothing is charged until you confirm.
+          Continue to prepare a temporary hold and payment step for {formatCents(quote.totalCents)}. This does not confirm a reservation.
         </p>
       </div>
     );
@@ -194,7 +205,7 @@ export default function CheckoutForm({
           <PaymentRequestButton
             paymentRequest={paymentRequestRef.current}
             label={payRequestLabel}
-            disabled={paying}
+            disabled={paying || uncertain}
             onError={() => setError("Wallet could not open. Please use the card option.")}
           />
           <div className="my-4 flex items-center gap-3 text-xs text-stone-400">
@@ -219,7 +230,7 @@ export default function CheckoutForm({
 
       <Button
         onClick={payWithCard}
-        disabled={paying || !stripeReady}
+        disabled={paying || uncertain || !stripeReady}
         size="lg"
         className="w-full"
       >
@@ -248,7 +259,9 @@ export function PaymentRequestButton({ paymentRequest, label, disabled, onError 
 export async function confirmWalletPayment(
   stripe: Stripe, clientSecret: string, event: PaymentRequestPaymentMethodEvent,
   onConfirm: (id: string) => Promise<void>,
+  isActive: () => boolean = () => true,
 ): Promise<void> {
+  if (!isActive()) { event.complete("fail"); throw new Error("Payment step expired or was closed before wallet authorization."); }
   let initial;
   try {
     initial = await stripe.confirmCardPayment(clientSecret,
@@ -261,6 +274,7 @@ export async function confirmWalletPayment(
   event.complete("success");
   let intent = initial.paymentIntent;
   if (intent.status === "requires_action") {
+    if (!isActive()) throw new Error("Payment step closed before authentication; verify this attempt before paying again.");
     const result = await stripe.confirmCardPayment(clientSecret);
     if (result.error) throw new Error(result.error.message ?? "Payment authentication failed.");
     intent = result.paymentIntent;

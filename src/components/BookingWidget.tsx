@@ -9,6 +9,7 @@ import { Button, Card } from "@/components/ui";
 import { IconX } from "@/components/icons";
 import { formatCents, type GuestCount, type Property, type Quote } from "@/lib/types";
 import { requestQuote } from "@/data/client-api";
+import { bookingFlowNotice } from "@/lib/booking-flow-state";
 import { track } from "@/analytics";
 
 export default function BookingWidget({ property, onRangeChange, bookingBlockedReason, publicPreview = false }: {
@@ -114,7 +115,7 @@ export default function BookingWidget({ property, onRangeChange, bookingBlockedR
       {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div aria-live="polite">{quote && !bookingBlockedReason && <PriceBreakdown quote={quote} />}</div>
       {!publicPreview && <Button className="min-h-11 w-full" size="lg" disabled={offline || loading || handoff || !!bookingBlockedReason} onClick={quote ? checkout : checkPrice}>{offline ? "Reconnect to continue" : handoff ? "Opening checkout…" : loading ? "Checking availability and price…" : quote ? "Continue to checkout" : "Check availability & price"}</Button>}
-      <p className="rounded-xl bg-cream p-3 text-xs leading-relaxed text-stone-600">{publicPreview ? "Reservations and payments are disabled in this preview." : "Test booking preview only. Displayed totals are not a final booking offer. Live payments are not enabled."}</p>
+      <p className="rounded-xl bg-cream p-3 text-xs leading-relaxed text-stone-600">{publicPreview ? "Reservations and payments are disabled in this preview." : bookingFlowNotice(quote)}</p>
     </div>;
   }
   return <>
