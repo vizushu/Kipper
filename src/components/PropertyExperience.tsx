@@ -1,5 +1,6 @@
 "use client";
 import { useState, type ReactNode } from "react";
+import type { StaySelection } from "@/lib/stay-selection";
 import type { Property } from "@/lib/types";
 import { resolveStayConfiguration } from "@/lib/accommodation";
 import type { DateRange } from "@/components/AvailabilityCalendar";
@@ -15,8 +16,8 @@ import { IconCheck } from "@/components/icons";
 function dateLabel(iso: string) { return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles" }); }
 function Section({ title, children }: { title: string; children: ReactNode }) { return <section className="border-t border-stone-200 py-9 sm:py-10"><h2 className="mb-5 font-display text-2xl font-medium text-ink">{title}</h2>{children}</section>; }
 
-export default function PropertyExperience({ property, publicPreview = false }: { property: Property; publicPreview?: boolean }) {
-  const [range, setRange] = useState<DateRange | null>(null);
+export default function PropertyExperience({ property, publicPreview = false, initialSelection }: { property: Property; publicPreview?: boolean; initialSelection?: StaySelection }) {
+  const [range, setRange] = useState<DateRange | null>(initialSelection?.range ?? null);
   const resolution = resolveStayConfiguration(property, range?.checkIn, range?.checkOut);
   const config = resolution.configuration;
   const blocked = config?.checkoutApproved === false || ["pending_approval", "manual_review", "invalid_dates"].includes(resolution.status);
@@ -51,7 +52,7 @@ export default function PropertyExperience({ property, publicPreview = false }: 
         {showDetails && property.faqs.length > 0 && <Section title="Frequently asked questions"><FaqAccordion faqs={property.faqs} /></Section>}
         {showDetails && <Section title="Good to know"><dl className="grid gap-5 text-sm sm:grid-cols-2"><div><dt className="font-semibold">Check-in</dt><dd className="mt-1 text-stone-600">{property.checkInTime} · {property.checkInMethod}</dd></div><div><dt className="font-semibold">Checkout</dt><dd className="mt-1 text-stone-600">{property.checkOutTime}</dd></div></dl>{property.safetyDevices.length > 0 && <ul className="mt-5 space-y-2 text-sm text-stone-600">{property.safetyDevices.map(item => <li key={item}>{item}</li>)}</ul>}</Section>}
       </div>
-      <aside className="min-w-0 self-stretch" aria-label="Booking"><BookingWidget publicPreview={publicPreview} property={property} onRangeChange={setRange} bookingBlockedReason={blocked ? resolution.message ?? "Online booking is unavailable for these dates. Please choose another stay." : undefined} /></aside>
+      <aside className="min-w-0 self-stretch" aria-label="Booking"><BookingWidget initialSelection={initialSelection} publicPreview={publicPreview} property={property} onRangeChange={setRange} bookingBlockedReason={blocked ? resolution.message ?? "Online booking is unavailable for these dates. Please choose another stay." : undefined} /></aside>
     </div>
   </>;
 }

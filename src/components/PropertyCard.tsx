@@ -7,10 +7,10 @@ import { Badge } from "@/components/ui";
 import { IconBath, IconBed, IconPin, IconUsers } from "@/components/icons";
 import type { PropertySummary } from "@/lib/types";
 
-export default function PropertyCard({ property }: { property: PropertySummary }) {
+export default function PropertyCard({ property, href }: { property: PropertySummary; href?: string }) {
   return (
     <Link
-      href={`/properties/${property.slug}`}
+      href={href ?? `/properties/${property.slug}`}
       className="group block overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-card transition-shadow hover:shadow-lift"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-cream">

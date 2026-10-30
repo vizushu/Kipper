@@ -10,17 +10,19 @@ import { IconX } from "@/components/icons";
 import { formatCents, type GuestCount, type Property, type Quote } from "@/lib/types";
 import { requestQuote } from "@/data/client-api";
 import { bookingFlowNotice } from "@/lib/booking-flow-state";
+import type { StaySelection } from "@/lib/stay-selection";
 import { track } from "@/analytics";
 
-export default function BookingWidget({ property, onRangeChange, bookingBlockedReason, publicPreview = false }: {
+export default function BookingWidget({ property, onRangeChange, bookingBlockedReason, publicPreview = false, initialSelection }: {
   property: Property;
+  initialSelection?: StaySelection;
   publicPreview?: boolean;
   onRangeChange?: (range: DateRange | null) => void;
   bookingBlockedReason?: string;
 }) {
   const router = useRouter();
-  const [range, setRange] = useState<DateRange | null>(null);
-  const [guests, setGuests] = useState<GuestCount>({ adults: 2, children: 0, infants: 0 });
+  const [range, setRange] = useState<DateRange | null>(initialSelection?.range ?? null);
+  const [guests, setGuests] = useState<GuestCount>(initialSelection?.guests ?? { adults: 2, children: 0, infants: 0 });
   const [pets, setPets] = useState(0);
   const [promoCode, setPromoCode] = useState("");
   const [expanded, setExpanded] = useState(false);
