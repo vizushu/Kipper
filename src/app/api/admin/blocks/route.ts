@@ -14,7 +14,7 @@ const blockSchema = z.object({
 
 /** POST /api/admin/blocks — create a manual blocked range (admin). */
 export async function POST(req: NextRequest) {
-  const denied = requireAdmin(req);
+  const denied = await requireAdmin(req);
   if (denied) return denied;
   const parsed = await parseBody(req, blockSchema);
   if (!parsed.ok) return parsed.response;

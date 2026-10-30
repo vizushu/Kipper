@@ -4,7 +4,7 @@ import { isBookingAccessConfigured } from "./booking-access";
 import { isPublicPreview } from "./booking-launch";
 export const RECOVERY_TTL_MS = 15 * 60 * 1000;
 export const RECOVERY_GENERIC_RESPONSE = {
-  message: "If these details match a booking, recovery instructions will be prepared. Delivery is not enabled in this test environment.",
+  message: "If these details match a booking, recovery instructions will be prepared. Delivery depends on the configured recovery service; this response is not a delivery confirmation.",
 };
 export function isRecoveryEnabled(): boolean {
   return !isPublicPreview() && process.env.BOOKING_RECOVERY_MODE === "true" && isBookingAccessConfigured();

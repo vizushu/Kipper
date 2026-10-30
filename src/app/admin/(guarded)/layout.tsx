@@ -5,6 +5,7 @@
  * cookies forwarded. Any non-OK response redirects to /admin/login.
  * Guests must never reach admin pages.
  */
+import { AdminLogout } from "@/components/AdminLogout";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -55,6 +56,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                 {item.label}
               </Link>
             ))}
+            <AdminLogout />
           </nav>
         </div>
       </header>

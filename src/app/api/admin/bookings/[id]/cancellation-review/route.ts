@@ -5,7 +5,7 @@ import { json, notFound, requireAdmin } from '../../../../_helpers';
 
 /** Read-only review at server time. No arbitrary backdating, cancellation or refund action. */
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  const denied = requireAdmin(req);
+  const denied = await requireAdmin(req);
   if (denied) return denied;
   const { id } = await context.params;
   const booking = await getAdapter().getBooking(id);

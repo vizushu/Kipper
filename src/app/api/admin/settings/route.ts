@@ -26,7 +26,7 @@ const settingsSchema = z.object({
 
 /** GET /api/admin/settings — current pricing settings (admin). */
 export async function GET(req: NextRequest) {
-  const denied = requireAdmin(req);
+  const denied = await requireAdmin(req);
   if (denied) return denied;
   const settings = await getAdapter().getSettings();
   return json({ settings });
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
 /** PUT /api/admin/settings — update pricing settings (admin, partial). */
 export async function PUT(req: NextRequest) {
-  const denied = requireAdmin(req);
+  const denied = await requireAdmin(req);
   if (denied) return denied;
   const parsed = await parseBody(req, settingsSchema);
   if (!parsed.ok) return parsed.response;

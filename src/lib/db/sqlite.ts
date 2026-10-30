@@ -1,3 +1,5 @@
+import { SqliteSecurityStore } from "./sqlite-security-store";
+import type { AdminSession } from "./security-store";
 import { SqlitePaymentExceptions } from "./sqlite-payment-exceptions";
 import type { PaymentExceptionInput } from "./payment-exceptions";
 import { storedPaymentMode } from "../payment-mode";
@@ -179,6 +181,7 @@ export class SqliteAdapter implements DataAdapter {
   private db: SqliteDb;
   private workflows: SqliteWorkflows;
   private paymentExceptions: SqlitePaymentExceptions;
+  private security: SqliteSecurityStore;
 
   constructor(dbPath?: string) {
     this.db = new Database(resolveDbPath(dbPath));
@@ -190,6 +193,7 @@ export class SqliteAdapter implements DataAdapter {
     if (!columns.some(c => c.name === "hold_expires_at")) this.db.exec("ALTER TABLE bookings ADD COLUMN hold_expires_at TEXT");
     if (!columns.some(c => c.name === "payment_mode")) this.db.exec("ALTER TABLE bookings ADD COLUMN payment_mode TEXT NOT NULL DEFAULT 'test' CHECK(payment_mode IN ('test','live'))");
     this.paymentExceptions = new SqlitePaymentExceptions(this.db);
+    this.security = new SqliteSecurityStore(this.db);
     this.workflows = new SqliteWorkflows(this.db, (id) => {const row=this.db.prepare("SELECT * FROM bookings WHERE id=?").get(id) as BookingRow|undefined;return row?rowToBooking(row):null;});
     this.seedSettingsIfEmpty();
   }
@@ -382,6 +386,10 @@ export class SqliteAdapter implements DataAdapter {
     }).immediate();
   }
 
+  consumeRateLimit = (keyHash:string,limit:number,windowSeconds:number,nowISO?:string) => this.security.consumeRateLimit(keyHash,limit,windowSeconds,nowISO);
+  createAdminSession = (session:AdminSession) => this.security.createAdminSession(session);
+  getAdminSession = (tokenHash:string) => this.security.getAdminSession(tokenHash);
+  revokeAdminSession = (tokenHash:string,nowISO:string) => this.security.revokeAdminSession(tokenHash,nowISO);
   recordPaymentException = (input:PaymentExceptionInput) => this.paymentExceptions.recordPaymentException(input);
   listPaymentExceptions = () => this.paymentExceptions.listPaymentExceptions();
   reviewPaymentException = (id:string,note:string,key:string) => this.paymentExceptions.reviewPaymentException(id,note,key);

@@ -6,7 +6,7 @@ export interface RecoveredBooking {
 }
 export type RecoveryView = { phase: 'idle' | 'requesting' | 'requested' | 'verifying' | 'ready' | 'error'; message: string; booking?: RecoveredBooking };
 export const INITIAL_RECOVERY_VIEW: RecoveryView = { phase: 'idle', message: '' };
-export const RECOVERY_REQUEST_NOTICE = 'If those details match a booking, recovery instructions will be prepared. Delivery is not enabled in this test environment. This response does not confirm whether a booking exists.';
+export const RECOVERY_REQUEST_NOTICE = 'If those details match a booking, recovery instructions will be prepared. Delivery depends on the configured recovery service; this response is not a delivery confirmation. This response does not confirm whether a booking exists.';
 const INVALID_CODE = 'This code is invalid, expired or already used. Request a new code if needed.';
 const CONNECTION_ERROR = 'Access could not be verified. Reconnect, then request a new code if your previous code was already used. Nothing will retry automatically.';
 function shortText(value: unknown, fallback: string, max = 200): string { return typeof value === 'string' && value.length > 0 && value.length <= max ? value : fallback; }

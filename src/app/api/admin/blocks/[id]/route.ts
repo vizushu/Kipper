@@ -7,7 +7,7 @@ export async function DELETE(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> }
 ) {
-  const denied = requireAdmin(req);
+  const denied = await requireAdmin(req);
   if (denied) return denied;
   const { id } = await ctx.params;
   const deleted = await getAdapter().deleteBlock(id);

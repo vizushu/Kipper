@@ -4,7 +4,7 @@ import { json, requireAdmin } from "../../_helpers";
 
 /** GET /api/admin/bookings?propertyId=&status= — list bookings (admin). */
 export async function GET(req: NextRequest) {
-  const denied = requireAdmin(req);
+  const denied = await requireAdmin(req);
   if (denied) return denied;
   const url = new URL(req.url);
   const status = url.searchParams.get("status");

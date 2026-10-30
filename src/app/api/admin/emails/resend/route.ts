@@ -12,7 +12,7 @@ const resendSchema = z.object({
 
 /** Compatibility endpoint: retry only the selected due receipt, never force a duplicate resend. */
 export async function POST(req: NextRequest) {
-  const denied = requireAdmin(req);
+  const denied = await requireAdmin(req);
   if (denied) return denied;
   const parsed = await parseBody(req, resendSchema);
   if (!parsed.ok) return parsed.response;

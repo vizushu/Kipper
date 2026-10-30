@@ -1,66 +1,68 @@
-import { isPublicPreview } from "./booking-launch";
-/**
- * Admin authentication for /api/admin/* routes.
- *
- * Two accepted credentials on every admin request (checked by isAdminRequest):
- *   1. `x-admin-secret` header equal to ADMIN_SECRET, or
- *   2. `cp_admin_session` httpOnly cookie, issued by POST /api/admin/login
- *      when the posted secret matches ADMIN_SECRET.
- *
- * The cookie value is a SHA-256 of a namespaced ADMIN_SECRET — stateless,
- * no server-side session store needed. ADMIN_SECRET must be set in the
- * environment; admin routes return 401 when it is missing.
- */
+/** Random, hashed, server-expiring admin sessions. Preview never authenticates. */
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import type { NextRequest } from 'next/server';
+import { isPublicPreview } from './booking-launch';
+import { getAdapter } from './db';
 
-import { createHash, timingSafeEqual } from "node:crypto";
-import type { NextRequest } from "next/server";
-
-export const ADMIN_COOKIE_NAME = "cp_admin_session";
-const COOKIE_NAMESPACE = "cp-admin-session:v1:";
-
+export const ADMIN_COOKIE_NAME = 'cp_admin_session';
+export const ADMIN_SESSION_TTL_SECONDS = 8 * 3600;
+const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 function adminSecret(): string | undefined {
   return isPublicPreview() ? undefined : process.env.ADMIN_SECRET || undefined;
 }
-
-function expectedCookieValue(): string | null {
-  const secret = adminSecret();
-  if (!secret) return null;
-  return createHash("sha256").update(COOKIE_NAMESPACE + secret).digest("hex");
-}
-
 function safeEqual(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
+  // Compare fixed-sized digests rather than leaking candidate length through a short circuit.
+  return timingSafeEqual(Buffer.from(hash(a), 'hex'), Buffer.from(hash(b), 'hex'));
 }
-
-/** True when the request carries the admin secret header or a valid admin cookie. */
-export function isAdminRequest(req: NextRequest): boolean {
-  const secret = adminSecret();
-  if (!secret) return false;
-  const header = req.headers.get("x-admin-secret");
-  if (header && safeEqual(header, secret)) return true;
-  const cookie = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
-  const expected = expectedCookieValue();
-  if (cookie && expected && safeEqual(cookie, expected)) return true;
-  return false;
-}
-
-/** Set-Cookie parts for the admin session (used by POST /api/admin/login). */
-export function adminSessionCookie(): { name: string; value: string } | null {
-  const value = expectedCookieValue();
-  if (!value) return null;
-  return { name: ADMIN_COOKIE_NAME, value };
-}
-
-/** True when ADMIN_SECRET is configured at all. */
-export function isAdminConfigured(): boolean {
-  return !!adminSecret();
-}
-
-/** Constant-time comparison of a candidate secret against ADMIN_SECRET. */
+function version(secret: string): string { return hash('cp-admin-secret-version:v2:' + secret); }
+export function isAdminConfigured(): boolean { return !!adminSecret(); }
 export function verifyAdminSecret(candidate: string): boolean {
   const secret = adminSecret();
-  if (!secret || !candidate) return false;
-  return safeEqual(candidate, secret);
+  return !!secret && !!candidate && safeEqual(candidate, secret);
+}
+export function hasAdminMachineCredential(req: Request): boolean {
+  return verifyAdminSecret(req.headers.get('x-admin-secret') ?? '');
+}
+/** Never trust forwarded-host headers for origin authorization. */
+export function isSameOrigin(req: Request): boolean {
+  const origin = req.headers.get('origin');
+  if (!origin || origin === 'null') return false;
+  try {
+    const expected = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.RENDER_EXTERNAL_URL ?? req.url;
+    return new URL(origin).origin === new URL(expected).origin && origin === new URL(origin).origin;
+  } catch { return false; }
+}
+export async function isAdminRequest(req: NextRequest): Promise<boolean> {
+  const secret = adminSecret();
+  if (!secret) return false;
+  if (hasAdminMachineCredential(req)) return true;
+  const token = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  if (!token || !/^[a-f0-9]{64}$/.test(token)) return false;
+  try {
+    const session = await getAdapter().getAdminSession(hash(token));
+    return !!session && session.revokedAt === null &&
+      Number.isFinite(Date.parse(session.expiresAt)) &&
+      Date.parse(session.expiresAt) > Date.now() &&
+      Date.parse(session.createdAt) <= Date.now() &&
+      safeEqual(session.secretVersion, version(secret));
+  } catch { return false; }
+}
+/** Returned raw token is delivered only in an HttpOnly cookie; only its hash is stored. */
+export async function adminSessionCookie(): Promise<{ name: string; value: string } | null> {
+  const secret = adminSecret();
+  if (!secret) return null;
+  const value = randomBytes(32).toString('hex');
+  const now = Date.now();
+  await getAdapter().createAdminSession({
+    tokenHash: hash(value), secretVersion: version(secret), createdAt: new Date(now).toISOString(),
+    expiresAt: new Date(now + ADMIN_SESSION_TTL_SECONDS * 1000).toISOString(), revokedAt: null,
+  });
+  return { name: ADMIN_COOKIE_NAME, value };
+}
+export async function revokeAdminSession(req: NextRequest): Promise<void> {
+  if (isPublicPreview()) throw new Error('Preview admin access disabled');
+  const token = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
+  if (token && /^[a-f0-9]{64}$/.test(token)) {
+    await getAdapter().revokeAdminSession(hash(token), new Date().toISOString());
+  }
 }

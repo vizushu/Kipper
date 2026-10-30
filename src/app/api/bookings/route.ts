@@ -1,3 +1,4 @@
+import { consumeBookingRequest } from "@/lib/booking-abuse";
 import { getBookingPaymentMode, storedPaymentMode } from "@/lib/payment-mode";
 import { bookingSessionCookie } from "@/lib/booking-session";
 import { snapshotForStay } from "@/lib/accommodation";
@@ -30,11 +31,22 @@ const bookingSchema = z.object({
 export async function POST(req: Request) {
   if (!isBookingEnabled()) return apiError("BOOKING_NOT_OPEN", BOOKING_LAUNCH_MESSAGE, 503);
   if (!isBookingAccessConfigured()) return apiError("BOOKING_NOT_OPEN", "Booking access is not configured.", 503);
+  const adapter = getAdapter();
+  const throttle = async (email?: string) => {
+    try {
+      const budget = await consumeBookingRequest(adapter, email);
+      if (budget.allowed) return null;
+      const response = apiError("TOO_MANY_REQUESTS", "Too many booking requests. Please wait before trying again.", 429);
+      response.headers.set("Retry-After", String(budget.retryAfterSeconds));
+      return response;
+    } catch { return apiError("BOOKING_UNAVAILABLE", "Booking requests are temporarily unavailable. Please try again later.", 503); }
+  };
+  const globalLimit = await throttle(); if (globalLimit) return globalLimit;
   const parsed = await parseBody(req, bookingSchema);
   if (!parsed.ok) return parsed.response;
   const { quoteId, guest, idempotencyKey } = parsed.data;
 
-  const adapter = getAdapter();
+  const guestLimit = await throttle(guest.email); if (guestLimit) return guestLimit;
   const quote = await adapter.getQuote(quoteId);
   if (!quote) {
     return bookingErrorResponse(

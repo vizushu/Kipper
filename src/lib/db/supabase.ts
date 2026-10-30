@@ -1,3 +1,4 @@
+import { rateLimitWindow,securityTimestamp,validateAdminSession,validateSecurityHash,type AdminSession,type RateLimitResult } from "./security-store";
 import { validatePaymentException, type PaymentException, type PaymentExceptionInput } from "./payment-exceptions";
 import { storedPaymentMode } from "../payment-mode";
 import type { OutboxEnvelope, OutboxJob } from "./workflows";
@@ -167,6 +168,23 @@ export class SupabaseAdapter implements DataAdapter {
     }
     if (!text) return undefined as T;
     return JSON.parse(text) as T;
+  }
+
+  async consumeRateLimit(keyHash:string,limit:number,windowSeconds:number,nowISO=new Date().toISOString()):Promise<RateLimitResult> {
+    rateLimitWindow(keyHash,limit,windowSeconds,nowISO);
+    return this.req('POST','/rpc/consume_security_rate_limit',{p_key_hash:keyHash,p_limit:limit,p_window_seconds:windowSeconds,p_now:nowISO});
+  }
+  async createAdminSession(session:AdminSession):Promise<void> {
+    validateAdminSession(session);
+    await this.req('POST','/rpc/create_admin_session',{p_session:{tokenHash:session.tokenHash,secretVersion:session.secretVersion,createdAt:session.createdAt,expiresAt:session.expiresAt,revokedAt:session.revokedAt}});
+  }
+  async getAdminSession(tokenHash:string):Promise<AdminSession|null> {
+    validateSecurityHash(tokenHash);
+    return this.req('POST','/rpc/get_admin_session',{p_token_hash:tokenHash,p_now:new Date().toISOString()});
+  }
+  async revokeAdminSession(tokenHash:string,nowISO:string):Promise<boolean> {
+    validateSecurityHash(tokenHash);securityTimestamp(nowISO);
+    return this.req('POST','/rpc/revoke_admin_session',{p_token_hash:tokenHash,p_now:nowISO});
   }
 
   async recordPaymentException(input:PaymentExceptionInput):Promise<{exception:PaymentException;created:boolean}> {

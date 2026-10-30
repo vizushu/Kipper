@@ -13,7 +13,7 @@ const rateSchema = z.object({
 
 /** POST /api/admin/rates — set a per-date nightly rate override (admin). */
 export async function POST(req: NextRequest) {
-  const denied = requireAdmin(req);
+  const denied = await requireAdmin(req);
   if (denied) return denied;
   const parsed = await parseBody(req, rateSchema);
   if (!parsed.ok) return parsed.response;

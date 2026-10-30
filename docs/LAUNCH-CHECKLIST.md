@@ -70,10 +70,11 @@ No live reservations or payments are enabled by this branding correction.
   provider, live guest, real payment or production-database testing is implied.
 
 ## Live restricted preview versus launch
-- Live preview source: branding-only `83fa8ad`; public viewing only. Reservations,
+- The restricted preview is public viewing only. Exact deployed revision is recorded
+  in the Render deployment receipt; repository updates are not automatically live. Reservations,
   payments, contact submission, guest lookup/recovery and admin APIs are disabled.
   No external mail or background scheduler is provisioned. Robots disallow indexing.
-- This combined backend/UI candidate is local until separately approved. Preserve
+- Publish only independently reviewed snapshots under the approved MVP scope. Preserve
   `SITE_PREVIEW_MODE=true` at build and runtime on any approved preview update.
 - Outstanding device/provider tests: actual iOS/Android PWA install/offline/reconnect,
   keyboard/screen-reader review, supported-browser checkout with test Stripe and
@@ -95,4 +96,10 @@ See `LAUNCH-SAFETY-MILESTONE.md` and `CANCELLATION-REVIEW.md` for the recovery U
 - Explicit closed/test/live mode, historical test provenance and preview override are implemented. No approval flags or credentials were configured.
 - Verified payments that cannot fulfill a booking enter the durable private review queue; persistence failure asks the provider to retry. Admin review records reconciliation only, not refunds or cancellations. See `PAYMENT-EXCEPTION-OPERATIONS.md`.
 - Current live capability recognizes only a separately approved exclusive-direct inventory policy. The user has not chosen that policy; do not infer Airbnb delisting. OTA/manual-approval design remains an owner/engineering decision.
-- Stronger server-expiring/revocable admin sessions, persisted abuse controls, actual provider/device QA, production persistence/monitoring and final guest terms/rates remain required before live activation.
+- Actual provider/device QA, production persistence/monitoring and final guest terms/rates remain required before live activation.
+
+### M3 admin security and abuse controls (not activation)
+- Random hash-only admin sessions have an eight-hour server-enforced lifetime, logout revocation and secret-rotation invalidation. Cookie-authenticated mutations require a matching origin; only an actually valid machine credential bypasses that check.
+- Persistent bounded login and booking request budgets fail closed if storage is unavailable; raw emails/IPs/session tokens are not stored in these control tables. See `ADMIN-SESSIONS.md` for limits and operational tradeoffs.
+- Recovery notices no longer incorrectly claim every environment is test-only, and still do not confirm account existence or promise delivery.
+- These code controls are not MFA, edge bot protection, provider QA or permission to accept bookings. Existing preview guards stay enabled; Stripe setup is owner-paused.

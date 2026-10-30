@@ -603,3 +603,106 @@ begin
 end; $$;
 revoke execute on function record_payment_exception(jsonb),review_payment_exception(text,text,text) from public,anon,authenticated;
 grant execute on function record_payment_exception(jsonb),review_payment_exception(text,text,text) to service_role;
+
+-- --------------------------------------------------------------------------
+-- Private bounded abuse counters and random hashed admin sessions. Recovery
+-- counters retain their original semantics; no raw identity/IP/token is stored.
+-- --------------------------------------------------------------------------
+create table if not exists security_rate_limits (
+  key_hash text not null check (key_hash ~ '^[a-f0-9]{64}$'),
+  window_seconds integer not null check (window_seconds between 1 and 86400),
+  window_start timestamptz not null,
+  expires_at timestamptz not null,
+  count integer not null check (count between 1 and 10001),
+  primary key(key_hash,window_seconds,window_start)
+);
+create index if not exists security_rate_limits_expiry on security_rate_limits(expires_at);
+create table if not exists admin_sessions (
+  token_hash text primary key check (token_hash ~ '^[a-f0-9]{64}$'),
+  secret_version text not null check (secret_version ~ '^[a-f0-9]{64}$'),
+  created_at timestamptz not null,
+  expires_at timestamptz not null,
+  revoked_at timestamptz,
+  check (expires_at>created_at and expires_at<=created_at+interval '8 hours'),
+  check (revoked_at is null or revoked_at>=created_at)
+);
+create index if not exists admin_sessions_expiry on admin_sessions(expires_at);
+alter table security_rate_limits enable row level security;
+alter table admin_sessions enable row level security;
+revoke all on security_rate_limits,admin_sessions from public,anon,authenticated;
+grant select,insert,update,delete on security_rate_limits,admin_sessions to service_role;
+
+create or replace function consume_security_rate_limit(p_key_hash text,p_limit integer,p_window_seconds integer,p_now timestamptz)
+returns jsonb language plpgsql security invoker set search_path=public as $$
+declare v_start timestamptz; v_expires timestamptz; v_count integer;
+begin
+  if p_key_hash is null or p_key_hash !~ '^[a-f0-9]{64}$' or p_limit is null or p_limit not between 1 and 10000
+    or p_window_seconds is null or p_window_seconds not between 1 and 86400 or p_now is null or not isfinite(p_now)
+  then raise exception 'Invalid bounded hashed rate limit.'; end if;
+  v_start:=to_timestamp(floor(extract(epoch from p_now)/p_window_seconds)*p_window_seconds);
+  v_expires:=v_start+make_interval(secs=>p_window_seconds);
+  -- A bounded cleanup cannot turn one request into an unbounded maintenance job.
+  delete from security_rate_limits where (key_hash,window_seconds,window_start) in
+    (select key_hash,window_seconds,window_start from security_rate_limits where expires_at<=p_now order by expires_at limit 500);
+  insert into security_rate_limits(key_hash,window_seconds,window_start,expires_at,count)
+    values(p_key_hash,p_window_seconds,v_start,v_expires,1)
+    on conflict(key_hash,window_seconds,window_start) do update set count=least(security_rate_limits.count+1,10001)
+    returning count into v_count;
+  return jsonb_build_object('allowed',v_count<=p_limit,'retryAfterSeconds',
+    case when v_count<=p_limit then 0 else greatest(1,ceil(extract(epoch from v_expires-p_now))::integer) end);
+end; $$;
+
+create or replace function create_admin_session(p_session jsonb)
+returns void language plpgsql security invoker set search_path=public as $$
+declare v_created timestamptz; v_expires timestamptz; v_revoked timestamptz;
+begin
+  if jsonb_typeof(p_session) is distinct from 'object'
+    or p_session->>'tokenHash' is null or p_session->>'tokenHash' !~ '^[a-f0-9]{64}$'
+    or p_session->>'secretVersion' is null or p_session->>'secretVersion' !~ '^[a-f0-9]{64}$'
+  then raise exception 'Security store requires SHA256 session hashes.'; end if;
+  v_created:=(p_session->>'createdAt')::timestamptz;
+  v_expires:=(p_session->>'expiresAt')::timestamptz;
+  v_revoked:=(p_session->>'revokedAt')::timestamptz;
+  if v_created is null or v_expires is null or not isfinite(v_created) or not isfinite(v_expires)
+    or v_expires<=v_created or v_expires>v_created+interval '8 hours'
+    or (v_revoked is not null and (not isfinite(v_revoked) or v_revoked<v_created))
+  then raise exception 'Invalid bounded admin session timestamps.'; end if;
+  -- Unique insert only: never extend or replace a session by presenting its hash.
+  insert into admin_sessions(token_hash,secret_version,created_at,expires_at,revoked_at)
+    values(p_session->>'tokenHash',p_session->>'secretVersion',v_created,v_expires,v_revoked);
+  delete from admin_sessions where token_hash in
+    (select token_hash from admin_sessions where expires_at<=clock_timestamp() order by expires_at limit 500);
+end; $$;
+
+create or replace function get_admin_session(p_token_hash text,p_now timestamptz)
+returns jsonb language plpgsql security invoker set search_path=public as $$
+declare v_session admin_sessions%rowtype;
+begin
+  if p_token_hash is null or p_token_hash !~ '^[a-f0-9]{64}$' or p_now is null or not isfinite(p_now)
+  then raise exception 'Invalid session lookup.'; end if;
+  delete from admin_sessions where token_hash in
+    (select token_hash from admin_sessions where expires_at<=p_now order by expires_at limit 500);
+  select * into v_session from admin_sessions where token_hash=p_token_hash and expires_at>p_now;
+  if not found then return null; end if;
+  return jsonb_build_object('tokenHash',v_session.token_hash,'secretVersion',v_session.secret_version,
+    'createdAt',to_char(v_session.created_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+    'expiresAt',to_char(v_session.expires_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+    'revokedAt',case when v_session.revoked_at is null then null else to_char(v_session.revoked_at at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end);
+end; $$;
+
+create or replace function revoke_admin_session(p_token_hash text,p_now timestamptz)
+returns boolean language plpgsql security invoker set search_path=public as $$
+declare v_session admin_sessions%rowtype;
+begin
+  if p_token_hash is null or p_token_hash !~ '^[a-f0-9]{64}$' or p_now is null or not isfinite(p_now)
+  then raise exception 'Invalid session revocation.'; end if;
+  delete from admin_sessions where token_hash in
+    (select token_hash from admin_sessions where expires_at<=p_now order by expires_at limit 500);
+  select * into v_session from admin_sessions where token_hash=p_token_hash and expires_at>p_now for update;
+  if not found then return false; end if;
+  if p_now<v_session.created_at then raise exception 'Admin session revoke time precedes creation.'; end if;
+  update admin_sessions set revoked_at=coalesce(revoked_at,p_now) where token_hash=p_token_hash;
+  return true;
+end; $$;
+revoke execute on function consume_security_rate_limit(text,integer,integer,timestamptz),create_admin_session(jsonb),get_admin_session(text,timestamptz),revoke_admin_session(text,timestamptz) from public,anon,authenticated;
+grant execute on function consume_security_rate_limit(text,integer,integer,timestamptz),create_admin_session(jsonb),get_admin_session(text,timestamptz),revoke_admin_session(text,timestamptz) to service_role;
