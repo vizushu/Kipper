@@ -1,4 +1,5 @@
 import { snapshotForStay } from "./accommodation";
+import { acceptedCancellationTerms } from "./cancellation-review";
 /**
  * Server-side pricing engine.
  *
@@ -282,7 +283,10 @@ export function computeQuote(input: ComputeQuoteInput): Quote {
   const createdAt = now;
   return {
     id: `q_${createdAt.getTime().toString(36)}_${Math.random().toString(36).slice(2, 10)}`,
-    staySnapshot: {...staySnapshot, cleaningFeeCents, taxRatePct: settings.taxRatePct, taxPolicyVersion: property.taxPolicyVersion},
+    staySnapshot: {...staySnapshot, cleaningFeeCents, taxRatePct: settings.taxRatePct, taxPolicyVersion: property.taxPolicyVersion,
+      cancellationTerms: acceptedCancellationTerms(staySnapshot),
+      priceBreakdown: { accommodationSubtotalCents: subtotalCents, accommodationDiscountCents: discountCents,
+        accommodationNetCents: subtotalCents - discountCents, cleaningFeeCents, petFeeCents, taxesCents, totalCents, currency: "USD" } },
     propertyId: property.id,
     propertySlug: property.slug,
     checkIn,

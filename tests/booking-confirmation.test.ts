@@ -2,16 +2,17 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import Page from "../src/app/booking/[reference]/page";
-const mock = vi.hoisted(() => ({ lookup: vi.fn() }));
+const mock = vi.hoisted(() => ({ lookup: vi.fn(), token: "scoped-token" as string | undefined }));
 vi.mock("@/data/api", () => ({ getBookingByReference: mock.lookup }));
+vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => mock.token ? { value: mock.token } : undefined }) }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND"); } }));
 const booking = {
   reference: "CP-ABC", status: "pending_payment", paymentStatus: "unpaid",
   guest: { name: "Test", email: "guest@example.test" }, guests: { adults: 2, children: 0, infants: 0 },
   pets: 0, nights: 2, checkIn: "2027-02-20", checkOut: "2027-02-22", lineItems: [], totalCents: 50000,
 };
-const args = { params: Promise.resolve({ reference: "CP-ABC" }), searchParams: Promise.resolve({ token: "scoped-token" }) };
-beforeEach(() => { vi.stubGlobal("React", React); mock.lookup.mockReset(); });
+const args = { params: Promise.resolve({ reference: "CP-ABC" }) };
+beforeEach(() => { vi.stubGlobal("React", React); mock.lookup.mockReset(); mock.token="scoped-token"; });
 afterEach(() => vi.unstubAllGlobals());
 it("uses original snapshotted terms and passes capability to private lookup", async () => {
   mock.lookup.mockResolvedValue({ ...booking, staySnapshot: {
@@ -32,6 +33,7 @@ it("does not backfill mutable policies for legacy bookings", async () => {
   expect(html).not.toContain("Firm:");
 });
 it("requires capability before lookup", async () => {
-  await expect(Page({ ...args, searchParams: Promise.resolve({}) })).rejects.toThrow("NOT_FOUND");
+  mock.token=undefined;
+  await expect(Page(args)).rejects.toThrow("NOT_FOUND");
   expect(mock.lookup).not.toHaveBeenCalled();
 });

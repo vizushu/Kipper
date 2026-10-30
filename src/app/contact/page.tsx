@@ -51,6 +51,7 @@ export default function ContactPage() {
         <p className="mt-2 text-sm leading-relaxed text-stone-600">Stay details and policies are available without sending a message.</p>
         <nav aria-label="Stay information" className="mt-4 flex flex-wrap gap-x-6 gap-y-3 text-sm font-medium text-clay-dark">
           <Link href="/properties/casa-pacifica" className="underline underline-offset-4">Explore the accommodation</Link>
+          <Link href="/booking-access" className="underline underline-offset-4">Recover booking access</Link>
           <Link href="/faq" className="underline underline-offset-4">Common questions</Link>
           <Link href="/policies/cancellation" className="underline underline-offset-4">Cancellation policy</Link>
         </nav>

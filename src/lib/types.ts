@@ -52,7 +52,29 @@ export interface AccommodationConfiguration {
   checkoutApproved: boolean;
 }
 
+export interface AcceptedCancellationTerms {
+  version: string;
+  timezone: 'America/Los_Angeles';
+  checkInLocalTime: string;
+  fullRefundDays: number;
+  partialRefundDays: number;
+  partialRefundPercent: number;
+  cleaningRefundBeforeArrival: boolean;
+}
+export interface AcceptedPriceBreakdown {
+  accommodationSubtotalCents: number;
+  accommodationDiscountCents: number;
+  accommodationNetCents: number;
+  cleaningFeeCents: number;
+  petFeeCents: number;
+  taxesCents: number;
+  totalCents: number;
+  currency: Currency;
+}
 export interface StaySnapshot {
+  /** Immutable accepted calculation inputs; absent on legacy bookings. */
+  cancellationTerms?: AcceptedCancellationTerms;
+  priceBreakdown?: AcceptedPriceBreakdown;
   cleaningFeeCents?: number;
   taxRatePct?: number;
   taxPolicyVersion?: string;

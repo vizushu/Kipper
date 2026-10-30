@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function BookingNotFound(){return <div className="mx-auto max-w-xl px-4 py-16 text-center"><h1 className="font-display text-3xl">Booking access unavailable</h1><p className="mt-4 text-stone-600">This session may be missing or expired. For your privacy, booking details cannot be shown without verified access.</p><Link href="/booking-access" className="mt-6 inline-block rounded-xl bg-ink px-6 py-3 text-paper">Recover booking access</Link></div>;}

@@ -130,7 +130,7 @@ export function assertRangeAvailable(input: RangeCheckInput): void {
   if (conflictingBlock) {
     throw new BookingError(
       "UNAVAILABLE",
-      `Those dates are blocked${conflictingBlock.reason ? `: ${conflictingBlock.reason}` : "."}`
+      "Those dates are unavailable. Please choose another stay."
     );
   }
 }

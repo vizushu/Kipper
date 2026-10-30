@@ -15,24 +15,21 @@ export default function PriceBreakdown({
 }) {
   return (
     <div>
-      <dl>
-        {quote.lineItems.map((item, i) => (
-          <PriceRow key={`${item.label}-${i}`} item={item} />
-        ))}
-      </dl>
-      <div className="mt-3 flex items-center justify-between border-t border-stone-200 pt-4">
-        <dt className="text-base font-semibold text-ink">
-          Total <span className="font-normal text-stone-500">(USD)</span>
-        </dt>
+      <dl className="mb-3 flex items-center justify-between border-b border-stone-200 pb-4">
+        <dt className="text-base font-semibold text-ink">Stay total <span className="font-normal text-stone-500">(USD)</span></dt>
         <dd className="text-xl font-semibold text-ink">{formatCents(quote.totalCents)}</dd>
-      </div>
+      </dl>
+      <p className="mb-3 text-xs leading-relaxed text-stone-500">Includes accommodation, mandatory cleaning, selected extras and applicable taxes. No payment-processing surcharge is added.</p>
+      <dl>
+        {quote.lineItems.map((item, i) => <PriceRow key={`${item.label}-${i}`} item={item} />)}
+      </dl>
       {showSampleBadge && (
         <p className="mt-3 text-xs text-stone-500">
-          <SampleBadge /> Cleaning fee and tax rate are draft defaults — Renier to confirm.
+          <SampleBadge /> Test quote only. Cleaning and tax inputs are confirmed; nightly rates and final checkout approval remain pending.
         </p>
       )}
       <p className="mt-2 text-xs text-stone-500">
-        Price held until{" "}
+        Quote expires at{" "}
         {new Date(quote.expiresAt).toLocaleString("en-US", {
           month: "short",
           day: "numeric",

@@ -1,3 +1,4 @@
+import { bookingSessionCookie } from "@/lib/booking-session";
 import { snapshotForStay } from "@/lib/accommodation";
 import { createBookingAccessToken, isBookingAccessConfigured } from "@/lib/booking-access";
 import { isBookingTestPreviewEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
@@ -60,7 +61,9 @@ export async function POST(req: Request) {
       paymentIntentId = pi.id;
       const withPi = await adapter.attachPaymentIntent(booking.id, pi.id);
       if (!withPi) return apiError("PAYMENT_FAILED", "Your booking hold expired or is no longer available. Please request a fresh quote.", 409);
-      const response = json({ booking: guestSafeBooking(withPi), clientSecret: pi.clientSecret, accessToken: createBookingAccessToken(withPi.reference) }, 201);
+      const accessToken = createBookingAccessToken(withPi.reference);
+      const response = json({ booking: guestSafeBooking(withPi), clientSecret: pi.clientSecret, accessToken }, 201);
+      response.cookies.set(bookingSessionCookie(accessToken));
       response.headers.set("Cache-Control", "private, no-store");
       return response;
     } catch (stripeErr) {

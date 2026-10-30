@@ -22,13 +22,13 @@ Target: reviewable site before end of Sunday November 1, Pacific time. This cand
 - 5BR guest capacity, bed map, amenities, photos and price approvals. Five-bedroom checkout remains closed.
 - Current bed-map / property facts and check-in cutoff final verification; no pool-heating promise.
 - Final nightly pricing strategy and promo eligibility. Existing test fixture rates are not a public advertised floor.
-- Stripe merchant account, Apple Pay eligibility/domain validation, secure webhook config. No fake Apple Pay button; Venmo is not implemented.
+- Stripe merchant account, Apple Pay eligibility/domain validation, secure webhook config. The current test-only payment-state model also needs coherent production-mode implementation and review before real keys can ever be used. No fake Apple Pay button; Venmo is not implemented.
 - Free Kipper preview workspace/service exists. Production persistent hosting, domain, secrets and any paid service need separate approval; never reuse unrelated services.
 - OTA/PMS integration: map ALL listing resources to same physical inventory. Current manual/iCal blocks are delayed, not verified live channel sync. No instant book until authoritative synchronization strategy tested.
 - Implemented15-minute hold expiry/release and atomic confirmation/cancellation/intent-attachment guards. SQLite lifecycle tests and actual two-process reservation race pass. PostgreSQL RPC parity is code-reviewed only, unexecuted. Transactional durable receipt jobs and bounded, idempotent retry are implemented and tested with synthetic local delivery. Production scheduling/alerting and provider validation remain pending. A late successful payment never revives cancelled/expired inventory and requires manual payment review.
 - Postgres migration execution and real concurrent-connection tests (not yet run); advisory locks now cover reservation/confirmation/cancellation RPCs and block-write trigger; runtime execution still unverified.
 - Real test-Stripe integration and browser interactive end-to-end verification, accessibility/mobile review. Mobile-first PWA manifest/icons/offline shell and strict cache tests implemented; installation/device testing remains outstanding.
-- Secure recovery APIs and expiring single-use code exchange implemented; recovery UI, verified delivery configuration and production abuse controls remain outstanding.
+- Secure recovery APIs and expiring single-use code exchange implemented; recovery UI now implemented with memory-only credentials; verified delivery configuration and production abuse controls remain outstanding.
 - Tax refund adjustments and long-stay exemption handling; current maximum28nights and manual review for longer stays.
 
 ## Preview / configuration
@@ -87,3 +87,6 @@ No live reservations or payments are enabled by this branding correction.
 - No automatic refunds, long-stay tax exemption, Venmo flow or live money routing
   is approved or represented as implemented. See DELIVERY-RECOVERY.md,
   BACKUP-RESTORE.md and DEPLOYMENT-CHECKLIST.md for operational limits.
+
+## Launch safety checkpoint
+See `LAUNCH-SAFETY-MILESTONE.md` and `CANCELLATION-REVIEW.md` for the recovery UI, cookie-scoped confirmation, public block-reason privacy fix, conservative offline calendar preview, accepted refund-review snapshots, read-only readiness report and bounded maintenance step. These do not enable real bookings or refunds.

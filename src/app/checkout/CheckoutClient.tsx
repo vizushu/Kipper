@@ -263,7 +263,7 @@ function CheckoutFlow() {
       sessionStorage.removeItem(
         `cp-idempotency-${inputs.propertyId}-${inputs.checkIn}-${inputs.checkOut}`,
       );
-      router.push(`/booking/${encodeURIComponent(confirmedBooking.reference)}?token=${encodeURIComponent(accessToken)}`);
+      router.push(`/booking/${encodeURIComponent(confirmedBooking.reference)}`);
     } catch (e) {
       setPaymentWarning(`Payment may have completed for ${booking.reference}. Contact Casa Pacifica with your receipt — do not pay again. ${e instanceof Error ? e.message : "Confirmation could not be verified."}`);
     }

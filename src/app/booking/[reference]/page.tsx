@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+import { BOOKING_SESSION_COOKIE } from "@/lib/booking-session";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -26,14 +28,12 @@ function fmtDate(iso: string): string {
 
 export default async function BookingConfirmationPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ reference: string }>;
-  searchParams: Promise<{ token?: string | string[] }>;
 }) {
   const { reference } = await params;
-  const { token } = await searchParams;
-  if (typeof token !== "string") notFound();
+  const token = (await cookies()).get(BOOKING_SESSION_COOKIE)?.value;
+  if (!token) notFound();
   const booking = await getBookingByReference(reference, token);
   if (!booking) notFound();
 
