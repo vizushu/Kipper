@@ -5,7 +5,6 @@
  */
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SampleBadge } from "@/components/ui";
 import { IconPin } from "@/components/icons";
 
 const POLICY_LINKS = [
@@ -37,7 +36,7 @@ export default function Footer() {
             </address>
             <p className="mt-4 text-sm text-stone-600">
               Questions about a stay? Your host, <strong className="font-medium text-ink">Kipper</strong>,
-              is one message away once you book — we aim to reply within the hour.
+              can help with questions about the accommodation.
             </p>
           </div>
           <nav aria-label="Policies">
@@ -57,8 +56,7 @@ export default function Footer() {
               ))}
             </ul>
             <p className="mt-3">
-              <SampleBadge />{" "}
-              <span className="text-xs text-stone-500">drafts — under Renier's review</span>
+              <span className="text-xs text-stone-500">Cancellation schedule confirmed. Terms of stay and privacy wording remain under review.</span>
             </p>
           </nav>
           <nav aria-label="Explore">

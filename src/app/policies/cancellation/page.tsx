@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function CancellationPolicyPage() {
   return (
-    <PolicyShell title="Cancellation policy" updated="October 30, 2026">
+    <PolicyShell draft={false} title="Cancellation policy" updated="October 30, 2026">
       <p>Accommodation refunds are based on cancellation before check-in, in America/Los_Angeles time:</p>
       <ul><li>At least 30 days: 100% accommodation refund.</li><li>15 to fewer than 30 days: 50% accommodation refund.</li><li>Under 15 days: no accommodation refund.</li></ul>
       <p>The $180 cleaning fee for the current 3-bedroom accommodation is fully refunded for cancellations before arrival. Tax adjustments are handled separately after verification.</p>

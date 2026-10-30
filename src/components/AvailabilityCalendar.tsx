@@ -274,7 +274,7 @@ export default function AvailabilityCalendar({
         <div className="rounded-2xl border border-stone-200 bg-cream px-6 py-8 text-center">
           <p className="font-medium text-ink">Availability isn't loading right now</p>
           <p className="mt-1 text-sm text-stone-500">
-            Please try again in a moment — your dates are safe.
+            Availability has not been confirmed and no dates are held. Please try again later.
           </p>
           <button
             type="button"

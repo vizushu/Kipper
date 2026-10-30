@@ -37,14 +37,8 @@ const CASA_PACIFICA: Property = {
   maxGuests: 8, // overnight
   maxTotalOccupancy: 8, // incl. daytime visitors
   bedrooms: 3,
-  beds: 4,
   bathrooms: 2,
-  bedLayout: [
-    { room: "Bedroom 1", bed: "King bed" },
-    { room: "Bedroom 2", bed: "Queen bed" },
-    { room: "Bedroom 3", bed: "Twin-over-full bunk bed" },
-    { room: "Living room", bed: "Queen sleeper sofa" },
-  ],
+  bedLayout: [], // Bed count and mapping await owner confirmation.
   description:
     "Welcome to your San Diego getaway — a thoughtfully designed downstairs accommodation perfect for families, friends, and business travel. Relax by the private pool, enjoy meals together in the spacious indoor and outdoor dining areas, or unwind after a day exploring San Diego. Conveniently located in the heart of Mira Mesa, minutes from UCSD, La Jolla Shores, and San Diego's best beaches and attractions.",
   guestAccess:
@@ -166,14 +160,14 @@ const CASA_PACIFICA: Property = {
     { src: "/photos/casa-pacifica-02.jpg", alt: "Casa Pacifica — bright open living room", room: "Living room" },
     { src: "/photos/casa-pacifica-03.jpg", alt: "Casa Pacifica — fully equipped kitchen", room: "Kitchen" },
     { src: "/photos/casa-pacifica-04.jpg", alt: "Casa Pacifica — indoor dining area", room: "Dining area" },
-    { src: "/photos/casa-pacifica-05.jpg", alt: "Casa Pacifica — patio and outdoor space", room: "Patio" },
-    { src: "/photos/casa-pacifica-06.jpg", alt: "Casa Pacifica — bedroom 1 with king bed", room: "Bedroom 1" },
+    { src: "/photos/casa-pacifica-05.jpg", alt: "Casa Pacifica — designated guest parking on the brick-paved area; keep the neighboring driveway clear", room: "Guest parking" },
+    { src: "/photos/casa-pacifica-06.jpg", alt: "Casa Pacifica — bedroom", room: "Bedroom 1" },
     { src: "/photos/casa-pacifica-07.jpg", alt: "Casa Pacifica — living room lounge area", room: "Living room" },
     { src: "/photos/casa-pacifica-08.jpg", alt: "Casa Pacifica — bathroom", room: "Bathroom" },
-    { src: "/photos/casa-pacifica-09.jpg", alt: "Casa Pacifica — bedroom 2 with queen bed", room: "Bedroom 2" },
+    { src: "/photos/casa-pacifica-09.jpg", alt: "Casa Pacifica — bedroom", room: "Bedroom 2" },
     { src: "/photos/casa-pacifica-10.jpg", alt: "Casa Pacifica — kitchen detail", room: "Kitchen" },
     { src: "/photos/casa-pacifica-11.jpg", alt: "Casa Pacifica — kitchen detail", room: "Kitchen" },
-    { src: "/photos/casa-pacifica-12.jpg", alt: "Casa Pacifica — bedroom 3 with bunk beds", room: "Bedroom 3" },
+    { src: "/photos/casa-pacifica-12.jpg", alt: "Casa Pacifica — bedroom", room: "Bedroom 3" },
     { src: "/photos/casa-pacifica-13.jpg", alt: "Casa Pacifica — dining area detail", room: "Dining area" },
   ],
   faqs: [

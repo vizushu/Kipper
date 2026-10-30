@@ -107,13 +107,12 @@ export function validateGuests(guests: GuestCount, property: Property): void {
   if (children < 0 || infants < 0) {
     throw new BookingError("GUEST_LIMIT", "Guest counts cannot be negative.");
   }
-  // Infants (under 2) don't count toward overnight capacity — standard STR practice.
-  const overnight = adults + children;
-  if (overnight > property.maxGuests || overnight + infants > property.maxTotalOccupancy) {
+  // Occupancy includes every person; no infant exemption has been approved.
+  const overnight = adults + children + infants;
+  if (overnight > property.maxGuests || overnight > property.maxTotalOccupancy) {
     throw new BookingError(
       "GUEST_LIMIT",
-      `This home sleeps ${property.maxGuests} overnight guests (adults + children); ` +
-        `you entered ${overnight}. Daytime visitors may bring the on-property total to ${property.maxTotalOccupancy}.`
+      `This home permits at most ${Math.min(property.maxGuests, property.maxTotalOccupancy)} people total, including infants and daytime visitors; you entered ${overnight} staying guests.`
     );
   }
 }

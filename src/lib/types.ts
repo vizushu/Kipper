@@ -90,7 +90,7 @@ export interface Property {
   maxGuests: number; // overnight
   maxTotalOccupancy: number; // incl. daytime visitors
   bedrooms: number;
-  beds: number;
+  beds?: number; // Omitted until sleeping arrangements are confirmed.
   bathrooms: number;
   bedLayout: BedLayout[];
   description: string;
