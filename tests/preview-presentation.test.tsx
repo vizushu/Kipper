@@ -35,7 +35,8 @@ describe('public preview presentation', () => {
     vi.stubEnv('SITE_PREVIEW_MODE', 'false');
     expect(generateMetadata().robots).toBeUndefined();
     expect(robots().rules).toMatchObject({ allow: '/' });
-    expect(renderToStaticMarkup(<ContactPage />)).toContain('contact-form');
+    expect(renderToStaticMarkup(<ContactPage />)).not.toContain('contact-form');
+    expect(renderToStaticMarkup(<ContactPage />)).toContain('Ask dot');
     expect(renderToStaticMarkup(<CheckoutPage />)).toContain('checkout-form');
   });
 });
