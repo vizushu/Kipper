@@ -78,7 +78,7 @@ export interface Property {
   id: string;
   slug: string;
   name: string;
-  brandLine: string; // "Casa Pacifica · Kipper Stays"
+  brandLine: string; // "Casa Pacifica · San Diego"
   tagline: string;
   address: string;
   city: string;

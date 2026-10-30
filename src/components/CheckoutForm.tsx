@@ -154,7 +154,7 @@ export default function CheckoutForm({
         <p className="font-medium text-ink">Payments aren't switched on yet</p>
         <p className="mx-auto mt-2 max-w-md text-sm text-stone-600">
           This site is in test mode and the payment key isn't configured. Your dates
-          are not guaranteed by a quote — please contact Kipper for assistance.
+          are not guaranteed by a quote — please contact Casa Pacifica for assistance.
         </p>
       </div>
     );

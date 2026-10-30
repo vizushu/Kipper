@@ -24,7 +24,7 @@ const CASA_PACIFICA: Property = {
   id: "casa-pacifica",
   slug: "casa-pacifica",
   name: "Casa Pacifica",
-  brandLine: "Casa Pacifica · Kipper Stays",
+  brandLine: "Casa Pacifica · San Diego",
   tagline: "A private pool retreat in the heart of San Diego",
   address: "10840 New Salem Point",
   city: "San Diego",
@@ -154,26 +154,26 @@ const CASA_PACIFICA: Property = {
   },
   photos: [
     // NOTE: photo 01 shows the backyard projector screen. The projector has been
-    // REMOVED from guest use and must never be advertised; keep 01 in the gallery
-    // but do not use it as the hero. Hero = photo 02 (living room) until Renier
-    // supplies a projector-free hero shot.
+    // REMOVED from guest use and must never be advertised. Exclude 01 from the
+    // guest gallery until a projector-free outdoor shot is supplied. Hero = 02
+    // (living room), supported by verified bedroom/kitchen images; parking last.
     { src: "/photos/casa-pacifica-02.jpg", alt: "Casa Pacifica — bright open living room", room: "Living room" },
+    { src: "/photos/casa-pacifica-06.jpg", alt: "Casa Pacifica — bedroom", room: "Bedroom 1" },
     { src: "/photos/casa-pacifica-03.jpg", alt: "Casa Pacifica — fully equipped kitchen", room: "Kitchen" },
     { src: "/photos/casa-pacifica-04.jpg", alt: "Casa Pacifica — indoor dining area", room: "Dining area" },
-    { src: "/photos/casa-pacifica-05.jpg", alt: "Casa Pacifica — designated guest parking on the brick-paved area; keep the neighboring driveway clear", room: "Guest parking" },
-    { src: "/photos/casa-pacifica-06.jpg", alt: "Casa Pacifica — bedroom", room: "Bedroom 1" },
-    { src: "/photos/casa-pacifica-07.jpg", alt: "Casa Pacifica — living room lounge area", room: "Living room" },
-    { src: "/photos/casa-pacifica-08.jpg", alt: "Casa Pacifica — bathroom", room: "Bathroom" },
-    { src: "/photos/casa-pacifica-09.jpg", alt: "Casa Pacifica — bedroom", room: "Bedroom 2" },
-    { src: "/photos/casa-pacifica-10.jpg", alt: "Casa Pacifica — kitchen detail", room: "Kitchen" },
-    { src: "/photos/casa-pacifica-11.jpg", alt: "Casa Pacifica — kitchen detail", room: "Kitchen" },
     { src: "/photos/casa-pacifica-12.jpg", alt: "Casa Pacifica — bedroom", room: "Bedroom 3" },
+    { src: "/photos/casa-pacifica-09.jpg", alt: "Casa Pacifica — bedroom", room: "Bedroom 2" },
+    { src: "/photos/casa-pacifica-07.jpg", alt: "Casa Pacifica — living area with pool table", room: "Living room" },
     { src: "/photos/casa-pacifica-13.jpg", alt: "Casa Pacifica — dining area detail", room: "Dining area" },
+    { src: "/photos/casa-pacifica-10.jpg", alt: "Casa Pacifica — kitchen detail", room: "Kitchen" },
+    { src: "/photos/casa-pacifica-11.jpg", alt: "Casa Pacifica — dining area cabinetry", room: "Dining area" },
+    { src: "/photos/casa-pacifica-08.jpg", alt: "Casa Pacifica — interior hallway", room: "Hallway" },
+    { src: "/photos/casa-pacifica-05.jpg", alt: "Casa Pacifica — designated guest parking on the brick-paved area; keep the neighboring driveway clear", room: "Guest parking" },
   ],
   faqs: [
     {
       q: "Is the pool heated?",
-      a: "Pool heating availability and pricing must be confirmed with Kipper before booking.",
+      a: "Pool heating availability and pricing must be confirmed with the Casa Pacifica booking contact before booking.",
     },
     {
       q: "Is the upstairs part of the rental?",

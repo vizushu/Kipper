@@ -1,9 +1,9 @@
 # Direct-booking MVP launch checklist — October 30, 2026
 
-Target: reviewable site before end of Sunday November 1, Pacific time. This branch is a test-only implementation, not authorization to deploy, charge, issue refunds, or migrate existing reservations.
+Target: reviewable site before end of Sunday November 1, Pacific time. This candidate is not a live-booking approval. A separate, restricted free preview is already live; the integrated candidate still requires publication and deployment approval. No charges, refunds or migration of real reservations are authorized.
 
 ## Confirmed inputs
-- Current accommodation: 3 bedrooms; maximum 8 people total including visitors.
+- Current accommodation: 3 bedrooms; maximum 8 people total including infants and visitors.
 - Current cleaning: $180 per stay. Do not assume that price for the future 5BR configuration.
 - Five-bedroom accommodation begins March 1, 2027, America/Los_Angeles. Same physical inventory. A stay checking out March1 remains3BR. A stay crossing that boundary requires manual review.
 - Custom cancellation: accommodation100% at least30days before check-in;50% at15–29days;none below15days. Cleaning fully refunded for cancellation before arrival. No automatic48hour grace. Calculator uses existing3PMlocalcheckin cutoff as explicit assumption; confirm this time before live launch. No actual refunds are executed.
@@ -23,12 +23,12 @@ Target: reviewable site before end of Sunday November 1, Pacific time. This bran
 - Current bed-map / property facts and check-in cutoff final verification; no pool-heating promise.
 - Final nightly pricing strategy and promo eligibility. Existing test fixture rates are not a public advertised floor.
 - Stripe merchant account, Apple Pay eligibility/domain validation, secure webhook config. No fake Apple Pay button; Venmo is not implemented.
-- Hosting workspace/domain/production secrets. Do not reuse unrelated music service. No deployment authorized.
+- Free Kipper preview workspace/service exists. Production persistent hosting, domain, secrets and any paid service need separate approval; never reuse unrelated services.
 - OTA/PMS integration: map ALL listing resources to same physical inventory. Current manual/iCal blocks are delayed, not verified live channel sync. No instant book until authoritative synchronization strategy tested.
-- Implemented15-minute hold expiry/release and atomic confirmation/cancellation/intent-attachment guards. SQLite lifecycle tests and actual two-process reservation race pass. PostgreSQL RPC parity is code-reviewed only, unexecuted. Receipt sends occur only for the winning confirmation; reliable delivery retry/outbox still requires operational design. A late successful payment never revives cancelled/expired inventory and requires manual payment review.
+- Implemented15-minute hold expiry/release and atomic confirmation/cancellation/intent-attachment guards. SQLite lifecycle tests and actual two-process reservation race pass. PostgreSQL RPC parity is code-reviewed only, unexecuted. Transactional durable receipt jobs and bounded, idempotent retry are implemented and tested with synthetic local delivery. Production scheduling/alerting and provider validation remain pending. A late successful payment never revives cancelled/expired inventory and requires manual payment review.
 - Postgres migration execution and real concurrent-connection tests (not yet run); advisory locks now cover reservation/confirmation/cancellation RPCs and block-write trigger; runtime execution still unverified.
 - Real test-Stripe integration and browser interactive end-to-end verification, accessibility/mobile review. Mobile-first PWA manifest/icons/offline shell and strict cache tests implemented; installation/device testing remains outstanding.
-- Capability link renewal/secure guest access workflow after24hours; no email renewal implemented.
+- Secure recovery APIs and expiring single-use code exchange implemented; recovery UI, verified delivery configuration and production abuse controls remain outstanding.
 - Tax refund adjustments and long-stay exemption handling; current maximum28nights and manual review for longer stays.
 
 ## Preview / configuration
@@ -41,14 +41,49 @@ Target: reviewable site before end of Sunday November 1, Pacific time. This bran
 ## Second increment validation
 - Full unit/integration suite and TypeScript rerun after atomic lifecycle, wallet, offline and public-preview changes; exact final count/clean build result recorded in delivery.
 - Real two-process SQLite race test verifies exactly one overlapping reservation succeeds. Expiry boundary, cancellation-before-confirmation, duplicate confirmation, imported block, wrong intent, generic update bypass and failed-payment downgrade tests pass.
-- Browser/visual QA did NOT pass: local Chromium socket operations denied; supported cloud browser could not reach isolated listener. HTTP200 tests and service-worker VM tests are partial coverage only.
-- No PostgreSQL executable/service available: SQL migration and concurrent RPC runtime tests NOT run. No Stripe account/domain/wallet test available: live/test network payments NOT run. No backups/restores or hosting persistence drill run.
+- Initial local browser QA was blocked by environment/socket isolation. The deployed restricted preview was subsequently inspected in the supported browser: date transitions, menu/sheet and a narrow388CSSpx layout passed. This was browser zoom, not physical-device or PWA-install testing. The integrated UI candidate still needs deployed visual review.
+- No PostgreSQL executable/service available: SQL migration and concurrent RPC runtime tests NOT run. No Stripe account/domain/wallet test available: live/test network payments NOT run. Synthetic local SQLite backup/restore tests now pass; no real hosting persistence/restore drill has run.
 - Public-preview release must use SITE_PREVIEW_MODE=true before build and at runtime; it overrides test checkout and disables contact/guest/admin data. No deploy/push without parent approval.
 
 ## Positioning correction — October 30, 2026
 
 Kipper is a concierge-AI startup, not identified as property manager, legal host,
-or payment recipient. Kipper Stays is the neutral preview brand. Final contracting details, regulatory review, and merchant/payment
+or payment recipient. Casa Pacifica is the property booking-site brand. Kipper is only the concierge AI in development; a separate startup site is outside this MVP task. Final contracting details, regulatory review, and merchant/payment
 configuration must be completed before booking opens. Casa Pacifica's STRO/TOT records
 are property-specific, not evidence of a Kipper brokerage/property-management license.
 No live reservations or payments are enabled by this branding correction.
+
+
+## Integrated candidate — implemented, not yet deployed
+- Durable receipt outbox: atomic enqueue with payment confirmation, dedupe keys,
+  bounded retry/leases, immutable delivery envelopes, cancellation suppression,
+  redacted admin status. Selected-receipt retry never drains unrelated messages or
+  resets terminal delivery budgets. No external delivery in preview.
+- Recovery: generic non-enumerating responses, persistent rate limits, 15-minute
+  single-use hashed codes and bounded exchange; preview blocks all access mutations.
+- SQLite backup CLI: online snapshot, integrity verification, restricted permissions,
+  restore-to-new-file and no overwrite; verified only against synthetic local data.
+- UI refinement: actual photo hierarchy, parking moved out of the opening grid,
+  concise visible accommodation restrictions and grouped amenities disclosure.
+- Test evidence is attached to the candidate handoff: full suite, TypeScript,
+  preview build, production dependency audit and independent review. No account,
+  provider, live guest, real payment or production-database testing is implied.
+
+## Live restricted preview versus launch
+- Live preview source: branding-only `83fa8ad`; public viewing only. Reservations,
+  payments, contact submission, guest lookup/recovery and admin APIs are disabled.
+  No external mail or background scheduler is provisioned. Robots disallow indexing.
+- This combined backend/UI candidate is local until separately approved. Preserve
+  `SITE_PREVIEW_MODE=true` at build and runtime on any approved preview update.
+- Outstanding device/provider tests: actual iOS/Android PWA install/offline/reconnect,
+  keyboard/screen-reader review, supported-browser checkout with test Stripe and
+  Apple Pay, webhook delivery/replay, verified email provider idempotency/retry,
+  production backup restore and persistent-disk restart drill. PostgreSQL migration
+  and concurrent RPC tests are required only if that optional adapter is selected.
+- Owner inputs/approvals: production hosting cost/storage/domain, merchant account
+  and payment method setup, final contracting/privacy details, nightly prices and
+  promotions, verified bed facts/check-in cutoff, cross-channel inventory strategy.
+  Future 5BR capacity/facts/pricing remain separate approvals and checkout stays shut.
+- No automatic refunds, long-stay tax exemption, Venmo flow or live money routing
+  is approved or represented as implemented. See DELIVERY-RECOVERY.md,
+  BACKUP-RESTORE.md and DEPLOYMENT-CHECKLIST.md for operational limits.

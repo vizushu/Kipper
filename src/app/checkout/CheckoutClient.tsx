@@ -162,7 +162,7 @@ function CheckoutFlow() {
       requestGuard.current.invalidate();
       setQuote(null); setBooking(null); setClientSecret(null); setAccessToken(null);
       setLoadingQuote(false); setNeedsRecheck(true);
-      if (paymentRisk.current) setPaymentWarning("Payment setup was already opened. Do not pay again. Contact Kipper with your booking reference or payment receipt to verify the result.");
+      if (paymentRisk.current) setPaymentWarning("Payment setup was already opened. Do not pay again. Contact Casa Pacifica with your booking reference or payment receipt to verify the result.");
     };
     const offline = () => { setOnline(false); invalidate(); };
     const reconnect = () => { setOnline(true); invalidate(); };
@@ -178,12 +178,12 @@ function CheckoutFlow() {
     const unresolved = sessionStorage.getItem(unresolvedKey);
     if (unresolved) {
       paymentRisk.current = true;
-      setPaymentWarning(`An earlier payment attempt needs verification (${unresolved}). Do not pay again. Contact Kipper with your receipt.`);
+      setPaymentWarning(`An earlier payment attempt needs verification (${unresolved}). Do not pay again. Contact Casa Pacifica with your receipt.`);
       setLoadingQuote(false);
     } else if (!paymentRisk.current) {
       void loadQuote();
     } else {
-      setPaymentWarning("Your stay details changed after payment setup. Do not pay again. Verify the earlier attempt with Kipper first.");
+      setPaymentWarning("Your stay details changed after payment setup. Do not pay again. Verify the earlier attempt with the Casa Pacifica booking contact first.");
       setLoadingQuote(false);
     }
     return () => requestGuard.current.invalidate();
@@ -225,7 +225,7 @@ function CheckoutFlow() {
       paymentRisk.current = true;
       sessionStorage.setItem(unresolvedKey, b.reference);
       if (!requestGuard.current.isCurrent(generation) || !navigator.onLine) {
-        setPaymentWarning(`Booking ${b.reference} was prepared while the connection or dates changed. Do not pay again; verify this attempt with Kipper.`);
+        setPaymentWarning(`Booking ${b.reference} was prepared while the connection or dates changed. Do not pay again; verify this attempt with the Casa Pacifica booking contact.`);
         return;
       }
       setBooking(b);
@@ -246,7 +246,7 @@ function CheckoutFlow() {
   async function handleConfirmPayment(paymentIntentId: string) {
     if (!booking || !accessToken) return;
     if (!navigator.onLine) {
-      setPaymentWarning(`Payment may have completed for ${booking.reference}. Do not pay again. Reconnect and contact Kipper with your receipt.`);
+      setPaymentWarning(`Payment may have completed for ${booking.reference}. Do not pay again. Reconnect and contact Casa Pacifica with your receipt.`);
       return;
     }
     setConfirmError("");
@@ -265,7 +265,7 @@ function CheckoutFlow() {
       );
       router.push(`/booking/${encodeURIComponent(confirmedBooking.reference)}?token=${encodeURIComponent(accessToken)}`);
     } catch (e) {
-      setPaymentWarning(`Payment may have completed for ${booking.reference}. Contact Kipper with your receipt — do not pay again. ${e instanceof Error ? e.message : "Confirmation could not be verified."}`);
+      setPaymentWarning(`Payment may have completed for ${booking.reference}. Contact Casa Pacifica with your receipt — do not pay again. ${e instanceof Error ? e.message : "Confirmation could not be verified."}`);
     }
   }
 

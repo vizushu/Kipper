@@ -40,7 +40,7 @@ export function PolicyShell({
         <Link href="/faq" className="font-medium text-clay underline-offset-4 hover:underline">
           See the FAQ
         </Link>{" "}
-        or message Kipper after booking.
+        or message the Casa Pacifica booking contact after booking.
       </p>
     </div>
   );

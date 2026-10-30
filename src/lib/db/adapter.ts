@@ -1,3 +1,4 @@
+import type { WorkflowStore } from "./workflows";
 /**
  * DataAdapter — persistence interface for bookings, blocks, rate overrides,
  * settings, idempotency keys, and quotes.
@@ -68,7 +69,7 @@ export interface UpdateBookingPatch {
   adminNotes?: string;
 }
 
-export interface DataAdapter {
+export interface DataAdapter extends WorkflowStore {
   // ---- bookings ---------------------------------------------------------
   /**
    * Atomically: re-check that [checkIn, checkOut) has no overlapping

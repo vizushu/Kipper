@@ -9,12 +9,12 @@ function worker() {
   const stored = new Map<string, Response>();
   const cache = { put: vi.fn(async (path: string, response: Response) => { stored.set(path, response); }), match: vi.fn(async (path: string) => stored.get(path)) };
   const fetch = vi.fn(async () => new Response('public shell', { status: 200 }));
-  const remove = vi.fn(async () => true);
+  const remove = vi.fn(async (_name: string) => true);
   const context = vm.createContext({
     URL, Response,
     Request: class extends Request { constructor(input: string, init?: RequestInit) { super(new URL(input, ORIGIN), init); } },
     fetch,
-    caches: { open: async () => cache, keys: async () => ['unrelated-cache', 'kipper-public-shell-v0', 'kipper-public-shell-v1'], delete: remove },
+    caches: { open: async () => cache, keys: async () => ['unrelated-cache', 'kipper-public-shell-v0', 'kipper-public-shell-v1', 'casa-pacifica-public-shell-v0', 'casa-pacifica-public-shell-v1'], delete: remove },
     self: { location: { origin: ORIGIN }, clients: { claim: vi.fn(async () => {}) }, addEventListener: (name: string, fn: (event: any) => void) => { handlers[name] = fn; } },
   });
   vm.runInContext(readFileSync('public/sw.js', 'utf8'), context);
@@ -31,15 +31,17 @@ describe('conservative public PWA shell', () => {
   it('has standalone install metadata and sized local brand icons', () => {
     const config = manifest();
     expect(config.display).toBe('standalone');
+    expect(config.name).toBe('Casa Pacifica');
+    expect(config.short_name).toBe('Casa Pacifica');
     expect(config.start_url).toBe('/');
     expect(config.icons?.map(icon => icon.sizes)).toContain('512x512');
     for (const icon of config.icons ?? []) expect(readFileSync(`public${icon.src}`).length).toBeGreaterThan(100);
   });
   it('precaches only generic offline content and icons, never home/listing HTML', async () => {
     const w = worker(); await w.lifecycle('install');
-    expect([...w.stored.keys()].sort()).toEqual(['/icons/kipper-180.png', '/icons/kipper-192.png', '/icons/kipper-512.png', '/offline.html']);
+    expect([...w.stored.keys()].sort()).toEqual(['/icons/casa-pacifica-180.png', '/icons/casa-pacifica-192.png', '/icons/casa-pacifica-512.png', '/offline.html']);
     await w.lifecycle('activate');
-    expect(w.remove).toHaveBeenCalledExactlyOnceWith('kipper-public-shell-v0');
+    expect(w.remove.mock.calls.map(call=>call[0])).toEqual(['kipper-public-shell-v0','kipper-public-shell-v1','casa-pacifica-public-shell-v0']);
   });
   it('leaves sensitive routes, all query URLs, APIs, third parties and mutations entirely network-only', () => {
     const w = worker();

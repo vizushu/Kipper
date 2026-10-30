@@ -14,22 +14,22 @@ export const viewport: Viewport = { themeColor: "#1C1917", width: "device-width"
 
 const siteMetadata: Metadata = {
   manifest: "/manifest.webmanifest",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Kipper" },
-  icons: { apple: "/icons/kipper-180.png" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Casa Pacifica" },
+  icons: { apple: "/icons/casa-pacifica-180.png" },
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? process.env.RENDER_EXTERNAL_URL ?? "http://localhost:3000",
   ),
   title: {
-    default: "Kipper Stays — Book direct in San Diego",
-    template: "%s · Kipper",
+    default: "Casa Pacifica — Book direct in San Diego",
+    template: "%s · Casa Pacifica",
   },
   description:
-    "Kipper Stays — a homeowner-stay preview from Kipper, a concierge-AI startup. Explore accommodation details; reservations and payments are not open.",
+    "Casa Pacifica — a San Diego accommodation preview. Explore accommodation details; reservations and payments are not open.",
   openGraph: {
     type: "website",
-    title: "Kipper Stays — Book direct in San Diego",
+    title: "Casa Pacifica — Book direct in San Diego",
     description:
-      "Explore Casa Pacifica in San Diego on Kipper Stays. Reservations and payments are not open.",
+      "Explore Casa Pacifica in San Diego. Reservations and payments are not open.",
     images: [{ url: "/photos/casa-pacifica-02.jpg", alt: "Casa Pacifica living room" }],
   },
 };

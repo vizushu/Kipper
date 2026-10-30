@@ -1,3 +1,4 @@
+import type { OutboxEnvelope, OutboxJob } from "./workflows";
 /**
  * Supabase (Postgres) DataAdapter, via the Supabase PostgREST REST API.
  *
@@ -95,6 +96,21 @@ function toBooking(r: SnakeBooking): Booking {
   };
 }
 
+interface SnakeOutbox {
+  id:string; booking_id:string; kind:OutboxJob['kind']; dedupe_key:string; status:OutboxJob['status'];
+  payload_json: {booking?:SnakeBooking|Booking;recovery?:NonNullable<OutboxJob['payload']['recovery']>};
+  envelope_json:OutboxEnvelope|null; attempts:number; created_at:string; next_attempt_at:string;
+  first_attempt_at:string|null; lease_token:string|null; lease_until:string|null; last_error:string|null;
+}
+function toOutbox(row: SnakeOutbox): OutboxJob {
+  const frozen = row.payload_json.booking;
+  const booking = frozen && ('property_id' in frozen ? toBooking(frozen) : frozen);
+  return {id:row.id,bookingId:row.booking_id,kind:row.kind,dedupeKey:row.dedupe_key,status:row.status,
+    payload:{...row.payload_json,...(booking?{booking}:{})} as OutboxJob['payload'],
+    envelope:row.envelope_json??undefined,attempts:row.attempts,createdAt:row.created_at,nextAttemptAt:row.next_attempt_at,
+    firstAttemptAt:row.first_attempt_at??undefined,leaseToken:row.lease_token??undefined,leaseUntil:row.lease_until??undefined,lastError:row.last_error??undefined};
+}
+
 export class SupabaseAdapter implements DataAdapter {
   private base: string;
   private key: string;
@@ -134,6 +150,32 @@ export class SupabaseAdapter implements DataAdapter {
     }
     if (!text) return undefined as T;
     return JSON.parse(text) as T;
+  }
+
+  async ensureReceiptOutbox(bookingId: string): Promise<void> {
+    await this.req('POST', '/rpc/ensure_receipt_outbox', {p_booking_id:bookingId});
+  }
+  async claimOutbox(now: string, limit: number, jobId?: string): Promise<OutboxJob[]> {
+    const rows = await this.req<SnakeOutbox[]>('POST', '/rpc/claim_delivery_outbox', {p_now:now,p_limit:limit,p_job_id:jobId??null});
+    return rows.map(toOutbox);
+  }
+  async prepareOutboxMessage(id: string, leaseToken: string, envelope: OutboxEnvelope, now: string): Promise<OutboxEnvelope|null> {
+    return this.req('POST', '/rpc/prepare_outbox_message', {p_id:id,p_lease_token:leaseToken,p_envelope:envelope,p_now:now});
+  }
+  async finishOutbox(id: string, leaseToken: string, outcome: 'sent'|'simulated'|'failed', now: string): Promise<boolean> {
+    return this.req('POST', '/rpc/finish_delivery_outbox', {p_id:id,p_lease_token:leaseToken,p_outcome:outcome,p_now:now});
+  }
+  async listOutbox(): Promise<OutboxJob[]> {
+    return (await this.req<SnakeOutbox[]>('GET','/delivery_outbox?order=created_at.asc,id.asc')).map(toOutbox);
+  }
+  async consumeRecoveryRateLimit(bucketHash: string, windowStartISO: string, limit: number): Promise<boolean> {
+    return this.req('POST','/rpc/consume_recovery_rate_limit',{p_bucket_hash:bucketHash,p_window_start:windowStartISO,p_limit:limit});
+  }
+  async createBookingRecovery(input: {tokenHash:string;bookingId:string;reference:string;expiresAt:string;createdAt:string}, notification:{recipient:string;token:string}): Promise<void> {
+    await this.req('POST','/rpc/create_booking_recovery',{p_input:input,p_notification:notification});
+  }
+  async consumeBookingRecovery(tokenHash: string, nowISO: string): Promise<{reference:string}|null> {
+    return this.req('POST','/rpc/consume_booking_recovery',{p_token_hash:tokenHash,p_now:nowISO});
   }
 
   // ---- bookings -----------------------------------------------------------

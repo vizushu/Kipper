@@ -55,7 +55,7 @@ export default function TermsPage() {
       <p>
         Cancellations follow our{" "}
         <a href="/policies/cancellation" className="underline underline-offset-4">cancellation policy</a>.
-        Please contact Kipper with questions about your stay terms.
+        Please contact Casa Pacifica with questions about your stay terms.
       </p>
     </PolicyShell>
   );

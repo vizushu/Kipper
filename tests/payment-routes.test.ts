@@ -5,7 +5,7 @@ import { POST as confirm } from "../src/app/api/bookings/[id]/confirm/route";
 import { POST as webhook } from "../src/app/api/webhooks/stripe/route";
 
 const mocks = vi.hoisted(() => ({
-  getBooking: vi.fn(), getBookingByPaymentIntentId: vi.fn(), updateBooking: vi.fn(),
+  tryProcessOutbox: vi.fn(), getBooking: vi.fn(), getBookingByPaymentIntentId: vi.fn(), updateBooking: vi.fn(),
   confirmBookingPayment: vi.fn(), failPendingBookingPayment: vi.fn(),
   verifyPaymentIntent: vi.fn(), sendBookingConfirmation: vi.fn(), sendHostNotification: vi.fn(),
 }));
@@ -13,6 +13,7 @@ vi.mock("@/lib/db", () => ({ getAdapter: () => mocks }));
 vi.mock("@/lib/stripe", () => ({ verifyPaymentIntent: mocks.verifyPaymentIntent }));
 vi.mock("@/lib/bookings", () => ({ guestSafeBooking: (b: Booking) => b }));
 vi.mock("@/lib/property", () => ({ getProperty: () => ({ id: "casa-pacifica" }) }));
+vi.mock("@/lib/outbox", () => ({tryProcessOutbox: mocks.tryProcessOutbox}));
 vi.mock("@/lib/email", () => ({
   sendBookingConfirmation: mocks.sendBookingConfirmation, sendHostNotification: mocks.sendHostNotification,
 }));
@@ -81,7 +82,7 @@ describe("confirmation route", () => {
   it("confirms valid payment and sends receipts", async () => {
     expect((await confirmation()).status).toBe(200);
     expect(mocks.confirmBookingPayment).toHaveBeenCalledWith(booking.id, pi.id, expect.any(String));
-    expect(mocks.sendBookingConfirmation).toHaveBeenCalledTimes(1);
+    expect(mocks.tryProcessOutbox).toHaveBeenCalledTimes(1);
   });
   it("does not send receipts if persistence fails", async () => {
     mocks.confirmBookingPayment.mockResolvedValue(null);
@@ -119,7 +120,7 @@ describe("webhook route", () => {
   it("confirms a valid signed test success", async () => {
     expect((await webhook(eventRequest())).status).toBe(200);
     expect(mocks.confirmBookingPayment).toHaveBeenCalledWith(booking.id, pi.id, expect.any(String));
-    expect(mocks.sendBookingConfirmation).toHaveBeenCalledTimes(1);
+    expect(mocks.tryProcessOutbox).toHaveBeenCalledTimes(1);
   });
 });
 

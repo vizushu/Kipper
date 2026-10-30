@@ -59,7 +59,7 @@ export default function ContactForm() {
         </span>
         <h2 className="mt-4 font-display text-2xl font-medium text-ink">Message sent</h2>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-stone-600">
-          Thanks, {name.trim().split(" ")[0]} — your message is on its way to Kipper.
+          Thanks, {name.trim().split(" ")[0]} — your message is on its way to Casa Pacifica.
           We read everything and reply as soon as we can.
         </p>
       </div>

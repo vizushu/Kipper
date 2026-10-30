@@ -16,9 +16,9 @@ import {
 import { getProperties } from "@/data/api";
 
 export const metadata: Metadata = {
-  title: "Kipper Stays — Book direct in San Diego",
+  title: "Casa Pacifica — Book direct in San Diego",
   description:
-    "Explore Casa Pacifica on Kipper Stays, a preview from concierge-AI startup Kipper. Reservations and payments are not open.",
+    "Explore Casa Pacifica in San Diego. Reservations and payments are not open.",
 };
 
 const WHY_DIRECT = [
@@ -30,11 +30,11 @@ const WHY_DIRECT = [
   {
     icon: IconCheck,
     title: "Concierge AI in development",
-    body: "Kipper is building concierge tools for guests and homeowners.",
+    body: "Kipper concierge AI is in development; it is not active in this preview.",
   },
   {
     icon: IconMessage,
-    title: "Direct line to Kipper",
+    title: "Stay communication",
     body: "Guest communication tools are in development. No operational response time is promised in this preview.",
   },
   {
@@ -67,7 +67,7 @@ export default async function HomePage() {
                 San Diego, California
               </Badge>
               <h1 className="mt-4 max-w-2xl font-display text-4xl font-medium leading-tight text-white">
-                Kipper Stays
+                Casa Pacifica
               </h1>
               <p className="mt-3 max-w-xl text-base leading-relaxed text-white/85 sm:text-lg">
                 Explore homeowner accommodation in San Diego, with concierge AI tools in development. Reservations are not open.
@@ -87,7 +87,7 @@ export default async function HomePage() {
         <SectionHeading
           eyebrow="Explore stays"
           title="Explore Casa Pacifica"
-          lede="A homeowner listing presented on Kipper Stays. Final booking and payment setup is not yet complete."
+          lede="Explore Casa Pacifica in Mira Mesa, San Diego. Final booking and payment setup is not yet complete."
         />
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((p) => (
@@ -140,10 +140,10 @@ export default async function HomePage() {
               </p>
               <h2 className="mt-3 flex items-center gap-2 font-display text-2xl font-medium text-ink">
                 <IconSparkle className="h-6 w-6 text-clay" aria-hidden />
-                Concierge AI
+                Kipper concierge AI
               </h2>
               <p className="mt-3 max-w-md text-base leading-relaxed text-stone-600">
-                We&apos;re building an AI concierge for every Kipper stay —
+                We&apos;re building Kipper, an AI concierge for Casa Pacifica —
                 instant answers to your questions, self check-in help, and
                 local recommendations, backed by a human host for anything
                 that needs judgment. It&apos;s not live yet; this page will
@@ -162,7 +162,7 @@ export default async function HomePage() {
                 </li>
                 <li className="flex gap-3">
                   <IconShield className="mt-0.5 h-5 w-5 shrink-0 text-clay-dark" aria-hidden />
-                  <span><strong className="font-medium text-ink">Human backup</strong> — anything involving judgment goes straight to Kipper.</span>
+                  <span><strong className="font-medium text-ink">Human backup</strong> — planned escalation for requests that need human review; not active in this preview.</span>
                 </li>
               </ul>
             </div>
@@ -179,7 +179,7 @@ export default async function HomePage() {
             </h2>
             <p className="mt-2 max-w-md text-sm leading-relaxed text-stone-300">
               Trip planning, dates, or anything else — send a message and
-              Kipper will get back to you.
+              Contact submissions are disabled in this preview.
             </p>
           </div>
           <Link href="/contact" className="shrink-0">

@@ -11,7 +11,7 @@ export default function PrivacyPage() {
   return (
     <PolicyShell title="Privacy policy" updated="October 13, 2026">
       <p>
-        This is a draft privacy policy for the Kipper Stays preview. Kipper is a concierge-AI startup. Booking, payment, and contact submissions are disabled in this preview. Before launch, the responsible data controller and any homeowner or service-provider data sharing must be identified. The sections below describe proposed handling, not enabled booking services.
+        This is a draft privacy policy for the Casa Pacifica preview. Kipper is a concierge-AI startup. Booking, payment, and contact submissions are disabled in this preview. Before launch, the responsible data controller and any homeowner or service-provider data sharing must be identified. The sections below describe proposed handling, not enabled booking services.
       </p>
       <h2>What we collect</h2>
       <ul>

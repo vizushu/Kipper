@@ -1,3 +1,4 @@
+import { isPublicPreview } from "./booking-launch";
 /**
  * Booking emails: guest confirmation + host notification.
  *
@@ -47,7 +48,7 @@ function shell(title: string, body: string): string {
 <h1 style="font-size:22px;">${esc(title)}</h1>
 ${body}
 <hr style="border:none;border-top:1px solid #ddd;margin:24px 0;">
-<p style="font-size:12px;color:#888;">${esc("Casa Pacifica · Kipper Stays")}</p>
+<p style="font-size:12px;color:#888;">${esc("Casa Pacifica · San Diego")}</p>
 </body></html>`;
 }
 
@@ -72,7 +73,7 @@ function guestHtml(booking: Booking, property: Property): string {
 <p>Cancellation: ${esc(booking.staySnapshot?.cancellationPolicy ?? "See original booking terms")}</p>
 <h2 style="font-size:16px;">Good to know</h2>
 <ul><li>Quiet hours: ${esc(property.quietHours)}</li><li>Wifi details are in this email's follow-up before arrival.</li><li>Please review the house rules in your booking details.</li></ul>
-<p>For stay questions, consult your verified host contact.<br>— Kipper Stays</p>`
+<p>For stay questions, consult your verified host contact.<br>— Casa Pacifica</p>`
   );
 }
 
@@ -96,8 +97,9 @@ function hostHtml(booking: Booking, property: Property): string {
 }
 
 async function deliver(to: string, subject: string, html: string, kind: "guest" | "host", reference: string): Promise<void> {
+  if (isPublicPreview()) throw new Error("Preview delivery blocked");
   const apiKey = process.env.RESEND_API_KEY;
-  if (apiKey && process.env.EMAIL_DELIVERY_MODE === "live" && process.env.BOOKING_TEST_MODE !== "true") {
+  if (apiKey && process.env.EMAIL_DELIVERY_MODE === "live" && process.env.EMAIL_LIVE_APPROVED === "true" && process.env.BOOKING_TEST_MODE !== "true") {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -132,7 +134,7 @@ export async function sendContactMessage(
       `New contact message from ${esc(name)}`,
       `<p><strong>From:</strong> ${esc(name)} &lt;${esc(email)}&gt;</p>` +
         `<p>${esc(message).replace(/\n/g, "<br>")}</p>` +
-        `<p style="font-size:12px;color:#888;">Sent via the Kipper Stays contact form.</p>`,
+        `<p style="font-size:12px;color:#888;">Sent via the Casa Pacifica contact form.</p>`,
     );
     await deliver(
       hostAddress(),

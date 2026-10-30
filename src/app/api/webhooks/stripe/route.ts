@@ -2,8 +2,7 @@ import { isPublicPreview } from "@/lib/booking-launch";
 import Stripe from "stripe";
 import { guestSafeBooking } from "@/lib/bookings";
 import { getAdapter } from "@/lib/db";
-import { sendBookingConfirmation, sendHostNotification } from "@/lib/email";
-import { getProperty } from "@/lib/property";
+import { tryProcessOutbox } from "@/lib/outbox";
 import {
   assertPaymentBinding,
   assertSuccessfulPayment,
@@ -45,6 +44,7 @@ export async function POST(req: Request) {
 
   // Late events must never reopen cancelled inventory or downgrade a confirmed booking.
   if (booking.status === "cancelled" || booking.status === "confirmed") {
+    if (booking.status === "confirmed") await tryProcessOutbox(adapter);
     return json({ received: true });
   }
 
@@ -60,11 +60,7 @@ export async function POST(req: Request) {
   }
   const result = await adapter.confirmBookingPayment(booking.id, pi.id, new Date().toISOString());
   if (!result) return json({ error: "Booking hold expired, was cancelled, or conflicts with inventory. Manual payment review required." }, 409);
-  const { booking: confirmed, transitioned } = result;
-  const property = getProperty(confirmed.propertyId);
-  if (property && transitioned) {
-    await sendBookingConfirmation(confirmed, property);
-    await sendHostNotification(confirmed, property);
-  }
+  const { booking: confirmed } = result;
+  await tryProcessOutbox(adapter);
   return json({ received: true, booking: guestSafeBooking(confirmed) });
 }

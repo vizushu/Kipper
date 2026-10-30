@@ -4,13 +4,16 @@
  * First photo large, thumbnails beside; lightbox with keyboard nav + captions.
  */
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { IconChevronLeft, IconChevronRight, IconExpand, IconX } from "@/components/icons";
 import { cn } from "@/components/cn";
 import type { Photo } from "@/lib/types";
 
 export default function PhotoGallery({ photos, propertyName }: { photos: Photo[]; propertyName: string }) {
   const [lightbox, setLightbox] = useState<number | null>(null);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const isOpen = lightbox !== null;
 
   const close = useCallback(() => setLightbox(null), []);
   const step = useCallback(
@@ -20,9 +23,19 @@ export default function PhotoGallery({ photos, propertyName }: { photos: Photo[]
   );
 
   useEffect(() => {
-    if (lightbox === null) return;
+    if (!isOpen) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const oldOverflow = document.body.style.overflow;
+    dialogRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") close();
+      if (e.key === "Tab") {
+        const buttons = dialogRef.current?.querySelectorAll<HTMLButtonElement>("button");
+        const first = buttons?.[0];
+        const last = buttons?.[buttons.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
       if (e.key === "ArrowRight") step(1);
       if (e.key === "ArrowLeft") step(-1);
     }
@@ -30,20 +43,23 @@ export default function PhotoGallery({ photos, propertyName }: { photos: Photo[]
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.body.style.overflow = oldOverflow;
+      opener?.focus();
     };
-  }, [lightbox, close, step]);
+  }, [isOpen, close, step]);
 
   const [first, ...rest] = photos;
-  const thumbs = rest.slice(0, 4);
+  const thumbs = rest.slice(0, 2);
+
+  if (!first) return null;
 
   return (
     <>
-      <div className="grid gap-2 sm:gap-3 md:grid-cols-4 md:grid-rows-2">
+      <div className="grid gap-2 sm:gap-3 md:grid-cols-3 md:grid-rows-2">
         <button
           type="button"
           onClick={() => setLightbox(0)}
-          className="img-frame group relative aspect-[4/3] md:col-span-2 md:row-span-2 md:aspect-auto md:h-full md:min-h-[420px]"
+          className="img-frame group relative aspect-[4/3] md:col-span-2 md:row-span-2 md:aspect-auto md:h-full md:min-h-[440px]"
           aria-label={`View photo: ${first.alt}`}
         >
           <Image
@@ -51,10 +67,10 @@ export default function PhotoGallery({ photos, propertyName }: { photos: Photo[]
             alt={first.alt}
             fill
             priority
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+            sizes="(max-width: 768px) 100vw, 66vw"
+            className="object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-[1.02]"
           />
-          <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-ink/70 px-3 py-1.5 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-ink/70 px-3 py-1.5 text-xs font-medium text-white opacity-100">
             <IconExpand className="h-3.5 w-3.5" /> {photos.length} photos
           </span>
         </button>
@@ -70,13 +86,13 @@ export default function PhotoGallery({ photos, propertyName }: { photos: Photo[]
               src={photo.src}
               alt={photo.alt}
               fill
-              sizes="25vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+              sizes="33vw"
+              className="object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-[1.03]"
             />
           </button>
         ))}
       </div>
-      {rest.length > 4 && (
+      {rest.length > 0 && (
         <button
           type="button"
           onClick={() => setLightbox(0)}
@@ -89,13 +105,14 @@ export default function PhotoGallery({ photos, propertyName }: { photos: Photo[]
       {lightbox !== null && (
         <div
           className="fixed inset-0 z-50 flex flex-col bg-ink/95"
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={`${propertyName} photo gallery`}
           onClick={close}
         >
-          <div className="flex items-center justify-between px-4 py-3 sm:px-6">
-            <p className="text-sm font-medium text-paper">
+          <div className="flex items-center justify-between px-4 py-3 sm:px-6" onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-medium text-paper" aria-live="polite">
               {lightbox + 1} / {photos.length}
               {photos[lightbox].room && (
                 <span className="ml-2 text-paper/60">{photos[lightbox].room}</span>

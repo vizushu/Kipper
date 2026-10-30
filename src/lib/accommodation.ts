@@ -14,7 +14,7 @@ export function resolveStayConfiguration(property: Property, checkIn?: string, c
   if (!isValidDateStr(checkIn) || !isValidDateStr(checkOut) || checkOut <= checkIn) return {status:'invalid_dates', message:'Choose a valid check-in and check-out date.'};
   const configuration = at(checkIn);
   if (!configuration) return {status:'pending_approval', message:'This accommodation is not yet available for these dates.'};
-  if (configuration.effectiveTo && checkOut > configuration.effectiveTo) return {status:'manual_review', message:'This stay crosses an accommodation change. Please contact Kipper for manual review; online checkout is unavailable.'};
+  if (configuration.effectiveTo && checkOut > configuration.effectiveTo) return {status:'manual_review', message:'This stay crosses an accommodation change. Please contact Casa Pacifica for manual review; online checkout is unavailable.'};
   if (!configuration.checkoutApproved || !configuration.maxGuests || !configuration.maxTotalOccupancy) return {status:'pending_approval', configuration, message:`${configuration.label} begins ${configuration.effectiveFrom}. Guest capacity and accommodation details are awaiting approval; online checkout is not yet available.`};
   return {status:'available', configuration};
 }

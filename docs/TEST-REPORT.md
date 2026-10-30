@@ -1,3 +1,5 @@
+> Current brand is Casa Pacifica; Kipper refers only to concierge AI in development. Earlier branding names below are historical, not current instructions.
+
 > Historical test reports below predate the October 30 positioning correction. Kipper is a concierge-AI startup; earlier host/operator branding is superseded and must not be used as current positioning.
 
 # Test report — Casa Pacifica direct-booking site

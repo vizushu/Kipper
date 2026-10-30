@@ -184,6 +184,146 @@ begin
     returning *;
 end; $$;
 
+-- Durable private workflows. Apply this whole schema before enabling workers/recovery.
+create table if not exists delivery_outbox (
+ id text primary key, booking_id text not null references bookings(id),
+ kind text not null check(kind in ('guest_confirmation','host_notification','access_recovery')),
+ dedupe_key text not null unique,
+ status text not null default 'pending' check(status in ('pending','processing','sent','simulated','suppressed','dead')),
+ payload_json jsonb not null, envelope_json jsonb, attempts integer not null default 0,
+ created_at timestamptz not null, next_attempt_at timestamptz not null,
+ first_attempt_at timestamptz, lease_token text, lease_until timestamptz, last_error text
+);
+create index if not exists delivery_outbox_due on delivery_outbox(status,next_attempt_at);
+create table if not exists booking_recovery (
+ token_hash text primary key, booking_id text not null references bookings(id), reference text not null,
+ expires_at timestamptz not null, created_at timestamptz not null, consumed_at timestamptz,
+ check(expires_at>created_at and expires_at<=created_at+interval '15 minutes')
+);
+create index if not exists booking_recovery_booking on booking_recovery(booking_id);
+create table if not exists recovery_rate_limits (
+ bucket_hash text not null, window_start timestamptz not null, count bigint not null,
+ primary key(bucket_hash,window_start)
+);
+alter table delivery_outbox enable row level security;
+alter table booking_recovery enable row level security;
+alter table recovery_rate_limits enable row level security;
+revoke all on delivery_outbox,booking_recovery,recovery_rate_limits from public,anon,authenticated;
+grant all on delivery_outbox,booking_recovery,recovery_rate_limits to service_role;
+
+create or replace function ensure_receipt_outbox(p_booking_id text)
+returns void language plpgsql as $$
+declare b bookings%rowtype; k text;
+begin
+ select * into b from bookings where id=p_booking_id for update;
+ if not found or b.status<>'confirmed' then return; end if;
+ foreach k in array array['guest_confirmation','host_notification'] loop
+  insert into delivery_outbox(id,booking_id,kind,dedupe_key,payload_json,created_at,next_attempt_at)
+  values('mail_'||gen_random_uuid()::text,b.id,k,k||'/'||b.id||'/v1',jsonb_build_object('booking',to_jsonb(b)),now(),now())
+  on conflict(dedupe_key) do nothing;
+ end loop;
+end; $$;
+
+create or replace function suppress_delivery_outbox(p_now timestamptz)
+returns void language plpgsql as $$
+begin
+ update delivery_outbox o set status='suppressed',payload_json='{}',envelope_json=null,lease_token=null,lease_until=null,last_error='booking_cancelled_or_recovery_expired'
+ where status in ('pending','processing') and (
+  (kind<>'access_recovery' and not exists(select 1 from bookings b where b.id=o.booking_id and b.status='confirmed')) or
+  (kind='access_recovery' and ((payload_json#>>'{recovery,expiresAt}')::timestamptz<=p_now or not exists(
+   select 1 from booking_recovery r join bookings b on b.id=r.booking_id where r.booking_id=o.booking_id
+   and r.token_hash=substring(o.dedupe_key from 10) and r.consumed_at is null and r.expires_at>p_now))));
+ update delivery_outbox set status='dead',payload_json='{}',envelope_json=null,lease_token=null,lease_until=null,last_error='retry_budget_exhausted'
+ where status in ('pending','processing') and ((attempts>=5 and (lease_until is null or lease_until<=p_now)) or first_attempt_at<=p_now-interval '23 hours');
+end; $$;
+
+drop function if exists claim_delivery_outbox(timestamptz,integer);
+create or replace function claim_delivery_outbox(p_now timestamptz,p_limit integer,p_job_id text default null)
+returns setof delivery_outbox language plpgsql as $$
+declare r delivery_outbox%rowtype; claimed delivery_outbox%rowtype;
+begin
+ perform suppress_delivery_outbox(p_now);
+ for r in select * from delivery_outbox where ((status='pending' and next_attempt_at<=p_now) or (status='processing' and lease_until<=p_now)) and (p_job_id is null or id=p_job_id)
+  order by created_at,id limit greatest(1,least(p_limit,10)) for update skip locked loop
+  update delivery_outbox set status='processing',attempts=attempts+1,first_attempt_at=coalesce(first_attempt_at,p_now),
+   lease_token='lease_'||gen_random_uuid()::text,lease_until=p_now+interval '5 minutes' where id=r.id returning * into claimed;
+  return next claimed;
+ end loop;
+end; $$;
+
+create or replace function prepare_outbox_message(p_id text,p_lease_token text,p_envelope jsonb,p_now timestamptz)
+returns jsonb language plpgsql as $$
+declare prepared jsonb;
+begin
+ perform suppress_delivery_outbox(p_now);
+ update delivery_outbox set envelope_json=coalesce(envelope_json,p_envelope)
+ where id=p_id and status='processing' and lease_token=p_lease_token and lease_until>p_now returning envelope_json into prepared;
+ return prepared;
+end; $$;
+
+create or replace function finish_delivery_outbox(p_id text,p_lease_token text,p_outcome text,p_now timestamptz)
+returns boolean language plpgsql as $$
+declare r delivery_outbox%rowtype; terminal boolean; next_status text; delay_seconds integer;
+begin
+ if p_outcome not in ('sent','simulated','failed') then raise exception 'Invalid delivery outcome'; end if;
+ perform suppress_delivery_outbox(p_now);
+ select * into r from delivery_outbox where id=p_id and status='processing' and lease_token=p_lease_token and lease_until>p_now for update;
+ if not found then return false; end if;
+ terminal:=p_outcome<>'failed' or r.attempts>=5;
+ next_status:=case when p_outcome='failed' then case when terminal then 'dead' else 'pending' end else p_outcome end;
+ delay_seconds:=(array[60,300,900,3600,3600])[greatest(1,least(r.attempts,5))];
+ update delivery_outbox set status=next_status,next_attempt_at=p_now+make_interval(secs=>delay_seconds),lease_token=null,lease_until=null,
+  last_error=case when p_outcome='failed' then 'delivery_failed' else null end,
+  payload_json=case when terminal then '{}'::jsonb else payload_json end,
+  envelope_json=case when terminal then null else envelope_json end where id=p_id;
+ return true;
+end; $$;
+
+create or replace function consume_recovery_rate_limit(p_bucket_hash text,p_window_start timestamptz,p_limit integer)
+returns boolean language plpgsql as $$
+declare used bigint;
+begin
+ if p_limit<1 or p_limit>10000 then return false; end if;
+ delete from recovery_rate_limits where window_start<p_window_start-interval '48 hours';
+ insert into recovery_rate_limits(bucket_hash,window_start,count) values(p_bucket_hash,p_window_start,1)
+ on conflict(bucket_hash,window_start) do update set count=least(recovery_rate_limits.count+1,1000000) returning count into used;
+ return used<=p_limit;
+end; $$;
+
+create or replace function create_booking_recovery(p_input jsonb,p_notification jsonb)
+returns void language plpgsql as $$
+declare b bookings%rowtype; created timestamptz; expires timestamptz;
+begin
+ select * into b from bookings where id=p_input->>'bookingId' for update;
+ if not found or b.reference is distinct from p_input->>'reference'
+  or lower(trim(b.guest->>'email')) is distinct from lower(trim(p_notification->>'recipient')) then raise exception 'Recovery identity mismatch'; end if;
+ created:=(p_input->>'createdAt')::timestamptz; expires:=(p_input->>'expiresAt')::timestamptz;
+ if created is null or expires is null or expires<=created or expires>created+interval '15 minutes' then raise exception 'Invalid recovery expiry'; end if;
+ update booking_recovery set consumed_at=created where booking_id=b.id and consumed_at is null;
+ update delivery_outbox set status='suppressed',payload_json='{}',envelope_json=null,lease_token=null,lease_until=null
+ where booking_id=b.id and kind='access_recovery' and status in ('pending','processing');
+ insert into booking_recovery(token_hash,booking_id,reference,expires_at,created_at)
+ values(p_input->>'tokenHash',b.id,b.reference,expires,created);
+ insert into delivery_outbox(id,booking_id,kind,dedupe_key,payload_json,created_at,next_attempt_at)
+ values('mail_'||gen_random_uuid()::text,b.id,'access_recovery','recovery/'||(p_input->>'tokenHash'),
+ jsonb_build_object('recovery',jsonb_build_object('recipient',p_notification->>'recipient','token',p_notification->>'token','reference',b.reference,'expiresAt',expires)),created,created);
+end; $$;
+
+create or replace function consume_booking_recovery(p_token_hash text,p_now timestamptz)
+returns jsonb language plpgsql as $$
+declare recovered_reference text;
+begin
+ update booking_recovery r set consumed_at=p_now where token_hash=p_token_hash and consumed_at is null and expires_at>p_now
+ and exists(select 1 from bookings b where b.id=r.booking_id and b.reference=r.reference) returning reference into recovered_reference;
+ if not found then return null; end if;
+ perform suppress_delivery_outbox(p_now);
+ return jsonb_build_object('reference',recovered_reference);
+end; $$;
+
+-- No anonymous/authenticated SDK access to workflow RPCs (including internal helpers).
+revoke execute on function ensure_receipt_outbox(text),suppress_delivery_outbox(timestamptz),claim_delivery_outbox(timestamptz,integer,text),prepare_outbox_message(text,text,jsonb,timestamptz),finish_delivery_outbox(text,text,text,timestamptz),consume_recovery_rate_limit(text,timestamptz,integer),create_booking_recovery(jsonb,jsonb),consume_booking_recovery(text,timestamptz) from public,anon,authenticated;
+grant execute on function ensure_receipt_outbox(text),suppress_delivery_outbox(timestamptz),claim_delivery_outbox(timestamptz,integer,text),prepare_outbox_message(text,text,jsonb,timestamptz),finish_delivery_outbox(text,text,text,timestamptz),consume_recovery_rate_limit(text,timestamptz,integer),create_booking_recovery(jsonb,jsonb),consume_booking_recovery(text,timestamptz) to service_role;
+
 create or replace function confirm_booking_payment(p_id text, p_payment_intent_id text, p_confirmed_at timestamptz)
 returns jsonb language plpgsql as $$
 declare v_property text; v_row bookings%rowtype;
@@ -201,6 +341,7 @@ begin
   if exists(select 1 from blocks where property_id=v_property and from_date<v_row.check_out and to_date>v_row.check_in) then return null; end if;
   if exists(select 1 from bookings where id<>p_id and property_id=v_property and status in ('confirmed','pending_payment') and (status='confirmed' or hold_expires_at is null or hold_expires_at>now()) and check_in<v_row.check_out and check_out>v_row.check_in) then return null; end if;
   update bookings set status='confirmed',payment_status='paid_test',confirmed_at=p_confirmed_at where id=p_id and status='pending_payment' returning * into v_row;
+  perform ensure_receipt_outbox(v_row.id); -- Same transaction as successful confirmation.
   return jsonb_build_object('booking',to_jsonb(v_row),'transitioned',true);
 end; $$;
 

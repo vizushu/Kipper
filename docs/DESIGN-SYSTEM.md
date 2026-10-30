@@ -1,3 +1,5 @@
+> Brand direction (October 30, 2026): Casa Pacifica is the property booking site. Kipper refers only to the concierge AI in development, not the accommodation or legal host. Do not build the separate startup website in this task.
+
 > Positioning correction (October 30, 2026): Kipper is a concierge-AI startup, not identified as property manager, legal host, or merchant. Hide host cards until homeowner/host identity is verified. This supersedes older hosting language. Reservations and payments remain disabled.
 
 # Kipper Design System — Phase 1 Spec

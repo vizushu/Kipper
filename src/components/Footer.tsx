@@ -22,9 +22,9 @@ export default function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
-            <p className="font-display text-xl font-medium text-ink">Kipper Stays</p>
+            <p className="font-display text-xl font-medium text-ink">Casa Pacifica</p>
             <p className="mt-1 text-sm text-stone-500">
-              Concierge AI in development · Explore homeowner stays
+              Mira Mesa · San Diego
             </p>
             <address className="mt-4 flex items-start gap-2 text-sm not-italic leading-relaxed text-stone-600">
               <IconPin className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
@@ -35,7 +35,7 @@ export default function Footer() {
               </span>
             </address>
             <p className="mt-4 text-sm text-stone-600">
-              Kipper is a concierge-AI startup. This preview does not accept reservations or payments.
+              Kipper concierge AI is in development. This Casa Pacifica preview does not accept reservations or payments.
             </p>
           </div>
           <nav aria-label="Policies">
@@ -70,7 +70,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/about" className="text-sm text-stone-600 underline-offset-4 hover:text-ink hover:underline">
-                  About Kipper
+                  About Casa Pacifica
                 </Link>
               </li>
               <li>
@@ -92,7 +92,7 @@ export default function Footer() {
           </nav>
         </div>
         <div className="mt-10 flex flex-col gap-3 border-t border-stone-300/60 pt-6 text-xs text-stone-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>© 2026 Kipper Stays. All rights reserved.</p>
+          <p>© 2026 Casa Pacifica. All rights reserved.</p>
           <p>Casa Pacifica property · San Diego STRO Tier-2 License STR-13982L · TOT 660372</p>
         </div>
       </div>

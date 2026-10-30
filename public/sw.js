@@ -1,6 +1,6 @@
 /* Public static offline shell only. Never cache listing HTML, account data or API responses. */
-const CACHE_NAME = 'kipper-public-shell-v1';
-const STATIC_PATHS = ['/offline.html', '/icons/kipper-192.png', '/icons/kipper-512.png', '/icons/kipper-180.png'];
+const CACHE_NAME = 'casa-pacifica-public-shell-v1';
+const STATIC_PATHS = ['/offline.html', '/icons/casa-pacifica-192.png', '/icons/casa-pacifica-512.png', '/icons/casa-pacifica-180.png'];
 const PUBLIC_NAVIGATION_PATHS = ['/', '/properties', '/properties/casa-pacifica', '/properties/casa-pacifica-san-diego'];
 
 self.addEventListener('install', event => {
@@ -17,7 +17,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const names = await caches.keys();
-    await Promise.all(names.filter(name => name.startsWith('kipper-public-shell-') && name !== CACHE_NAME).map(name => caches.delete(name)));
+    await Promise.all(names.filter(name => (name.startsWith('kipper-public-shell-') || name.startsWith('casa-pacifica-public-shell-')) && name !== CACHE_NAME).map(name => caches.delete(name)));
     await self.clients.claim();
   })());
 });

@@ -1,9 +1,9 @@
 # Mobile-first PWA: installation and offline boundary
 
-This increment adds a web app manifest, 192/512px standalone/maskable brand icons, an Apple touch icon, safe-area viewport metadata, and a production-only service-worker registration. Icons are locally drawn geometric K marks, not property photography. This is an installable web app, not a native app or offline booking engine.
+This increment adds a web app manifest, 192/512px standalone/maskable brand icons, an Apple touch icon, safe-area viewport metadata, and a production-only service-worker registration. Icons are locally drawn sun-and-wave marks, not property photography. This is an installable web app, not a native app or offline booking engine.
 
 ## Offline policy
-- The sole cache (`kipper-public-shell-v1`) contains a generic, self-contained `/offline.html` and three brand icons.
+- The sole cache (`casa-pacifica-public-shell-v1`) contains a generic, self-contained `/offline.html` and three brand icons.
 - Never caches property HTML, guest details, admin pages, access links, booking/confirmation pages, quote/availability responses, payment resources, or RSC payloads.
 - Only exact public navigation paths (`/`, `/properties`, the two known public property slugs) get the generic fallback after a network error. Their successful responses are never written to Cache Storage.
 - Any query-string URL, mutation, external-origin resource or API/private route is untouched by the worker: network-only, no queued retry or background synchronization.
@@ -23,3 +23,5 @@ The root layout deliberately uses Georgia for display text and the local system 
 
 ## Public preview isolation
 Set `SITE_PREVIEW_MODE=true` before building and starting any public preview. Root metadata becomes `noindex,nofollow,noarchive`, `robots.txt` disallows all crawling, and a persistent preview banner states that bookings/payments are disabled. Contact and checkout pages render informational notices instead of guest-data or payment forms. Server-side API guards independently enforce disabled transactions; `BOOKING_TEST_MODE` must never override the public-preview guard. Crawling directives are not access control: the preview contains only public listing content, and should not contain secrets or guest data. A new build/restart is required when changing deployment mode so prerendered pages cannot retain the previous environment's presentation.
+
+Casa Pacifica is the installed app identity. Sun/wave icons derive from the local SVG source. Activation removes obsolete Kipper shell caches as well as obsolete Casa Pacifica shell versions; unrelated caches are untouched. No forced worker activation during checkout.

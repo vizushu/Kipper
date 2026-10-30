@@ -2,8 +2,7 @@ import { isPublicPreview } from "@/lib/booking-launch";
 import { z } from "zod";
 import { guestSafeBooking } from "@/lib/bookings";
 import { getAdapter } from "@/lib/db";
-import { sendBookingConfirmation, sendHostNotification } from "@/lib/email";
-import { getProperty } from "@/lib/property";
+import { tryProcessOutbox } from "@/lib/outbox";
 import { verifyPaymentIntent } from "@/lib/stripe";
 import { assertSuccessfulPayment } from "@/lib/payment-verification";
 import {
@@ -56,16 +55,12 @@ export async function POST(
     return apiError("PAYMENT_FAILED", error instanceof Error ? error.message : "Payment verification failed.", 400);
   }
   const result = await adapter.confirmBookingPayment(booking.id, verified.id, new Date().toISOString());
-  if (!result) return apiError("PAYMENT_FAILED", "This booking hold expired, was cancelled, or is no longer available. Contact Kipper with your payment receipt; do not pay again.", 409);
-  const { booking: confirmed, transitioned } = result;
+  if (!result) return apiError("PAYMENT_FAILED", "This booking hold expired, was cancelled, or is no longer available. Contact Casa Pacifica with your payment receipt; do not pay again.", 409);
+  const { booking: confirmed } = result;
 
   // Emails never fail the booking — sendBookingConfirmation/Notification
   // log and continue internally.
-  const property = getProperty(confirmed.propertyId);
-  if (property && transitioned) {
-    await sendBookingConfirmation(confirmed, property);
-    await sendHostNotification(confirmed, property);
-  }
+  await tryProcessOutbox(adapter);
 
   return json({ booking: guestSafeBooking(confirmed) });
 }

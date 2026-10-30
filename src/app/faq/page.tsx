@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const SITE_FAQS = [
   {
     q: "Why should I book direct instead of Airbnb?",
-    a: "Booking directly lets you coordinate your stay with Kipper. Compare accommodation details and dates; no best-rate guarantee is made.",
+    a: "Booking directly lets you coordinate your stay with the Casa Pacifica booking contact. Compare accommodation details and dates; no best-rate guarantee is made.",
   },
   {
     q: "How do payments work?",
@@ -24,7 +24,7 @@ const SITE_FAQS = [
   },
   {
     q: "Can I get an early check-in or late checkout?",
-    a: "Often, yes — it depends on the cleaning schedule around your dates. Just ask Kipper after booking and we'll do our best.",
+    a: "Early check-in and late checkout are not guaranteed. Any request needs approval from the verified booking contact.",
   },
   ...PROPERTY.faqs,
 ];
@@ -35,7 +35,7 @@ export default function FaqPage() {
       <SectionHeading
         eyebrow="FAQ"
         title="Questions, answered"
-        lede="Everything about booking direct and staying at Casa Pacifica. Still curious? Message Kipper after booking."
+        lede="Everything about booking direct and staying at Casa Pacifica. Still curious? Consult your verified booking contact."
       />
       <div className="mt-8">
         <FaqAccordion faqs={SITE_FAQS} />

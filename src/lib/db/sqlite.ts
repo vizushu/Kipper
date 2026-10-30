@@ -1,3 +1,5 @@
+import { SqliteWorkflows } from "./sqlite-workflows";
+import type { OutboxEnvelope } from "./workflows";
 /**
  * SQLite DataAdapter (better-sqlite3). Default adapter.
  *
@@ -169,6 +171,7 @@ const SETTING_KEYS = [
 
 export class SqliteAdapter implements DataAdapter {
   private db: SqliteDb;
+  private workflows: SqliteWorkflows;
 
   constructor(dbPath?: string) {
     this.db = new Database(resolveDbPath(dbPath));
@@ -178,6 +181,7 @@ export class SqliteAdapter implements DataAdapter {
     const columns = this.db.prepare("PRAGMA table_info(bookings)").all() as {name: string}[];
     if (!columns.some(c => c.name === "stay_snapshot_json")) this.db.exec("ALTER TABLE bookings ADD COLUMN stay_snapshot_json TEXT");
     if (!columns.some(c => c.name === "hold_expires_at")) this.db.exec("ALTER TABLE bookings ADD COLUMN hold_expires_at TEXT");
+    this.workflows = new SqliteWorkflows(this.db, (id) => {const row=this.db.prepare("SELECT * FROM bookings WHERE id=?").get(id) as BookingRow|undefined;return row?rowToBooking(row):null;});
     this.seedSettingsIfEmpty();
   }
 
@@ -363,9 +367,19 @@ export class SqliteAdapter implements DataAdapter {
       if (block || overlap) return null;
       this.db.prepare(`UPDATE bookings SET status = 'confirmed', payment_status = 'paid_test', confirmed_at = ? WHERE id = ? AND status = 'pending_payment' AND stripe_payment_intent_id = ?`).run(confirmedAt, id, paymentIntentId);
       const confirmed = this.db.prepare('SELECT * FROM bookings WHERE id = ?').get(id) as BookingRow;
+      this.workflows.queueReceipts(rowToBooking(confirmed), confirmedAt);
       return {booking: rowToBooking(confirmed), transitioned: true};
     }).immediate();
   }
+
+  ensureReceiptOutbox = (id:string) => this.workflows.ensureReceiptOutbox(id);
+  claimOutbox = (now:string,limit:number,jobId?:string) => this.workflows.claimOutbox(now,limit,jobId);
+  prepareOutboxMessage = (id:string,lease:string,envelope:OutboxEnvelope,now:string) => this.workflows.prepareOutboxMessage(id,lease,envelope,now);
+  finishOutbox = (id:string,lease:string,outcome:'sent'|'simulated'|'failed',now:string) => this.workflows.finishOutbox(id,lease,outcome,now);
+  listOutbox = () => this.workflows.listOutbox();
+  consumeRecoveryRateLimit = (bucket:string,window:string,limit:number) => this.workflows.consumeRecoveryRateLimit(bucket,window,limit);
+  createBookingRecovery: SqliteWorkflows['createBookingRecovery'] = (input,notification) => this.workflows.createBookingRecovery(input,notification);
+  consumeBookingRecovery = (hash:string,now:string) => this.workflows.consumeBookingRecovery(hash,now);
 
   async getBooking(id: string): Promise<Booking | null> {
     const row = this.db.prepare("SELECT * FROM bookings WHERE id = ?").get(id) as BookingRow | undefined;
