@@ -24,3 +24,5 @@ With an approved restricted token: verify actual style/color/label support, attr
 - https://docs.mapbox.com/mapbox-gl-js/guides/pricing/ (map-load billing)
 - https://docs.mapbox.com/help/dive-deeper/attribution/
 - https://docs.mapbox.com/mapbox-gl-js/example/cooperative-gestures/
+
+Non-sensitive DOM diagnostics expose only fixed lifecycle categories (`missing-token`, `loading`, `unsupported-webgl`, `style-load-error`, `sdk-load-error`, `timeout`, `webgl-context-lost`, `ready`). Raw SDK errors, token values and provider URLs are never included. These distinguish fallback causes without browser capability-policy workarounds.

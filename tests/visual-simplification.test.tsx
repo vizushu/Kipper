@@ -18,7 +18,7 @@ it('removes menu and intro review clutter, and places exact screenshot sections 
  expect(html).toContain('8 guests');expect(html).toContain('3 bedrooms');expect(html).toContain('2 baths');expect(html).not.toContain('Current accommodation:');
  expect(html.indexOf('3 bedrooms')).toBeLessThan(html.indexOf('At home in San Diego'));
  expect(html.indexOf('The good kind of staying in.')).toBeLessThan(html.indexOf('A space for everyone.'));
- expect(html).toContain('About these highlights');expect(html).toContain('Read all policies');expect(html).toContain('The first chapter is yours.');
+ expect(html).toContain('About these highlights');expect(html).toContain('Read all policies');expect(html).toContain('Selected Airbnb reviews supplied by the host');
  expect(html).not.toMatch(/Wi-Fi 7|5 GHz|Warm and welcoming staff/);
 });
 it('does not change current headcount or future booking authority',()=>{

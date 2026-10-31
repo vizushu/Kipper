@@ -12,6 +12,8 @@ import StayHighlights from "@/components/StayHighlights";
 import PoliciesDialog from "@/components/PoliciesDialog";
 import NeighborhoodMap from "@/components/NeighborhoodMap";
 import SmartHomeConcept from "@/components/SmartHomeConcept";
+import GuestReviewCards from "@/components/GuestReviewCards";
+import { CASA_PACIFICA_REVIEWS } from "@/data/guest-reviews";
 import RoomCards from "@/components/RoomCards";
 import FaqAccordion from "@/components/FaqAccordion";
 import { IconClock, IconShield, IconCheck, IconUsers, IconBed, IconBath } from "@/components/icons";
@@ -46,7 +48,7 @@ export default function PropertyExperience({property,publicPreview=false,initial
         </Section>
       </>}
       <Section title="Your San Diego neighborhood."><p className="text-sm text-moss">{property.neighborhood}, {property.city}</p><NeighborhoodMap/><p className="mt-3 text-xs text-moss">The exact address is shared with confirmed guests.</p></Section>
-      <Section title="Stories from our guests."><div className="rounded-xl border border-line p-6 text-center"><p aria-hidden="true" className="text-xl tracking-widest">☆☆☆☆☆</p><h3 className="mt-3 font-display text-2xl">The first chapter is yours.</h3><p className="mt-2 text-xs text-moss">Verified guest reviews will appear here.</p></div></Section>
+      {isCasa&&<Section title="Stories from our guests."><GuestReviewCards reviews={CASA_PACIFICA_REVIEWS}/></Section>}
       {showDetails&&<details className="mt-8 border-t border-line pt-5"><summary className="cursor-pointer py-2 text-sm">More about the home</summary><Section title="The space"><p className="text-sm leading-7 text-moss">Explore the photos, amenities and accommodation details for your selected dates.</p></Section><Section title="Frequently asked questions"><FaqAccordion faqs={property.faqs.filter(item=>!/upstairs|downstairs|shared indoor|shared space/i.test(`${item.q} ${item.a}`))}/></Section></details>}
       <p className="mt-8 text-xs text-moss">Short-term rental license · {property.license}</p>
       <div aria-label="Booking"><BookingWidget initialSelection={initialSelection} publicPreview={publicPreview} property={property} onRangeChange={setRange} bookingBlockedReason={blocked?resolution.message??"Online booking is unavailable for these dates. Please choose another stay.":undefined}/></div>
