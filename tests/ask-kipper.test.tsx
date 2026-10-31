@@ -11,10 +11,10 @@ it.each(['true','false'])('keeps one honest unavailable contact entry in preview
  const html=renderToStaticMarkup(<ContactPage/>);
  expect(metadata.title).toBe('Ask Kipper');expect(html).toContain('Questions about your stay?');
  expect(html.match(/<button/g)).toHaveLength(1);expect(html).toMatch(/<button[^>]*disabled/);
- expect(html).toContain('aria-describedby="message-status"');expect(html).toContain('Guest email is not connected yet');
+ expect(html).toContain('aria-describedby="message-status"');expect(html).toContain('mailto:vizushu@gmail.com');
  expect(html).toContain('Booked guests: urgent help');expect(html).toContain('original booking confirmation');
  expect(html).toContain('Kipper AI is not answering here yet');
- expect(html).not.toMatch(/private@example|12025550123|join.slack|Discord|Ask dot|mailto:|sms:|tel:|<form|<input|<textarea/);
+ expect(html).not.toMatch(/private@example|12025550123|join.slack|Discord|Ask dot|sms:|tel:|<form|<input|<textarea/);
  expect(html).not.toMatch(/15.minute|instant answer|within.*minutes/i);
 });
 it('uses the same contact page from header and footer, without a competing chat entry',()=>{

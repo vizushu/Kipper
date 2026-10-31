@@ -5,7 +5,7 @@ one narrow column: “Questions about your stay?”, a prominent Message us acti
 a quiet email alternative, and a directly visible booked-guest urgent-help section.
 No search, multi-field form or automated question sequence is required.
 
-## Current state — not connected
+## Original foundation state — superseded for email by approved SMS disclosures below
 
 No verified monitored guest channel, guest email or urgent-support contact has
 been configured. Message us is explicitly disabled with an associated explanation.
@@ -26,7 +26,7 @@ The existing `/api/contact` and public-preview guards remain unchanged. The lega
 email form is not mounted. No credentials, destination values, provider accounts or
 service configuration were changed in this increment.
 
-## Before activation
+## Messaging activation requirements
 
 The owner must choose and verify one monitored guest-facing conversation channel,
 a dedicated guest email alternative and an urgent human route, including ownership,
@@ -42,3 +42,30 @@ Internal Slack history, private assistant memory, another guest’s data and acc
 codes must never be exposed. Test with synthetic data before approving real messages.
 
 This update changes presentation only; it does not implement or activate messaging.
+
+## Approved prelaunch SMS disclosures — October 31, 2026
+The owner approved public SMS policy attribution to Renier De La Cruz, the help/privacy
+email vizushu@gmail.com, and a human-backup role. The personal escalation phone is
+not public and is not stored in this repository. The public email alternative is now
+a mailto link; the website itself still receives no contact submissions in preview.
+
+Dedicated /policies/sms-privacy and /policies/sms-terms pages describe the approved
+planned guest-initiated support service, not an active campaign. Existing draft lodging
+terms remain separate. Message us stays disabled in every mode, without any SMS number
+or link. No keyword, responder, webhook, API credential or provider setting is activated.
+The policies state frequency/rates, STOP/HELP, no marketing enrollment, approved human
+backup/email, and no guaranteed response time or currently answering AI.
+
+Own-system ordinary message/delivery retention is planned for up to 90 days after
+conversation closure, with documented exceptions and minimal consent/opt-out records.
+This is not implemented yet. Launch must define closure/reopening semantics, durable
+provider SID inventory, purge scheduling/retry/audit and provider deletion handling.
+Do not infer a 90-day global erase guarantee. Provider archives/backups differ:
+- https://help.twilio.com/articles/223181008-Twilio-SMS-message-and-traffic-storage
+- https://www.twilio.com/docs/messaging/api/message-resource (Delete: message-body
+  backups may persist up to 30 days after HTTP DELETE).
+
+These pages alone are not evidence of working opt-in or two-way messaging. A truthful
+prelaunch campaign-review demonstration requires separately approved complete flow
+evidence; do not invent a web form or keyword enrollment. No campaign submission occurs
+from this code change.
