@@ -1,3 +1,4 @@
+import type {CalendarSnapshot,CalendarStatus} from "./calendar-store";
 import { rateLimitWindow,securityTimestamp,validateAdminSession,validateSecurityHash,type AdminSession,type RateLimitResult } from "./security-store";
 import { validatePaymentException, type PaymentException, type PaymentExceptionInput } from "./payment-exceptions";
 import { storedPaymentMode } from "../payment-mode";
@@ -231,8 +232,17 @@ export class SupabaseAdapter implements DataAdapter {
     return this.req('POST','/rpc/consume_booking_recovery',{p_token_hash:tokenHash,p_now:nowISO});
   }
 
+  async beginCalendarSync(_p:string,_s:string,_now?:string):Promise<{leaseId:string}|null>{throw new Error('Calendar persistence is not implemented for this adapter.');}
+  async completeCalendarSync(_input:CalendarSnapshot):Promise<{applied:boolean;blockCount:number;conflictCount:number}>{throw new Error('Calendar persistence is not implemented for this adapter.');}
+  async failCalendarSync(_p:string,_s:string,_lease:string,_now:string):Promise<void>{throw new Error('Calendar persistence is not implemented for this adapter.');}
+  async getCalendarStatus(_p:string,_s:string):Promise<CalendarStatus|null>{if(process.env.CALENDAR_SYNC_REQUIRED!=='true'&&process.env.CALENDAR_SYNC_ENABLED!=='true')return null;throw new Error('Calendar persistence is not implemented for this adapter.');}
+  async listCalendarExportRanges(_p:string,_now:string):Promise<{id:string;from:string;to:string}[]>{throw new Error('Calendar persistence is not implemented for this adapter.');}
+  async listCalendarBlockIds(_p:string):Promise<string[]>{throw new Error('Calendar persistence is not implemented for this adapter.');}
+  async resolveCalendarConflict(_p:string,_s:string,_now:string):Promise<boolean>{throw new Error('Calendar persistence is not implemented for this adapter.');}
+
   // ---- bookings -----------------------------------------------------------
   async createBookingIfAvailable(input: NewBookingInput): Promise<Booking> {
+    if(process.env.CALENDAR_SYNC_REQUIRED==='true'||process.env.CALENDAR_SYNC_ENABLED==='true')throw new BookingError('UNAVAILABLE','Calendar inventory requires a supported adapter.');
     // Atomic check-and-insert runs inside a Postgres transaction in the
     // create_booking_if_available() function (supabase/schema.sql).
     // The function RAISES on conflict; map those to BookingError codes.
@@ -276,6 +286,7 @@ export class SupabaseAdapter implements DataAdapter {
     return rows.length > 0;
   }
   async confirmBookingPayment(id: string, paymentIntentId: string, confirmedAt: string): Promise<{booking: Booking; transitioned: boolean} | null> {
+    if(process.env.CALENDAR_SYNC_REQUIRED==='true'||process.env.CALENDAR_SYNC_ENABLED==='true')return null;
     const result = await this.req<{booking: SnakeBooking; transitioned: boolean} | null>('POST', '/rpc/confirm_booking_payment', {p_id:id, p_payment_intent_id:paymentIntentId, p_confirmed_at:confirmedAt});
     return result?.booking ? {booking:toBooking(result.booking), transitioned:result.transitioned} : null;
   }

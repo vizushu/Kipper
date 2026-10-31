@@ -13,6 +13,7 @@ export function requestedPaymentMode(): PaymentMode | 'closed' {
 export function livePaymentBlockers(): string[] {
   const missing: string[] = LIVE_APPROVAL_FLAGS.filter(flag => process.env[flag] !== 'true');
   // iCal and an unimplemented channel-manager adapter can never certify live inventory.
+  if (process.env.CALENDAR_SYNC_ENABLED === 'true' || process.env.CALENDAR_SYNC_REQUIRED === 'true' || process.env.CALENDAR_EXPORT_ENABLED === 'true') missing.push('SHARED_CALENDAR_REVIEW_WORKFLOW_REQUIRED');
   if (process.env.INVENTORY_POLICY !== 'exclusive_direct') missing.push('EXCLUSIVE_DIRECT_INVENTORY_REQUIRED');
   if (!process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_')) missing.push('LIVE_STRIPE_SECRET_REQUIRED');
   if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith('pk_live_')) missing.push('LIVE_STRIPE_PUBLISHABLE_REQUIRED');

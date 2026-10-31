@@ -1,3 +1,4 @@
+import { assertCalendarReady } from "@/lib/calendar-sync";
 import { isBookingEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
 import { computeAvailabilityDays } from "@/lib/availability";
 import { addDays, isValidDateStr, todayInLA } from "@/lib/dates";
@@ -29,6 +30,7 @@ export async function GET(req: Request) {
   if (!ctx) return notFound("Property not found.");
 
   try {
+    await assertCalendarReady(ctx.adapter, ctx.property.id);
     const days = computeAvailabilityDays({
       property: ctx.property,
       settings: ctx.settings,

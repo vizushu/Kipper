@@ -1,12 +1,14 @@
 import type {DataAdapter} from './db/adapter';
 import {isPublicPreview} from './booking-launch';
+import {syncAirbnbCalendar} from './calendar-sync';
 import {processOutbox} from './outbox';
 /** Bounded maintenance step. Caller must authenticate; no scheduler is provisioned here. */
 export async function runMaintenance(adapter:DataAdapter){
  if(isPublicPreview())return {disabled:true,expiredHolds:0};
+ const calendar=process.env.CALENDAR_SYNC_ENABLED==='true'?await syncAirbnbCalendar(adapter):undefined;
  const expiredHolds=await adapter.expirePendingBookings();
  const delivery=await processOutbox(adapter,{limit:10});
- return {disabled:false,expiredHolds,delivery};
+ return {disabled:false,expiredHolds,delivery,...(calendar?{calendar}:{})};
 }
 export async function maintenanceSummary(adapter:DataAdapter){
  if(isPublicPreview())return {disabled:true};

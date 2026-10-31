@@ -1,3 +1,4 @@
+import type { CalendarStore } from "./calendar-store";
 import type { SecurityStore } from "./security-store";
 import type { PaymentExceptionStore } from "./payment-exceptions";
 import type { WorkflowStore } from "./workflows";
@@ -72,7 +73,7 @@ export interface UpdateBookingPatch {
   adminNotes?: string;
 }
 
-export interface DataAdapter extends WorkflowStore, PaymentExceptionStore, SecurityStore {
+export interface DataAdapter extends WorkflowStore, PaymentExceptionStore, SecurityStore, CalendarStore {
   // ---- bookings ---------------------------------------------------------
   /**
    * Atomically: re-check that [checkIn, checkOut) has no overlapping

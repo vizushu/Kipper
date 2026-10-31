@@ -1,3 +1,5 @@
+import {SqliteCalendarStore} from "./sqlite-calendar-store";
+import {calendarPropertyId,type CalendarSnapshot} from "./calendar-store";
 import { SqliteSecurityStore } from "./sqlite-security-store";
 import type { AdminSession } from "./security-store";
 import { SqlitePaymentExceptions } from "./sqlite-payment-exceptions";
@@ -182,6 +184,7 @@ export class SqliteAdapter implements DataAdapter {
   private workflows: SqliteWorkflows;
   private paymentExceptions: SqlitePaymentExceptions;
   private security: SqliteSecurityStore;
+  private calendars: SqliteCalendarStore;
 
   constructor(dbPath?: string) {
     this.db = new Database(resolveDbPath(dbPath));
@@ -194,6 +197,7 @@ export class SqliteAdapter implements DataAdapter {
     if (!columns.some(c => c.name === "payment_mode")) this.db.exec("ALTER TABLE bookings ADD COLUMN payment_mode TEXT NOT NULL DEFAULT 'test' CHECK(payment_mode IN ('test','live'))");
     this.paymentExceptions = new SqlitePaymentExceptions(this.db);
     this.security = new SqliteSecurityStore(this.db);
+    this.calendars = new SqliteCalendarStore(this.db);
     this.workflows = new SqliteWorkflows(this.db, (id) => {const row=this.db.prepare("SELECT * FROM bookings WHERE id=?").get(id) as BookingRow|undefined;return row?rowToBooking(row):null;});
     this.seedSettingsIfEmpty();
   }
@@ -248,12 +252,14 @@ export class SqliteAdapter implements DataAdapter {
 
   // ---- bookings -----------------------------------------------------------
   async createBookingIfAvailable(input: NewBookingInput): Promise<Booking> {
+    input={...input,propertyId:calendarPropertyId(input.propertyId)};
     const nowIso = new Date().toISOString();
     const holdExpiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
     const id = newId("bk");
 
     const tx = this.db.transaction((reference: string) => {
       this.expirePendingNow(nowIso);
+      this.calendars.assertFresh(input.propertyId,nowIso);
       // 1) Re-check availability INSIDE the transaction.
       const overlap = this.db
         .prepare(
@@ -283,7 +289,7 @@ export class SqliteAdapter implements DataAdapter {
       if (blocked) {
         throw new BookingError(
           "UNAVAILABLE",
-          `Those dates are blocked${blocked.reason ? `: ${blocked.reason}` : "."}`
+          "Those dates are unavailable. Please choose another stay."
         );
       }
       // 2) Insert. UNIQUE(idempotency_key) makes a retried request fail here
@@ -375,6 +381,7 @@ export class SqliteAdapter implements DataAdapter {
       const row = this.db.prepare('SELECT * FROM bookings WHERE id = ?').get(id) as BookingRow | undefined;
       if (!row || row.stripe_payment_intent_id !== paymentIntentId || row.status === 'cancelled') return null;
       if (row.status === 'confirmed') return {booking: rowToBooking(row), transitioned: false};
+      try {this.calendars.assertFresh(row.property_id,new Date().toISOString());} catch {return null;}
       // A newly imported/manual block may invalidate a previously free hold.
       const block = this.db.prepare('SELECT id FROM blocks WHERE property_id = ? AND from_date < ? AND to_date > ? LIMIT 1').get(row.property_id, row.check_out, row.check_in);
       const overlap = this.db.prepare(`SELECT id FROM bookings WHERE id != ? AND property_id = ? AND status IN ('confirmed', 'pending_payment') AND check_in < ? AND check_out > ? LIMIT 1`).get(id, row.property_id, row.check_out, row.check_in);
@@ -500,6 +507,14 @@ export class SqliteAdapter implements DataAdapter {
     return rows.map(rowToBooking);
   }
 
+  beginCalendarSync=(p:string,s:string,now?:string)=>this.calendars.beginCalendarSync(p,s,now);
+  completeCalendarSync=(input:CalendarSnapshot)=>this.calendars.completeCalendarSync(input);
+  failCalendarSync=(p:string,s:string,lease:string,now:string)=>this.calendars.failCalendarSync(p,s,lease,now);
+  getCalendarStatus=(p:string,s:string)=>this.calendars.getCalendarStatus(p,s);
+  listCalendarBlockIds=(p:string)=>this.calendars.listCalendarBlockIds(p);
+  listCalendarExportRanges=(p:string,now:string)=>this.calendars.listCalendarExportRanges(p,now);
+  resolveCalendarConflict=(p:string,s:string,now:string)=>this.calendars.resolveCalendarConflict(p,s,now);
+
   // ---- blocks --------------------------------------------------------------
   async listBlocks(propertyId: string): Promise<BlockedRange[]> {
     const rows = this.db
@@ -523,6 +538,7 @@ export class SqliteAdapter implements DataAdapter {
   }
 
   async deleteBlock(id: string): Promise<boolean> {
+    if(this.calendars.isImportedBlock(id))return false;
     const res = this.db.prepare("DELETE FROM blocks WHERE id = ?").run(id);
     return res.changes > 0;
   }

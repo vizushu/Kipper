@@ -1,3 +1,4 @@
+import { assertCalendarReady } from "@/lib/calendar-sync";
 import { getBookingPaymentMode } from "@/lib/payment-mode";
 import { isBookingEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
 import { z } from "zod";
@@ -37,6 +38,7 @@ export async function POST(req: Request) {
     return apiError("PRICING_REVIEW_REQUIRED", "Stored pricing settings need host review before a quote can be issued.", 503);
   }
   try {
+    await assertCalendarReady(ctx.adapter, ctx.property.id);
     // Availability + min/max-stay validation before pricing.
     assertRangeAvailable({
       settings: ctx.settings,
