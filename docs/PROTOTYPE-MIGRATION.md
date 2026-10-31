@@ -93,3 +93,17 @@ embed returned HTTP200 during implementation. It is not cached by the PWA.
 
 This candidate includes the approved unified Ask Kipper page (no connected messaging)
 which was published but intentionally not deployed separately.
+
+### Browser compatibility repair
+
+Live Chromium inspection found the OSM embed required WebGL. It is replaced by
+ordinary raster image tiles for the same broad neighborhood center, loaded only
+when the map enters the viewport. Only nine intersecting tiles at one fixed zoom
+are requested, using browser caching and an origin-only Referer; no query, guest
+information or property location is transmitted. No tile archive, prefetch,
+offline download, proxy or service-worker map cache is added. Attribution stays
+visible, and a failed image has an honest external-map fallback. SVG diagonal
+arrows replace missing-font glyphs in header/footer/policy/map links.
+Policy checked: https://operations.osmfoundation.org/policies/tiles/ ; tile math:
+https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames . Browser/device rendering
+still needs verification after this exact repair is deployed.

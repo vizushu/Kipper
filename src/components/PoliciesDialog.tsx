@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { IconArrowUpRight } from "@/components/icons";
 import { useEffect, useRef, useState } from "react";
 import type { Property } from "@/lib/types";
 import { IconX } from "@/components/icons";
@@ -27,7 +28,7 @@ export default function PoliciesDialog({ property }: { property: Property }) {
       <section className="mt-5 border-t border-line pt-5"><h3 className="font-display text-2xl">House rules</h3><ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-moss"><li>Maximum {property.maxTotalOccupancy} guests, including children, infants and visitors.</li><li>Check-in {property.checkInTime}. Checkout {property.checkOutTime}.</li><li>Quiet hours: {property.quietHours}.</li><li>No parties, smoking or vaping.</li></ul></section>
       <section className="mt-5 border-t border-line pt-5"><h3 className="font-display text-2xl">Pool &amp; safety</h3><p className="mt-3 text-sm leading-6 text-moss">Supervise children around the pool. No glass near the pool. No lifeguard is on duty.</p></section>
       <section className="mt-5 border-t border-line pt-5"><h3 className="font-display text-2xl">Cancellation</h3><p className="mt-3 text-sm leading-6 text-moss">Accommodation is 100% refundable at least 30 days before arrival, 50% refundable 15–29 days before arrival, and nonrefundable less than 15 days before arrival. Cleaning is fully refundable before arrival.</p><Link href="/policies/cancellation" className="mt-3 inline-flex min-h-11 items-center text-sm underline underline-offset-4">Full cancellation policy</Link></section>
-      <section className="mt-5 border-t border-line pt-5"><h3 className="font-display text-2xl">Questions before booking?</h3><p className="mt-3 text-sm leading-6 text-moss">Check pets, accessibility, pool heating and EV charging details before booking.</p><Link href="/contact" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm underline underline-offset-4">Ask Kipper <span aria-hidden="true">↗</span></Link></section>
+      <section className="mt-5 border-t border-line pt-5"><h3 className="font-display text-2xl">Questions before booking?</h3><p className="mt-3 text-sm leading-6 text-moss">Check pets, accessibility, pool heating and EV charging details before booking.</p><Link href="/contact" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm underline underline-offset-4">Ask Kipper <IconArrowUpRight className="ml-1 inline h-3.5 w-3.5 align-middle"/></Link></section>
       <Link href="/policies/terms" className="mt-4 inline-flex min-h-11 items-center text-xs underline underline-offset-4">Full terms of stay</Link>
       <p className="mt-3 text-xs leading-6 text-moss">Accepted booking terms specify the exact local-time cancellation cutoffs. Tax refund adjustments require separate review.</p>
     </dialog></>;

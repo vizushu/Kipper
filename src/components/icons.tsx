@@ -200,3 +200,7 @@ export const IconFlame = (p: P) => (
     <path d="M12 3s5.5 4.5 5.5 9.5a5.5 5.5 0 0 1-11 0c0-2 1-3.7 2.3-5 .4 1.2 1 2 2 2.6C10.6 8 11 5 12 3Z" />
   </svg>
 );
+
+export const IconArrowUpRight = (p: P) => (
+  <svg {...base(p)}><path d="M6 18 18 6M6 6h12v12" /></svg>
+);

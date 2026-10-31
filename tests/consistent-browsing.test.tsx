@@ -4,7 +4,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {readFileSync} from 'node:fs';
 import PropertyExperience from '../src/components/PropertyExperience';
 import PoliciesDialog from '../src/components/PoliciesDialog';
-import NeighborhoodMap,{MIRA_MESA_MAP,MIRA_MESA_MAP_LINK} from '../src/components/NeighborhoodMap';
+import NeighborhoodMap,{neighborhoodRasterTiles,MIRA_MESA_MAP_LINK} from '../src/components/NeighborhoodMap';
 import Header from '../src/components/Header';
 import {getProperty} from '../src/lib/property';
 vi.mock('next/navigation',()=>({useRouter:()=>({push:vi.fn()}),usePathname:()=>'/'}));
@@ -26,13 +26,13 @@ it('uses an actual modal for policies with current limits and a direct Ask Kippe
 });
 it('maps only broad neighborhood geography with no marker or property inputs',()=>{
  const html=renderToStaticMarkup(<NeighborhoodMap/>);const p=getProperty('casa-pacifica')!;
- expect(html).toContain('openstreetmap.org/export/embed');expect(html).toContain('© OpenStreetMap contributors');expect(html).toContain('not the property location');
+ expect(html).not.toContain('<iframe');expect(html).toContain('© OpenStreetMap contributors');expect(html).toContain('not the property location');
  for(const value of [p.address,String(p.latitude),String(p.longitude),'marker='])expect(html).not.toContain(value);
- expect(new URL(MIRA_MESA_MAP).searchParams.get('bbox')).toBe('-117.19,32.90,-117.10,32.96');expect(MIRA_MESA_MAP_LINK).not.toContain('marker');
+ expect(neighborhoodRasterTiles()).toHaveLength(9);expect(MIRA_MESA_MAP_LINK).not.toContain('marker');
  expect(html).toContain('referrerPolicy="no-referrer"');
 });
 it('keeps Back labels consistent and adds the Ask Kipper diagonal arrow',()=>{
- expect(renderToStaticMarkup(<Header/>)).toContain('↗');
+ expect(renderToStaticMarkup(<Header/>)).toContain('M6 18 18 6M6 6h12v12');
  for(const path of ['src/app/contact/page.tsx','src/components/RoomCards.tsx','src/components/BookingWidget.tsx']){
   const source=readFileSync(path,'utf8');expect(source).toContain('← Back');expect(source).not.toMatch(/Back to the home|Close room details/);
  }
