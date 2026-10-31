@@ -20,7 +20,7 @@ describe('date-aware property template', () => {
     const html = renderToStaticMarkup(<PropertyExperience property={property} />);
     expect(html).toContain('3 bedrooms');
     expect(html).toContain('8 guests');
-    expect(html).toContain('5 bedrooms available in 03/27');
+    expect(html).toContain('5 bedrooms · 3 baths available in 03/27');
     expect(html).toContain('STR-13982L');
     expect(html).toContain('A quote does not reserve dates.');
     expect(html).not.toContain(property.address);

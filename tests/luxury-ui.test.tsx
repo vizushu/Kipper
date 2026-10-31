@@ -20,8 +20,8 @@ it('shows six exact verified amenities with every original detail in a native cl
   for (const item of highlights) expect(property.amenities.flatMap(g => g.items)).toContain(item);
   const html = renderToStaticMarkup(<AmenityHighlights groups={property.amenities} />);
   expect(html).toContain('Show all amenities');
-  expect(html).toContain('<details');
-  expect(html).not.toMatch(/<details[^>]* open/);
+  expect(html).toContain('<dialog');
+  expect(html).not.toMatch(/<dialog[^>]* open/);
   for (const group of property.amenities) expect(html).toContain(group.category.replaceAll('&', '&amp;'));
   expect(selectAmenityHighlights([{ category: 'Other', items: ['Verified item'] }])).toEqual(['Verified item']);
   expect(selectAmenityHighlights([])).toEqual([]);
@@ -42,7 +42,7 @@ it('keeps inclusive occupancy and transition without the removed access emphasis
   expect(html.indexOf('Before you book')).toBeLessThan(html.indexOf('The space'));
   expect(html).not.toContain('separate private residence');
   expect(html).toContain('Maximum 8 guests, including children, infants and visitors.');
-  expect(html).toContain('5 bedrooms available in 03/27');
+  expect(html).toContain('5 bedrooms · 3 baths available in 03/27');
   expect(html).not.toContain(property.address);
 });
 it('does not carry current access or occupancy disclosures into the unapproved expansion', () => {

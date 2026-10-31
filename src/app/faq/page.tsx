@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import FaqAccordion from "@/components/FaqAccordion";
-import { SectionHeading } from "@/components/ui";
 import { PROPERTY } from "@/data/property";
 
 export const metadata: Metadata = {
@@ -32,11 +31,7 @@ const SITE_FAQS = [
 export default function FaqPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <SectionHeading
-        eyebrow="FAQ"
-        title="Questions, answered"
-        lede="Everything about booking direct and staying at Casa Pacifica. Still curious? Consult your verified booking contact."
-      />
+      <header><p className="casa-eyebrow mb-3">FAQ</p><h1 className="casa-page-heading">Questions, answered</h1><p className="mt-3 text-sm leading-6 text-moss">Everything about booking direct and staying at Casa Pacifica. Still curious? Consult your verified booking contact.</p></header>
       <div className="mt-8">
         <FaqAccordion faqs={SITE_FAQS} />
       </div>

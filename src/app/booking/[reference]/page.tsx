@@ -1,3 +1,4 @@
+import { BackLink } from "@/components/BackControl";
 import { bookingStatusHeading } from "@/lib/booking-flow-state";
 import { cookies } from "next/headers";
 import { BOOKING_SESSION_COOKIE } from "@/lib/booking-session";
@@ -57,7 +58,7 @@ export default async function BookingConfirmationPage({
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-moss/10 text-moss">
           <IconCheck className="h-7 w-7" />
         </span>
-        <h1 className="mt-4 font-display text-4xl font-normal tracking-tight text-ink">
+        <h1 className="casa-page-heading">
           {bookingStatusHeading(booking)}
         </h1>
         <p className="mt-2 text-stone-600">
@@ -129,7 +130,7 @@ export default async function BookingConfirmationPage({
           <p className="text-sm text-stone-600">
             For changes to an existing stay, consult the verified host contact in your original confirmation.
           </p>
-          <Link href="/" className="mt-4 inline-flex min-h-11 items-center text-sm">← Back</Link>
+          <BackLink href="/" className="mt-4"/>
         </div>
       </div>
     </div>

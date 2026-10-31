@@ -107,3 +107,11 @@ arrows replace missing-font glyphs in header/footer/policy/map links.
 Policy checked: https://operations.osmfoundation.org/policies/tiles/ ; tile math:
 https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames . Browser/device rendering
 still needs verification after this exact repair is deployed.
+
+### Oct 31: full navigation/amenities consistency pass
+- Shared full-shaft SVG Back control now covers albums, photo viewer, video, room, share, date panel, property breadcrumb, contact and booking return. Albums/photo retain the site masthead; Back returns photo → albums → property, with selected album focus restored. Duplicate X removed wherever Back already exists. Standalone policy/amenities popups retain their sole X.
+- Gallery title scale is shared across all three layers. Section CSS no longer overrides nested dialog headings; form-control font inheritance no longer overrides explicit size/weight utilities. Calendar and photo navigation use the same thin arrow family; diagonal arrows use a common 16px SVG.
+- Amenities use an ivory native dialog with two-column icon rows, full existing verified categories, Escape/outside dismissal and opener restoration. No prototype-only amenity or Wi-Fi specification imported.
+- Expansion badge now says “5 bedrooms · 3 baths available in 03/27”; current 8-person/3-bedroom/2-bath capacity and future checkout approval remain unchanged.
+- Existing Casa Pacifica sun/wave icon brands the broad neighborhood circle, not a property pin. Geography, attribution, raster loading policy and address privacy are unchanged.
+- Acceptance includes deployed desktop/narrow checks of every gallery layer, date/room/share/policy/amenity dialogs, Back hierarchy, close/reopen/focus, map branding and contact. Automated checks do not imply physical touch-device or payment-provider testing.

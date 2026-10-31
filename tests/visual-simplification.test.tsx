@@ -14,7 +14,7 @@ it('removes menu and intro review clutter, and places exact screenshot sections 
  const html=renderToStaticMarkup(<PropertyExperience property={getProperty('casa-pacifica')!} publicPreview/>);
  expect(html).toContain('Experience authentic San Diego beach culture. the comfort of feeling at home.');
  expect(html).not.toContain('No verified reviews yet');
- expect(html).toContain('5 bedrooms available in 03/27');expect(html).not.toContain('15 guests');
+ expect(html).toContain('5 bedrooms · 3 baths available in 03/27');expect(html).not.toContain('15 guests');
  expect(html).toContain('8 guests');expect(html).toContain('3 bedrooms');expect(html).toContain('2 baths');expect(html).not.toContain('Current accommodation:');
  expect(html.indexOf('3 bedrooms')).toBeLessThan(html.indexOf('At home in San Diego'));
  expect(html.indexOf('The good kind of staying in.')).toBeLessThan(html.indexOf('A space for everyone.'));

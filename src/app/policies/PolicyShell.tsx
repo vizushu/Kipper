@@ -26,7 +26,7 @@ export function PolicyShell({
         / <span className="text-ink">{title}</span>
       </nav>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-3xl font-medium text-ink">{title}</h1>
+        <h1 className="casa-page-heading">{title}</h1>
         {draft && <SampleBadge />}
       </div>
       <p className="mt-2 text-sm text-stone-500">

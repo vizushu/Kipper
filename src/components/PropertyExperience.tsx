@@ -26,14 +26,14 @@ export default function PropertyExperience({property,publicPreview=false,initial
     {showDetails&&property.photos.length>0?<PhotoGallery photos={property.photos} propertyName={property.name}/>:<div className="flex min-h-56 items-center justify-center bg-cream p-8 text-center"><div><p className="font-display text-3xl">Your dates. Your accommodation.</p><p className="mt-3 text-sm text-moss">{resolution.message??"Photos and accommodation details are awaiting approval."}</p></div></div>}
     <div className="casa-editorial">
       <section aria-label="Introduction"><p className="casa-eyebrow mb-3">{property.neighborhood} · {property.city}</p><h1 className="casa-title">{isCasa?"Experience authentic San Diego beach culture. the comfort of feeling at home.":property.name}</h1>
-        <div className="mt-5 pb-5">{showDetails&&<div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm"><span className="flex items-center gap-2"><IconUsers className="h-5 w-5"/>{property.maxGuests} guests</span><span className="flex items-center gap-2"><IconBed className="h-5 w-5"/>{property.bedrooms} bedrooms</span><span className="flex items-center gap-2"><IconBath className="h-5 w-5"/>{property.bathrooms} baths</span></div>}{isCasa&&<p className="mt-3 text-xs text-moss">5 bedrooms available in 03/27</p>}</div>
+        <div className="mt-5 pb-5">{showDetails&&<div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm"><span className="flex items-center gap-2"><IconUsers className="h-5 w-5"/>{property.maxGuests} guests</span><span className="flex items-center gap-2"><IconBed className="h-5 w-5"/>{property.bedrooms} bedrooms</span><span className="flex items-center gap-2"><IconBath className="h-5 w-5"/>{property.bathrooms} baths</span></div>}{isCasa&&<p className="mt-3 text-xs text-moss">5 bedrooms · 3 baths available in 03/27</p>}</div>
         {config&&<p className="sr-only">{config.label}</p>}
         {property.hostName&&<p className="mb-3 text-xs text-moss">{property.hostName}</p>}
         {resolution.message&&<p role="status" className="mb-5 text-sm text-moss">{resolution.message}</p>}
       </section>
       {showDetails&&<>
         {isCasa&&<StayHighlights/>}
-        <section className="border-t border-line pb-2 pt-7"><h2 className="mb-6 font-display">The good kind of staying in.</h2><AmenityHighlights groups={property.amenities}/></section>
+        <section className="border-t border-line pb-2 pt-7"><h2 className="casa-page-heading mb-6">The good kind of staying in.</h2><AmenityHighlights groups={property.amenities}/></section>
         <Section title="A space for everyone."><RoomCards photos={property.photos}/><p className="mt-3 text-xs text-moss">Bed count and sleeping arrangements are awaiting confirmation.</p></Section>
         <Section title="Before you book">
           <div className="space-y-5 text-sm leading-6">

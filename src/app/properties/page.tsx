@@ -15,7 +15,7 @@ export default async function PropertiesPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <h1 className="font-display text-3xl font-medium text-ink sm:text-4xl">Stays</h1>
+      <h1 className="casa-page-heading">Stays</h1>
       <p className="mt-2 max-w-2xl text-base leading-relaxed text-stone-600">
         {isPublicPreview() ? "Explore Casa Pacifica. This preview does not accept reservations or payments." : "Explore Casa Pacifica and select dates for a complete stay quote."}
       </p>

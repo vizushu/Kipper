@@ -9,7 +9,7 @@
  * - Prices come only from the server quote, never a client-computed total.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { IconChevronLeft, IconChevronRight } from "@/components/icons";
+import { IconArrowLeft, IconArrowRight } from "@/components/icons";
 import { type AvailabilityDay } from "@/lib/types";
 import { cn } from "@/components/cn";
 
@@ -244,7 +244,7 @@ export default function AvailabilityCalendar({
           aria-label="Previous month"
           className="flex h-11 w-11 items-center justify-center rounded-full text-ink hover:bg-cream disabled:opacity-30"
         >
-          <IconChevronLeft className="h-5 w-5" />
+          <IconArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex items-center gap-2 text-xs text-stone-500">
           <span className="inline-flex items-center gap-1.5">
@@ -260,7 +260,7 @@ export default function AvailabilityCalendar({
           aria-label="Next month"
           className="flex h-11 w-11 items-center justify-center rounded-full text-ink hover:bg-cream"
         >
-          <IconChevronRight className="h-5 w-5" />
+          <IconArrowRight className="h-5 w-5" />
         </button>
       </div>
 

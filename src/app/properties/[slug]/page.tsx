@@ -1,3 +1,4 @@
+import { BackLink } from "@/components/BackControl";
 import { parseStaySelection, staySelectionKey } from "@/lib/stay-selection";
 import { isPublicPreview } from "@/lib/booking-launch";
 import type { Metadata } from "next";
@@ -21,7 +22,7 @@ export default async function PropertyPage({ params, searchParams }: { params: P
   const schema = { "@context": "https://schema.org", "@type": "LodgingBusiness", name: property.name, address: { "@type": "PostalAddress", addressLocality: property.city, addressRegion: property.state } };
   return <article className="mx-auto max-w-[1164px] pb-6 sm:px-[22px]">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
-    <nav aria-label="Breadcrumb" className="px-5 py-3 text-xs text-moss"><Link href="/properties" className="inline-flex min-h-8 items-center underline-offset-4 hover:underline">← Back</Link></nav>
+    <nav aria-label="Breadcrumb" className="px-5 py-3 text-xs text-moss"><BackLink href="/properties"/></nav>
     <PropertyExperience publicPreview={isPublicPreview()} key={staySelectionKey(property.id, selection)} initialSelection={selection} property={{ ...property, address: "", zip: "", latitude: 0, longitude: 0 }} />
   </article>;
 }

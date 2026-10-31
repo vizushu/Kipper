@@ -83,8 +83,8 @@ export const IconChevronDown = (p: P) => (
   </svg>
 );
 export const IconArrowRight = (p: P) => (
-  <svg {...base(p)}>
-    <path d="M4 12h15m-6-7 7 7-7 7" />
+  <svg {...base({ strokeWidth: 1.5, ...p })}>
+    <path d="M4 12h16m-6-6 6 6-6 6" />
   </svg>
 );
 export const IconShield = (p: P) => (
@@ -202,5 +202,9 @@ export const IconFlame = (p: P) => (
 );
 
 export const IconArrowUpRight = (p: P) => (
-  <svg {...base(p)}><path d="M6 18 18 6M6 6h12v12" /></svg>
+  <svg {...base({ strokeWidth: 1.5, ...p })}><path d="M6 18 18 6M6 6h12v12" /></svg>
+);
+
+export const IconArrowLeft = (p: P) => (
+  <svg {...base({ strokeWidth: 1.5, ...p })}><path d="M20 12H4m6-6-6 6 6 6" /></svg>
 );

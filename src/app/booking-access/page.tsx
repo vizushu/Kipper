@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'Booking access', description: 'Secur
 export default function BookingAccessPage() {
   return <div className="mx-auto max-w-[590px] px-5 py-10 pb-20 sm:px-8 sm:py-12">
     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Casa Pacifica</p>
-    <h1 className="mt-3 font-display text-4xl font-normal tracking-tight text-ink">Access your booking</h1>
+    <h1 className="casa-page-heading">Access your booking</h1>
     {isRecoveryEnabled() ? <BookingAccessClient /> : <div className="mt-6 rounded-xl border border-stone-300 bg-[#fffcf6] p-6 text-sm leading-relaxed text-stone-600">
       Booking access recovery is not available in this preview. No booking details or recovery codes are collected here. For an existing reservation, use the verified contact in your original confirmation.
     </div>}

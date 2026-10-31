@@ -323,7 +323,7 @@ function CheckoutFlow() {
   return (
     <div className="mx-auto max-w-[590px] px-5 py-7 pb-20 sm:px-8 sm:py-10">
       <BookingProgress current={detailsConfirmed ? "payment" : "review"} />
-      <h1 className="font-display text-4xl font-normal tracking-tight text-ink">Review your stay.</h1>
+      <h1 className="casa-page-heading">Review your stay.</h1>
       <p className="mt-2 text-stone-600">
         {property?.name ?? "Casa Pacifica"} · {fmtDate(quote.checkIn)} → {fmtDate(quote.checkOut)} ·{" "}
         {guestSummary(quote.guests)}
