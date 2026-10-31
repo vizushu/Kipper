@@ -69,3 +69,14 @@ These pages alone are not evidence of working opt-in or two-way messaging. A tru
 prelaunch campaign-review demonstration requires separately approved complete flow
 evidence; do not invent a web form or keyword enrollment. No campaign submission occurs
 from this code change.
+
+## Useful self-service while messaging is pending
+The primary contact action is now Email us, a blank mailto to the approved support
+address; it does not submit data to the website or claim delivery. Six optional,
+initially closed native disclosures provide a clearly labeled verified stay guide,
+not live AI/chat. Current occupancy, date-transition limitations, arrival facts and
+cancellation text use canonical property/policy sources. No private address, access
+code, live availability, quote, invented amenity or guest context is returned.
+SMS prelaunch disclosures remain available in a secondary expandable section with a
+disabled SMS control and links to approved policies. Human contact is never gated on
+answering questions. See CURRENT-BOOKING-READINESS.md for actual remaining launch gates.

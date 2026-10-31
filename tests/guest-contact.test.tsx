@@ -42,7 +42,7 @@ describe('guest contact destinations fail closed',()=>{
  it('unifies contact without public community cards, mandatory search or fake chat',()=>{
   const html=renderToStaticMarkup(<ContactPage/>);expect(html).not.toContain('sm:grid-cols-2');expect(html).not.toContain('<article');
   expect(html).toContain('Questions about your stay?');expect(html).toContain('href="/booking-access"');
-  expect(html).toContain('disabled=""');expect(html).toContain('Message us');expect(html).toContain('Booked guests: urgent help');
+  expect(html).toContain('disabled=""');expect(html).toContain('Email us');expect(html).toContain('Booked guests: urgent help');
   expect(html).not.toMatch(/<form|<textarea|<input/);
  });
 });
