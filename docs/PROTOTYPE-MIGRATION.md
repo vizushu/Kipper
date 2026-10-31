@@ -65,3 +65,31 @@ specifications and staffed-hotel claims were not copied. Bedroom cards use exist
 room-labelled photographs only; no bed sizes or layouts are asserted. The prototype's
 exact-address map was not copied because the application withholds the precise
 address until verified guest access. The public neighborhood link remains general.
+
+## Consistent browsing revision (October 30, 23:54 request)
+
+The latest eight screenshots supersede earlier hero chrome and expansion facts.
+Back actions use a bare arrow + Back; Ask Kipper gets a diagonal arrow. The hero
+supports pointer/touch swipe and keyboard navigation with a moving five-dot window;
+its tap still opens albums and swipes suppress accidental taps. The share glyph is
+an upload arrow inside a translucent circle, not the Ask Kipper diagonal arrow.
+
+The current icon row is 8 guests / 3 bedrooms / 2 baths, with a quiet “5 bedrooms
+available in 03/27” indicator. Repeated future/current browsing warnings and access
+paragraphs are removed; actual selected-date errors and every server booking gate
+remain. Public FAQ/draft terms presentation avoids the removed floor/shared-space
+emphasis without claiming an entire property. Original property data and accepted
+booking terms/snapshots are unchanged. Room and policy dialogs support outside
+click, Back/Close, Escape and opener focus restoration. Policies use current limits.
+
+The map is an OpenStreetMap neighborhood embed with broad Mira Mesa bounds
+(-117.19,32.90,-117.10,32.96), not property coordinates or an address pin. The overlay
+is labelled approximate area, not a property radius. It never reads property location
+fields or guest data, sends no referrer, and preserves OSM attribution. The map opens
+only broad neighborhood geography; exact address remains for confirmed guests.
+Geographic context was checked against the City of San Diego Mira Mesa community
+plan: https://www.sandiego.gov/planning/community-plans/mira-mesa . The OSM public
+embed returned HTTP200 during implementation. It is not cached by the PWA.
+
+This candidate includes the approved unified Ask Kipper page (no connected messaging)
+which was published but intentionally not deployed separately.

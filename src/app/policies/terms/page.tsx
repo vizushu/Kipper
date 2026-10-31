@@ -15,10 +15,9 @@ export default function TermsPage() {
       </p>
       <h2>The property</h2>
       <p>
-        You are booking the current downstairs guest accommodation in Mira Mesa, San Diego: 3 bedrooms, 2 bathrooms, sleeping up to
+        You are booking the current guest accommodation in Mira Mesa, San Diego: 3 bedrooms, 2 bathrooms, sleeping up to
         8 guests, with private access to the backyard, pool, and listed
-        amenities. The upstairs level is a separate private residence and is not
-        part of your reservation.
+        amenities. Only the accommodation specified for your stay dates is included.
       </p>
       <h2>Occupancy & guests</h2>
       <ul>

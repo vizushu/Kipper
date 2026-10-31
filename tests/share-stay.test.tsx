@@ -21,3 +21,12 @@ it('does not share/copy automatically and renders an explicit trigger without pr
   expect(source).not.toContain('window.location.href');
   expect(source).not.toContain('fetch(');
 });
+
+it('uses the pale circular share control and dismisses only backdrop clicks', () => {
+  const html = renderToStaticMarkup(<ShareStay propertyName="Casa Pacifica" />);
+  expect(html).toContain('rounded-full bg-paper/75 text-ink');
+  const source = readFileSync('src/components/ShareStay.tsx','utf8');
+  expect(source).toContain('event.target === event.currentTarget');
+  expect(source).toContain('revision.current++');
+  expect(source).not.toContain('Close sharing');
+});

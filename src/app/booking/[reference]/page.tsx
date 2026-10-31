@@ -129,9 +129,7 @@ export default async function BookingConfirmationPage({
           <p className="text-sm text-stone-600">
             For changes to an existing stay, consult the verified host contact in your original confirmation.
           </p>
-          <Link href="/" className="mt-4 inline-block">
-            <Button variant="secondary">Back to home</Button>
-          </Link>
+          <Link href="/" className="mt-4 inline-flex min-h-11 items-center text-sm">← Back</Link>
         </div>
       </div>
     </div>

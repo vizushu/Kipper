@@ -29,19 +29,20 @@ it('shows six exact verified amenities with every original detail in a native cl
 it('renders the prototype carousel with photo albums and visible count', () => {
   const html = renderToStaticMarkup(<PhotoGallery photos={property.photos} propertyName={property.name} />);
   expect(html).toContain('aria-label="Open all photo albums"');
-  expect(html).toContain('aria-label="Next home photo"');
+  expect(html).not.toContain('aria-label="Next home photo"');
+  expect(html).toContain('data-photo-dots');
   expect(html).toContain('View all 12 photos');
   expect(html).toContain('1 / 12');
   expect(html).not.toContain('opacity-0');
   expect(renderToStaticMarkup(<PhotoGallery photos={[]} propertyName="Empty" />)).toBe('');
 });
-it('discloses upstairs separation, inclusive occupancy and transition ahead of the space description', () => {
+it('keeps inclusive occupancy and transition without the removed access emphasis', () => {
   vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-30T12:00:00Z'));
   const html = renderToStaticMarkup(<PropertyExperience property={property} publicPreview />);
   expect(html.indexOf('Before you book')).toBeLessThan(html.indexOf('The space'));
-  expect(html).toContain('separate private residence');
-  expect(html).toContain('Maximum 8 people on the property, including infants and daytime visitors.');
-  expect(html).toContain('March 1, 2027');
+  expect(html).not.toContain('separate private residence');
+  expect(html).toContain('Maximum 8 guests, including children, infants and visitors.');
+  expect(html).toContain('5 bedrooms available in 03/27');
   expect(html).not.toContain(property.address);
 });
 it('does not carry current access or occupancy disclosures into the unapproved expansion', () => {

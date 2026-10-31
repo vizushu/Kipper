@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   const preview = isPublicPreview();
   return <div className="mx-auto max-w-[590px] px-5 pb-20 pt-8 sm:px-8 sm:py-12">
-    <Link href="/properties/casa-pacifica" className="mb-7 inline-flex min-h-11 items-center text-sm text-ink">← Back to the home</Link>
+    <Link href="/properties/casa-pacifica" className="mb-7 inline-flex min-h-11 items-center text-sm text-ink">← Back</Link>
     <p className="casa-eyebrow mb-3">Ask Kipper · Casa Pacifica</p>
     <h1 className="font-display text-4xl font-normal leading-[1.1] tracking-tight text-ink sm:text-5xl">Questions about your stay?</h1>
     <p className="mt-5 text-sm leading-7 text-moss">One place for stay questions and help from the team.</p>

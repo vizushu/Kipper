@@ -26,7 +26,7 @@ const SITE_FAQS = [
     q: "Can I get an early check-in or late checkout?",
     a: "Early check-in and late checkout are not guaranteed. Any request needs approval from the verified booking contact.",
   },
-  ...PROPERTY.faqs,
+  ...PROPERTY.faqs.filter(item => !/upstairs|downstairs|shared indoor|shared space/i.test(`${item.q} ${item.a}`)),
 ];
 
 export default function FaqPage() {

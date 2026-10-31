@@ -14,9 +14,9 @@ it('removes menu and intro review clutter, and places exact screenshot sections 
  const html=renderToStaticMarkup(<PropertyExperience property={getProperty('casa-pacifica')!} publicPreview/>);
  expect(html).toContain('Experience authentic San Diego beach culture. the comfort of feeling at home.');
  expect(html).not.toContain('No verified reviews yet');
- expect(html).toContain('Expansion from March 1, 2027');expect(html).toContain('15 guests · 5 bedrooms · 3 baths');
- expect(html).toContain('Current accommodation: 8 guests · 3 bedrooms · 2 baths');
- expect(html.indexOf('15 guests')).toBeLessThan(html.indexOf('At home in San Diego'));
+ expect(html).toContain('5 bedrooms available in 03/27');expect(html).not.toContain('15 guests');
+ expect(html).toContain('8 guests');expect(html).toContain('3 bedrooms');expect(html).toContain('2 baths');expect(html).not.toContain('Current accommodation:');
+ expect(html.indexOf('3 bedrooms')).toBeLessThan(html.indexOf('At home in San Diego'));
  expect(html.indexOf('The good kind of staying in.')).toBeLessThan(html.indexOf('A space for everyone.'));
  expect(html).toContain('About these highlights');expect(html).toContain('Read all policies');expect(html).toContain('The first chapter is yours.');
  expect(html).not.toMatch(/Wi-Fi 7|5 GHz|Warm and welcoming staff/);
@@ -28,6 +28,6 @@ it('does not change current headcount or future booking authority',()=>{
 });
 it('makes hero chrome transparent while retaining touch targets and accessible controls',()=>{
  const html=renderToStaticMarkup(<PhotoGallery propertyName="Casa Pacifica" photos={getProperty('casa-pacifica')!.photos}/>);
- expect(html).toContain('bg-black/25');expect(html).toContain('bg-transparent text-white');expect(html).toContain('h-11 w-11');
- expect(html).toContain('Share this stay');expect(html).toContain('Next home photo');
+ expect(html).toContain('bg-black/25');expect(html).toContain('bg-transparent');expect(html).toContain('h-11 w-11');
+ expect(html).toContain('Share this stay');expect(html).not.toContain('Next home photo');expect(html).toContain('data-photo-dots');
 });
