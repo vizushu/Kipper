@@ -11,6 +11,7 @@ import AmenityHighlights from "@/components/AmenityHighlights";
 import StayHighlights from "@/components/StayHighlights";
 import PoliciesDialog from "@/components/PoliciesDialog";
 import NeighborhoodMap from "@/components/NeighborhoodMap";
+import SmartHomeConcept from "@/components/SmartHomeConcept";
 import RoomCards from "@/components/RoomCards";
 import FaqAccordion from "@/components/FaqAccordion";
 import { IconClock, IconShield, IconCheck, IconUsers, IconBed, IconBath } from "@/components/icons";
@@ -33,7 +34,7 @@ export default function PropertyExperience({property,publicPreview=false,initial
       </section>
       {showDetails&&<>
         {isCasa&&<StayHighlights/>}
-        <section className="border-t border-line pb-2 pt-7"><h2 className="casa-page-heading mb-6">The good kind of staying in.</h2><AmenityHighlights groups={property.amenities}/></section>
+        <section className="border-t border-line pb-2 pt-7"><h2 className="casa-page-heading mb-6">The good kind of staying in.</h2><AmenityHighlights groups={property.amenities}/>{isCasa&&<SmartHomeConcept/>}</section>
         <Section title="A space for everyone."><RoomCards photos={property.photos}/><p className="mt-3 text-xs text-moss">Bed count and sleeping arrangements are awaiting confirmation.</p></Section>
         <Section title="Before you book">
           <div className="space-y-5 text-sm leading-6">

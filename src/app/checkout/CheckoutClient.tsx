@@ -13,6 +13,7 @@
  * States: loading quote, quote error (with code-aware messaging),
  * guest form, payment, processing, success redirect, failure + retry.
  */
+import FaxJokeField from "@/components/FaxJokeField";
 import BookingProgress from "./BookingProgress";
 import { bookingFlowNotice, quoteIsCurrent } from "@/lib/booking-flow-state";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -385,10 +386,10 @@ function CheckoutFlow() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="(555) 123-4567"
                 autoComplete="tel"
-                className="sm:col-span-2"
                 hint="Only used if we need to reach you about your stay."
                 disabled={detailsConfirmed}
               />
+              <FaxJokeField/>
             </div>
             {!detailsConfirmed ? (
               <Button

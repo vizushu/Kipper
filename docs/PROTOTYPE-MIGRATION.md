@@ -115,3 +115,15 @@ still needs verification after this exact repair is deployed.
 - Expansion badge now says “5 bedrooms · 3 baths available in 03/27”; current 8-person/3-bedroom/2-bath capacity and future checkout approval remain unchanged.
 - Existing Casa Pacifica sun/wave icon brands the broad neighborhood circle, not a property pin. Geography, attribution, raster loading policy and address privacy are unchanged.
 - Acceptance includes deployed desktop/narrow checks of every gallery layer, date/room/share/policy/amenity dialogs, Back hierarchy, close/reopen/focus, map branding and contact. Automated checks do not imply physical touch-device or payment-provider testing.
+
+### Oct 31: reservation humor and local smart-home concept
+- Actual reference fax label/disabled “Just kidding!” field is represented only in the
+  reservation guest-details stage. It has no name, required flag, value, state or
+  booking-payload mapping. Accessible copy explains that no fax number is collected.
+  Public preview still does not render the guest-information checkout form.
+- A compact, initially collapsed concept sits directly below verified amenities.
+  Local temperature starts at 72°F and is bounded to 60–85°F; example lights toggle
+  only React state. Every control is explicitly simulated. No device connection,
+  network call, telemetry, storage, access code or new amenity/service claim exists.
+- This is not a Kipper startup-site build, actual smart-home integration or booking
+  activation. Domain/canonical changes remain with the separate hosting/DNS task.
