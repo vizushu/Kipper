@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { CSSProperties } from "react";
+import "mapbox-gl/dist/mapbox-gl.css";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
