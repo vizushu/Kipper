@@ -1,7 +1,7 @@
 /** Private operational alerts. No guest data, feed URLs or provider credentials. */
 export type OperatorAlertKind='calendar_conflict'|'payment_exception'|'calendar_health'|'payment_setup';
 export type OperatorAlertStatus='pending'|'processing'|'sent'|'simulated'|'suppressed'|'dead';
-export interface OperatorAlertEnvelope {from:string;to:string;subject:string;text:string}
+export interface OperatorAlertEnvelope {replyTo?:string;from:string;to:string;subject:string;text:string}
 export interface OperatorAlert {
  id:string;kind:OperatorAlertKind;incidentId:string;episode:number;paymentMode:'test'|'live';
  dedupeKey:string;status:OperatorAlertStatus;attempts:number;createdAt:string;nextAttemptAt:string;

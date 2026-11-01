@@ -39,3 +39,16 @@ describe('admin selected receipt retry',()=>{
  it('reports already-sent receipts without sending them again',async()=>{await setup();const target=(await a.listOutbox()).find(j=>j.kind==='guest_confirmation')!;await processOutbox(a,{jobId:target.id,deliver:async()=> 'sent'});const response=await request();expect(response.status).toBe(409);expect(await response.json()).toMatchObject({status:'sent',action:'not_retried'});expect(fs.existsSync(path.join(dir,'mail'))).toBe(false);expect((await a.listOutbox()).find(j=>j.id===target.id)?.attempts).toBe(1);});
  it('rejects cancelled receipts and blocks preview before accessing jobs',async()=>{await setup();await a.cancelBooking(booking.id);expect((await request()).status).toBe(409);vi.stubEnv('SITE_PREVIEW_MODE','true');expect((await request()).status).toBe(401);expect(fs.existsSync(path.join(dir,'mail'))).toBe(false);});
 });
+
+it('freezes configured reply-to in the durable envelope across lease retries',async()=>{
+ await confirm();vi.stubEnv('BOOKING_REPLY_TO_EMAIL','first@example.test');
+ const [job]=await a.claimOutbox(now(),1);
+ const frozen=await a.prepareOutboxMessage(job.id,job.leaseToken!,outboxEnvelope(job),now());
+ expect(frozen?.replyTo).toBe('first@example.test');
+ vi.stubEnv('BOOKING_REPLY_TO_EMAIL','second@example.test');
+ expect((await a.prepareOutboxMessage(job.id,job.leaseToken!,outboxEnvelope(job),now()))?.replyTo).toBe('first@example.test');
+ vi.advanceTimersByTime(5*60_000+1);
+ const [retry]=await b.claimOutbox(now(),1,job.id);
+ expect(retry.envelope?.replyTo).toBe('first@example.test');
+ expect(retry.dedupeKey).toBe(job.dedupeKey);
+});

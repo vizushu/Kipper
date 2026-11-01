@@ -1,21 +1,9 @@
 import { isPublicPreview } from "./booking-launch";
-/**
- * Booking emails: guest confirmation + host notification.
- *
- * Transport:
- * - If RESEND_API_KEY is set → sent via the Resend REST API.
- * - Otherwise → rendered HTML is written to ./.dev-emails/*.html (dev
- *   logger fallback) and the "send" is logged to the console.
- *
- * NEVER throws: a failed email must never fail a booking. All errors are
- * logged and swallowed — routes call these after the booking state change
- * has already been persisted.
- *
- * Env:
- *   RESEND_API_KEY      — enables real sending via Resend
- *   BOOKING_FROM_EMAIL  — From: address (default "Casa Pacifica <bookings@casapacifica.example>")
- *   HOST_NOTIFY_EMAIL   — where host notifications go (default: the From address)
+/** Legacy render helpers; active booking delivery uses the durable outbox.
+ * Explicit delivery approval is required. Errors are redacted, never provider bodies or guest data.
  */
+import {configuredReplyTo,liveEmailDeliveryConfigured,validateDeliveryEnvelope} from "./email-delivery";
+import {storedPaymentMode} from "./payment-mode";
 
 import fs from "node:fs";
 import path from "node:path";
@@ -72,7 +60,7 @@ function guestHtml(booking: Booking, property: Property): string {
 <p>Accommodation: ${esc(booking.staySnapshot?.label ?? "See original booking terms")}</p>
 <p>Cancellation: ${esc(booking.staySnapshot?.cancellationPolicy ?? "See original booking terms")}</p>
 <h2 style="font-size:16px;">Good to know</h2>
-<ul><li>Quiet hours: ${esc(property.quietHours)}</li><li>Wifi details are in this email's follow-up before arrival.</li><li>Please review the house rules in your booking details.</li></ul>
+<ul><li>Quiet hours: ${esc(property.quietHours)}</li><li>Contact your host for arrival and Wi-Fi details.</li><li>Please review the house rules in your booking details.</li></ul>
 <p>For stay questions, consult your verified host contact.<br>— Casa Pacifica</p>`
   );
 }
@@ -96,31 +84,32 @@ function hostHtml(booking: Booking, property: Property): string {
   );
 }
 
-async function deliver(to: string, subject: string, html: string, kind: "guest" | "host", reference: string): Promise<void> {
+async function deliver(to: string, subject: string, html: string, kind: "guest" | "host", reference: string, booking?: Booking): Promise<void> {
   if (isPublicPreview()) throw new Error("Preview delivery blocked");
   const apiKey = process.env.RESEND_API_KEY;
-  if (apiKey && process.env.EMAIL_DELIVERY_MODE === "live" && process.env.EMAIL_LIVE_APPROVED === "true" && process.env.BOOKING_TEST_MODE !== "true") {
+  const replyTo=configuredReplyTo();
+  if (liveEmailDeliveryConfigured()) {
+    if(booking&&(storedPaymentMode(booking.paymentMode)!=='live'||booking.paymentStatus!=='paid'||booking.status!=='confirmed'))throw new Error('Live delivery is not enabled for this message');
+    validateDeliveryEnvelope({from:fromAddress(),to,subject,replyTo});
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from: fromAddress(), to: [to], subject, html }),
+      body: JSON.stringify({ from: fromAddress(), to: [to], subject, html, ...(replyTo?{reply_to:replyTo}:{}) }),
     });
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Resend ${res.status}: ${body}`);
+      throw new Error("Email provider did not acknowledge delivery");
     }
-    console.log(`[email] sent ${kind} email for ${reference} via Resend`);
     return;
   }
-  // Dev logger fallback: write the rendered email to disk.
+  if(process.env.EMAIL_DELIVERY_MODE!=="local")throw new Error("Email delivery is disabled");
+  // Explicit local simulation only; no guest/provider output in logs.
   const dir = path.join(process.cwd(), ".dev-emails");
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true, mode:0o700 });
   const file = path.join(dir, `${Date.now()}-${kind}-${reference}.html`);
-  fs.writeFileSync(file, html, "utf8");
-  console.log(`[email:dev] ${kind} email for ${reference} written to ${file} (RESEND_API_KEY not set)`);
+  fs.writeFileSync(file, html, {encoding:"utf8",mode:0o600});
 }
 
 /** Contact-form message → host inbox. Never throws — logs and continues on failure. */
@@ -144,7 +133,7 @@ export async function sendContactMessage(
       `contact-${Date.now()}`,
     );
   } catch (err) {
-    console.error(`[email] FAILED contact message:`, err);
+    console.error("[email] Contact delivery failed");
   }
 }
 
@@ -156,10 +145,11 @@ export async function sendBookingConfirmation(booking: Booking, property: Proper
       `Booking confirmed — ${property.name} (${booking.reference})`,
       guestHtml(booking, property),
       "guest",
-      booking.reference
+      booking.reference,
+      booking
     );
   } catch (err) {
-    console.error(`[email] FAILED guest confirmation for ${booking.reference}:`, err);
+    console.error("[email] Guest delivery failed");
   }
 }
 
@@ -171,9 +161,10 @@ export async function sendHostNotification(booking: Booking, property: Property)
       `New direct booking ${booking.reference} — ${booking.checkIn} → ${booking.checkOut}`,
       hostHtml(booking, property),
       "host",
-      booking.reference
+      booking.reference,
+      booking
     );
   } catch (err) {
-    console.error(`[email] FAILED host notification for ${booking.reference}:`, err);
+    console.error("[email] Host delivery failed");
   }
 }

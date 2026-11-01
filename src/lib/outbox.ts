@@ -1,4 +1,5 @@
-import { canFulfillPaymentMode, storedPaymentMode } from "./payment-mode";
+import {configuredReplyTo,liveEmailDeliveryConfigured,validateDeliveryEnvelope} from "./email-delivery";
+import { storedPaymentMode } from "./payment-mode";
 /** Durable, bounded delivery. Default disabled; public preview cannot claim or send. */
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -11,17 +12,18 @@ const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 export type OutboxDelivery=(job:OutboxJob,envelope:OutboxEnvelope)=>Promise<'sent'|'simulated'>;
 export function outboxEnvelope(job:OutboxJob):OutboxEnvelope {
  const from=process.env.BOOKING_FROM_EMAIL??'Casa Pacifica <bookings@example.test>';
+ const replyTo=configuredReplyTo();
  if(job.kind==='access_recovery'){
   const r=job.payload.recovery;if(!r)throw new Error('Missing recovery payload');
   // A code is exchanged by POST, not a URL query (avoids access-token referrer/log leakage).
-  return {from,to:r.recipient,subject:'Your Casa Pacifica booking access code',html:`<p>A booking access recovery was requested.</p><p>Use this single-use code within 15 minutes:</p><p><code>${escape(r.token)}</code></p><p>If you did not request access, ignore this message. Never share this code.</p>`};
+  return {from,...(replyTo?{replyTo}:{}),to:r.recipient,subject:'Your Casa Pacifica booking access code',html:`<p>A booking access recovery was requested.</p><p>Use this single-use code within 15 minutes:</p><p><code>${escape(r.token)}</code></p><p>If you did not request access, ignore this message. Never share this code.</p>`};
  }
  const b=job.payload.booking;if(!b)throw new Error('Missing receipt snapshot');
  const name=b.staySnapshot?.propertyName??'Your Casa Pacifica stay';
  const summary=`<p>Booking reference: <strong>${escape(b.reference)}</strong></p><p>${escape(b.checkIn)} to ${escape(b.checkOut)}</p><p>Accommodation: ${escape(b.staySnapshot?.label??'Consult the original accepted terms')}</p><p>Total recorded: ${escape(formatCents(b.totalCents))}</p><p>Accepted cancellation terms: ${escape(b.staySnapshot?.cancellationPolicy??'Consult the original accepted terms')}</p><p>This receipt records confirmation at ${escape(b.confirmedAt??b.createdAt)}. Subsequent changes or cancellation may supersede that status; check your booking details for current status.</p>`;
- return {from,to:job.kind==='guest_confirmation'?b.guest.email:(process.env.HOST_NOTIFY_EMAIL??'host@example.test'),subject:`${job.kind==='guest_confirmation'?'Booking receipt':'New booking receipt'} — ${name} (${b.reference})`,html:`<h1>${escape(name)}</h1>${summary}`};
+ return {from,...(replyTo?{replyTo}:{}),to:job.kind==='guest_confirmation'?b.guest.email:(process.env.HOST_NOTIFY_EMAIL??'host@example.test'),subject:`${job.kind==='guest_confirmation'?'Booking receipt':'New booking receipt'} — ${name} (${b.reference})`,html:`<h1>${escape(name)}</h1>${summary}`};
 }
-function liveConfigured(){return process.env.EMAIL_DELIVERY_MODE==='live'&&process.env.EMAIL_LIVE_APPROVED==='true'&&canFulfillPaymentMode('live')&&!!process.env.RESEND_API_KEY;}
+const liveConfigured=liveEmailDeliveryConfigured;
 export async function deliverOutboxMessage(job:OutboxJob,envelope:OutboxEnvelope):Promise<'sent'|'simulated'> {
  if(isPublicPreview())throw new Error('Preview delivery blocked');
  if(process.env.EMAIL_DELIVERY_MODE==='local'){
@@ -29,8 +31,12 @@ export async function deliverOutboxMessage(job:OutboxJob,envelope:OutboxEnvelope
   // Stable filename deduplicates a crashed worker's local retry. No recipient/token logs.
   await fs.writeFile(path.join(dir,`${job.id}.html`),envelope.html,{mode:0o600});return 'simulated';
  }
- if(!liveConfigured()||(job.kind==='access_recovery' && storedPaymentMode(job.payload.recovery?.paymentMode)!=='live')||(job.payload.booking && (storedPaymentMode(job.payload.booking.paymentMode)!=='live' || job.payload.booking.paymentStatus!=='paid')))throw new Error('Live delivery is not enabled for this message');
- const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':job.dedupeKey},body:JSON.stringify({from:envelope.from,to:[envelope.to],subject:envelope.subject,html:envelope.html}),signal:AbortSignal.timeout(10_000)});
+ const eligible=job.kind==='access_recovery'
+  ? !!job.payload.recovery&&storedPaymentMode(job.payload.recovery.paymentMode)==='live'
+  : !!job.payload.booking&&storedPaymentMode(job.payload.booking.paymentMode)==='live'&&job.payload.booking.paymentStatus==='paid'&&job.payload.booking.status==='confirmed';
+ if(!liveConfigured()||!eligible)throw new Error('Live delivery is not enabled for this message');
+ validateDeliveryEnvelope(envelope);
+ const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':job.dedupeKey},body:JSON.stringify({from:envelope.from,to:[envelope.to],subject:envelope.subject,html:envelope.html,...(envelope.replyTo?{reply_to:envelope.replyTo}:{})}),signal:AbortSignal.timeout(10_000)});
  if(!response.ok)throw new Error('Email provider did not acknowledge delivery');
  return 'sent';
 }

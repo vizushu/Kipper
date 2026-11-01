@@ -3,7 +3,7 @@ import {validatedAirbnbCalendarUrl} from './calendar-feed';
 
 /** Configuration is an explicit launch approval contract, not proof that operations were verified. */
 export const LIVE_APPROVAL_FLAGS = [
-  'LIVE_BOOKING_APPROVED', 'LIVE_PROVIDER_QA_APPROVED', 'LIVE_OPERATIONS_APPROVED', 'LIVE_GUEST_TERMS_APPROVED',
+  'LIVE_BOOKING_APPROVED', 'LIVE_PROVIDER_QA_APPROVED', 'LIVE_OPERATIONS_APPROVED', 'LIVE_GUEST_TERMS_APPROVED', 'LIVE_PRICING_APPROVED',
   'INVENTORY_EXCLUSIVE_DIRECT_APPROVED',
 ] as const;
 export function requestedPaymentMode(): PaymentMode | 'closed' {
