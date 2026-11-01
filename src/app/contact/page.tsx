@@ -2,7 +2,6 @@ import {isStagingTest} from "@/lib/staging-session";
 import { BackLink } from "@/components/BackControl";
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import AskKipperWelcome from "@/components/AskKipperWelcome";
 import StayHelpGuide from "@/components/StayHelpGuide";
 
 export const dynamic = 'force-dynamic';
@@ -19,8 +18,6 @@ export default function ContactPage() {
     <p className="casa-eyebrow mb-3">Ask Kipper · Casa Pacifica</p>
     <h1 className="casa-page-heading">Questions about your stay?</h1>
     <p className="mt-5 text-sm leading-7 text-moss">One place for stay questions and help from the team.</p>
-
-    <AskKipperWelcome/>
 
     <section aria-label="Email the team" className="mt-7">
       <a href="mailto:vizushu@gmail.com" className="flex min-h-12 w-full items-center justify-center rounded-full bg-ink px-6 py-3 text-sm font-medium text-paper">Email us</a>

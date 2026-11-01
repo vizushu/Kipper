@@ -10,7 +10,7 @@ it.each(['true','false'])('keeps one honest unavailable contact entry in preview
  vi.stubEnv('GUEST_CONTACT_SMS_NUMBER','+12025550123');vi.stubEnv('GUEST_CONTACT_EMAIL','private@example.test');
  const html=renderToStaticMarkup(<ContactPage/>);
  expect(metadata.title).toBe('Ask Kipper');expect(html).toContain('Questions about your stay?');
- expect(html.match(/<button[^>]*disabled/g)).toHaveLength(1);expect(html).toMatch(/<button[^>]*disabled/);
+ expect(html.match(/<button/g)).toHaveLength(1);expect(html).toMatch(/<button[^>]*disabled/);
  expect(html).toContain('aria-describedby="message-status"');expect(html).toContain('mailto:vizushu@gmail.com');
  expect(html).toContain('Booked guests: urgent help');expect(html).toContain('original booking confirmation');
  expect(html).toContain('Kipper AI is not answering here yet');
