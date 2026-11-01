@@ -17,7 +17,7 @@ export function consumeStagingLoginAttempt(now=Date.now()):boolean {
     }).immediate();
   } finally {db.close();}
 }
-const headers={'Cache-Control':'private, no-store','X-Robots-Tag':'noindex, nofollow','Referrer-Policy':'no-referrer'};
+const headers={'Cache-Control':'private, no-store','X-Robots-Tag':'noindex, nofollow','Referrer-Policy':'same-origin'};
 function response(message:string,status:number){return new NextResponse(message,{status,headers});}
 export async function stagingLogin(req:Request,logout=false):Promise<NextResponse>{
   if(!isStagingTest())return response('Not found.',404);
