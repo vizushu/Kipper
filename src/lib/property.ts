@@ -118,7 +118,6 @@ const CASA_PACIFICA: Property = {
         "Free on-premises parking + free street parking",
         "EV charger (Level 2)",
         "Private entrance",
-        "Self check-in via smart lock",
         "Smoke + CO alarms",
         "Fire extinguisher",
         "First aid kit",
@@ -141,7 +140,7 @@ const CASA_PACIFICA: Property = {
   ],
   checkInTime: "3:00 PM",
   checkOutTime: "11:00 AM",
-  checkInMethod: "Self check-in with smart lock",
+  checkInMethod: "Confirm arrival arrangements with Casa Pacifica before travel",
   quietHours: "10:00 PM – 8:00 AM",
   // ⚠️ Cancellation wording mirrors the Airbnb "Firm" policy; exact direct-booking
   // terms are Renier-to-confirm.
@@ -191,7 +190,7 @@ const CASA_PACIFICA: Property = {
     },
     {
       q: "What are the check-in and checkout times?",
-      a: "Check in from 3:00 PM, check out by 11:00 AM. Self check-in via smart lock — no need to coordinate a key handoff.",
+      a: "Check in from 3:00 PM and check out by 11:00 AM. Confirm arrival arrangements with Casa Pacifica before travel.",
     },
     {
       q: "Is there WiFi?",

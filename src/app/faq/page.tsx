@@ -18,8 +18,8 @@ const SITE_FAQS = [
     a: "The full stay total is charged securely at booking through Stripe — the same payment processor used by millions of businesses. We never see or store your card details. In test mode, only Stripe test cards are accepted and no real charges are made.",
   },
   {
-    q: "How do I get my entry code?",
-    a: "Check-in is fully self-service with a smart lock. Your personal entry code is sent to your booking email before arrival — no key handoff, no waiting around.",
+    q: "How do I arrange check-in?",
+    a: "Check-in starts at 3:00 PM. Please confirm arrival arrangements with Casa Pacifica before travel.",
   },
   {
     q: "Can I get an early check-in or late checkout?",

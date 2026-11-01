@@ -35,7 +35,7 @@ export default function PrivacyPage() {
       <h2>How we use your information</h2>
       <ul>
         <li>To process your booking and take payment.</li>
-        <li>To send your confirmation, smart-lock entry code, and stay communications.</li>
+        <li>To send your confirmation and stay communications.</li>
         <li>To respond to questions and provide support during your stay.</li>
         <li>To meet legal and tax obligations (e.g., lodging tax records).</li>
       </ul>

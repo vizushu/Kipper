@@ -27,7 +27,7 @@ export default function TermsPage() {
       </ul>
       <h2>House rules</h2>
       <ul>
-        <li>Check-in from 3:00 PM (self check-in via smart lock); check-out by 11:00 AM.</li>
+        <li>Check-in from 3:00 PM; check-out by 11:00 AM. Confirm arrival arrangements with Casa Pacifica before travel.</li>
         <li>Quiet hours 10:00 PM – 8:00 AM.</li>
         <li>No parties, events, or large gatherings. No commercial photography or filming.</li>
         <li>No smoking, vaping, marijuana, hookah, or illegal drugs anywhere on the property.</li>
