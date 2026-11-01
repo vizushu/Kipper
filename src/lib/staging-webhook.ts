@@ -1,5 +1,5 @@
 import {PaymentVerificationError} from './payment-verification';
-/** Anonymous Stripe exception has a strict bound in staging; no JSON parsing before signature verification. */
+/** All anonymous Stripe callbacks have a strict bound; the historical helper name is retained. No JSON parsing before signature verification. */
 export async function stagingStripeBody(req:Request):Promise<string>{
  const limit=64*1024,length=req.headers.get('content-length');
  if(length!==null&&(!/^\d+$/.test(length)||Number(length)>limit))throw new PaymentVerificationError('Webhook payload too large.',413);
