@@ -1,3 +1,4 @@
+import type {OperatorAlertStore} from "./operator-alerts";
 import type { CalendarStore } from "./calendar-store";
 import type { SecurityStore } from "./security-store";
 import type { PaymentExceptionStore } from "./payment-exceptions";
@@ -73,7 +74,7 @@ export interface UpdateBookingPatch {
   adminNotes?: string;
 }
 
-export interface DataAdapter extends WorkflowStore, PaymentExceptionStore, SecurityStore, CalendarStore {
+export interface DataAdapter extends WorkflowStore, PaymentExceptionStore, SecurityStore, CalendarStore, OperatorAlertStore {
   // ---- bookings ---------------------------------------------------------
   /**
    * Atomically: re-check that [checkIn, checkOut) has no overlapping
@@ -86,6 +87,7 @@ export interface DataAdapter extends WorkflowStore, PaymentExceptionStore, Secur
   expirePendingBookings(now?: string): Promise<number>;
   confirmBookingPayment(id: string, paymentIntentId: string, confirmedAt: string): Promise<{booking: Booking; transitioned: boolean} | null>;
   failPendingBookingPayment(id: string, paymentIntentId: string): Promise<boolean>;
+  getPaymentEligibleBooking(id:string):Promise<Booking|null>;
   attachPaymentIntent(id: string, paymentIntentId: string): Promise<Booking | null>;
   getBooking(id: string): Promise<Booking | null>;
   getBookingByReference(reference: string): Promise<Booking | null>;

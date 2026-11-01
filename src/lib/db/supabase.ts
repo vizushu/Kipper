@@ -1,3 +1,4 @@
+import type {OperatorAlert,OperatorAlertEnvelope,OperatorAlertReadiness,PaymentSetupFailure} from "./operator-alerts";
 import type {CalendarSnapshot,CalendarStatus} from "./calendar-store";
 import { rateLimitWindow,securityTimestamp,validateAdminSession,validateSecurityHash,type AdminSession,type RateLimitResult } from "./security-store";
 import { validatePaymentException, type PaymentException, type PaymentExceptionInput } from "./payment-exceptions";
@@ -231,6 +232,18 @@ export class SupabaseAdapter implements DataAdapter {
   async consumeBookingRecovery(tokenHash: string, nowISO: string): Promise<{reference:string}|null> {
     return this.req('POST','/rpc/consume_booking_recovery',{p_token_hash:tokenHash,p_now:nowISO});
   }
+
+  async listOperatorAlerts():Promise<OperatorAlert[]>{throw new Error('Operator alerts are not implemented for this adapter.');}
+  async claimOperatorAlerts(_n:string,_l:number,_id?:string):Promise<OperatorAlert[]>{throw new Error('Operator alerts are not implemented for this adapter.');}
+  async prepareOperatorAlertMessage(_id:string,_lease:string,_e:OperatorAlertEnvelope,_n:string):Promise<OperatorAlertEnvelope|null>{throw new Error('Operator alerts are not implemented for this adapter.');}
+  async finishOperatorAlert(_id:string,_lease:string,_outcome:'sent'|'simulated'|'failed',_n:string):Promise<boolean>{throw new Error('Operator alerts are not implemented for this adapter.');}
+  async recordCalendarHealthAlert(_p:string,_h:boolean,_n:string):Promise<void>{throw new Error('Operator alerts are not implemented for this adapter.');}
+  async completeOperatorAlertRun(_n:string):Promise<void>{throw new Error('Operator alerts are not implemented for this adapter.');}
+  async getOperatorAlertReadiness(_n:string):Promise<OperatorAlertReadiness>{return {ready:false,lastSuccessAt:null,deadCount:0,overdueCount:0};}
+  async recordPaymentSetupFailure(_b:string,_pi:string,_n:string):Promise<{id:string;created:boolean}>{throw new Error('Operator alerts are not implemented for this adapter.');}
+  async reviewPaymentSetupFailure(_id:string,_note:string,_key:string,_now:string):Promise<PaymentSetupFailure|null>{throw new Error('Operator alerts are not implemented for this adapter.');}
+  async listPaymentSetupFailures():Promise<PaymentSetupFailure[]>{throw new Error('Operator alerts are not implemented for this adapter.');}
+  async getPaymentEligibleBooking(_id:string):Promise<Booking|null>{return null;}
 
   async beginCalendarSync(_p:string,_s:string,_now?:string):Promise<{leaseId:string}|null>{throw new Error('Calendar persistence is not implemented for this adapter.');}
   async completeCalendarSync(_input:CalendarSnapshot):Promise<{applied:boolean;blockCount:number;conflictCount:number}>{throw new Error('Calendar persistence is not implemented for this adapter.');}

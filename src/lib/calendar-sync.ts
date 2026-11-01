@@ -1,5 +1,5 @@
 import type {DataAdapter} from './db/adapter';
-import {calendarStatusReady} from './db/calendar-store';
+import {calendarStatusReady,configuredCalendarFingerprint} from './db/calendar-store';
 import {fetchAirbnbCalendar,parseAirbnbCalendar} from './calendar-feed';
 import {calendarSyncEnabled} from './calendar-access';
 import {BookingError} from './types';
@@ -9,7 +9,7 @@ export const CALENDAR_PROPERTY_ID='casa-pacifica';
 export async function syncAirbnbCalendar(adapter:DataAdapter,options:{allowEmpty?:boolean;fetcher?:(url:string)=>Promise<string>;now?:()=>Date}={}) {
   if(!calendarSyncEnabled())return {status:'disabled' as const};
   const url=process.env.AIRBNB_ICAL_URL;
-  if(!url)return {status:'not-configured' as const};
+  if(!url||!configuredCalendarFingerprint())return {status:'not-configured' as const};
   const now=options.now??(()=>new Date());
   const lease=await adapter.beginCalendarSync(CALENDAR_PROPERTY_ID,AIRBNB_SOURCE_ID,now().toISOString());
   if(!lease)return {status:'busy' as const};

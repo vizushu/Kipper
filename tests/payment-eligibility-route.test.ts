@@ -1,0 +1,12 @@
+import {afterEach,expect,it,vi} from 'vitest';
+const mock=vi.hoisted(()=>({enabled:vi.fn(),booking:vi.fn(),eligible:vi.fn(),verify:vi.fn()}));
+vi.mock('@/lib/booking-launch',()=>({isBookingEnabled:mock.enabled}));
+vi.mock('@/lib/db',()=>({getAdapter:()=>({getBooking:mock.booking,getPaymentEligibleBooking:mock.eligible})}));
+vi.mock('@/lib/booking-access',()=>({verifyBookingAccessToken:mock.verify}));
+import {POST} from '../src/app/api/bookings/[id]/payment-eligibility/route';
+const req=()=>POST(new Request('https://example.test/api/bookings/synthetic/payment-eligibility',{method:'POST',headers:{authorization:'Bearer synthetic-capability'}}),{params:Promise.resolve({id:'synthetic'})});
+afterEach(()=>vi.resetAllMocks());
+it('preview/closed mode performs no inventory read',async()=>{mock.enabled.mockReturnValue(false);expect((await req()).status).toBe(503);expect(mock.booking).not.toHaveBeenCalled();});
+it('never exposes another booking without scoped capability',async()=>{mock.enabled.mockReturnValue(true);mock.booking.mockResolvedValue({reference:'CP-SYNTHETIC'});mock.verify.mockReturnValue(false);expect((await req()).status).toBe(404);expect(mock.eligible).not.toHaveBeenCalled();});
+it('rejects newly stale/conflicting inventory after authentication',async()=>{mock.enabled.mockReturnValue(true);mock.booking.mockResolvedValue({id:'synthetic',reference:'CP-SYNTHETIC'});mock.verify.mockReturnValue(true);mock.eligible.mockResolvedValue(null);const r=await req();expect(r.status).toBe(409);expect(await r.text()).not.toContain('CP-SYNTHETIC');});
+it('returns only eligibility and hold deadline, not credentials or guest data',async()=>{mock.enabled.mockReturnValue(true);mock.booking.mockResolvedValue({id:'synthetic',reference:'CP-SYNTHETIC'});mock.verify.mockReturnValue(true);mock.eligible.mockResolvedValue({holdExpiresAt:'2026-10-31T12:15:00Z',guest:{email:'private@example.test'}});expect(await(await req()).json()).toEqual({eligible:true,expiresAt:'2026-10-31T12:15:00Z'});});

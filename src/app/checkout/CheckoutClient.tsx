@@ -262,6 +262,12 @@ function CheckoutFlow() {
   }
 
   const confirmationGeneration = requestGuard.current.snapshot();
+  async function recheckPaymentEligibility(){
+    const generation=confirmationGeneration;
+    if(!booking||!accessToken||!mounted.current||!requestGuard.current.isCurrent(generation))throw new Error('Payment step changed.');
+    const response=await fetch(`/api/bookings/${encodeURIComponent(booking.id)}/payment-eligibility`,{method:'POST',headers:{authorization:`Bearer ${accessToken}`}});
+    if(!response.ok||!mounted.current||!requestGuard.current.isCurrent(generation))throw new Error('Payment eligibility changed.');
+  }
   async function handleConfirmPayment(paymentIntentId: string) {
     if (!booking || !accessToken) return;
     const generation = confirmationGeneration;
@@ -440,6 +446,7 @@ function CheckoutFlow() {
                   clientSecret={clientSecret}
                   creating={creating}
                   paymentExpiresAt={booking?.holdExpiresAt}
+                  onBeforePayment={recheckPaymentEligibility}
                   onCreateBooking={handleCreateBooking}
                   onConfirmPayment={handleConfirmPayment}
                   onPaymentUncertain={setPaymentWarning}

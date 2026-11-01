@@ -2,8 +2,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { POST } from "../src/app/api/bookings/route";
 import { getProperty } from "../src/lib/property";
 import { snapshotForStay } from "../src/lib/accommodation";
-const mocks = vi.hoisted(() => ({ consumeRateLimit: vi.fn(), getQuote: vi.fn(), create: vi.fn(), attach: vi.fn(), fail: vi.fn(), payment: vi.fn() }));
-vi.mock("@/lib/db", () => ({ getAdapter: () => ({ consumeRateLimit: mocks.consumeRateLimit, getQuote: mocks.getQuote, attachPaymentIntent: mocks.attach, failPendingBookingPayment: mocks.fail }) }));
+const mocks = vi.hoisted(() => ({ consumeRateLimit: vi.fn(), getQuote: vi.fn(), create: vi.fn(), attach: vi.fn(), fail: vi.fn(), payment: vi.fn(), eligible: vi.fn(), setupFailure: vi.fn() }));
+vi.mock("@/lib/db", () => ({ getAdapter: () => ({ getPaymentEligibleBooking: mocks.eligible, recordPaymentSetupFailure: mocks.setupFailure, consumeRateLimit: mocks.consumeRateLimit, getQuote: mocks.getQuote, attachPaymentIntent: mocks.attach, failPendingBookingPayment: mocks.fail }) }));
 vi.mock("@/lib/booking-launch", () => ({ isPublicPreview: () => false, isBookingEnabled: () => true, BOOKING_LAUNCH_MESSAGE: "disabled" }));
 vi.mock("@/lib/bookings", () => ({ createBookingForQuote: mocks.create, guestSafeBooking: (b: unknown) => b }));
 vi.mock("@/lib/stripe", () => ({ createPaymentIntent: mocks.payment }));
@@ -30,6 +30,7 @@ it("rejects a now-unapproved configuration even with a stored snapshot", async (
 });
 
 function validCreation() {
+  mocks.eligible.mockResolvedValue({id:"b_stable"});mocks.setupFailure.mockResolvedValue({id:"setupreview_synthetic",created:true});
   mocks.getQuote.mockResolvedValue({ ...quote, staySnapshot: snapshotForStay(getProperty("casa-pacifica")!, quote.checkIn, quote.checkOut) });
   mocks.create.mockResolvedValue({ booking: { id: "b_stable", reference: "CP-ABC", idempotencyKey: "stable-key" } });
   mocks.payment.mockResolvedValue({ id: "pi_stable", clientSecret: "test_secret" });
@@ -40,6 +41,7 @@ it("does not return payment credentials after hold expiry wins attachment", asyn
   expect(response.status).toBe(409);
   expect(await response.json()).not.toHaveProperty("clientSecret");
   expect(mocks.attach).toHaveBeenCalledWith("b_stable", "pi_stable");
+  expect(mocks.setupFailure).toHaveBeenCalledWith("b_stable","pi_stable",expect.any(String));
 });
 it("attaches conditionally and returns a scoped access token", async () => {
   validCreation(); mocks.attach.mockResolvedValue({ id: "b_stable", reference: "CP-ABC" });
@@ -69,3 +71,8 @@ it("enforces a hashed guest budget without storing the submitted email",async()=
  expect(mocks.consumeRateLimit).toHaveBeenNthCalledWith(2,expect.stringMatching(/^[a-f0-9]{64}$/),5,900);
  expect(JSON.stringify(mocks.consumeRateLimit.mock.calls)).not.toContain('test@example.test');
 });
+
+it("does not create a provider intent after inventory eligibility becomes stale",async()=>{validCreation();mocks.eligible.mockResolvedValue(null);const r=await request();expect(r.status).toBe(409);expect(mocks.payment).not.toHaveBeenCalled();expect(await r.json()).not.toHaveProperty('clientSecret');});
+
+it("records reconciliation when intent attachment throws after provider creation",async()=>{validCreation();mocks.attach.mockRejectedValueOnce(new Error('synthetic database failure'));const r=await request();expect(r.status).toBe(500);expect(mocks.setupFailure).toHaveBeenCalledWith('b_stable','pi_stable',expect.any(String));expect(JSON.stringify(await r.json())).not.toMatch(/test_secret|synthetic database/);});
+it("returns only generic failure when post-provider reconciliation storage also fails",async()=>{validCreation();mocks.attach.mockRejectedValueOnce(new Error('private storage failure'));mocks.setupFailure.mockRejectedValueOnce(new Error('private ledger failure'));mocks.fail.mockRejectedValueOnce(new Error('private release failure'));const r=await request();expect(r.status).toBe(500);expect(JSON.stringify(await r.json())).not.toMatch(/test_secret|private/);});

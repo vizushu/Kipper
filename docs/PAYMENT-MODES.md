@@ -60,3 +60,6 @@ external launch prerequisites. PostgreSQL concurrency/migrations require runtime
 verification in the eventual selected environment. No paid hosting, credentials,
 provider accounts, live charges/refunds/emails or launch activation is authorized
 by these tests.
+
+### Shared-iCal instant policy (not activated by code publication)
+`INVENTORY_POLICY=shared_ical` is separate from `exclusive_direct`. It requires explicit `SHARED_ICAL_RISK_ACCEPTED`, approved/configured inbound+outbound calendars, SQLite, live operational alert configuration/QA and a recent successful dispatcher heartbeat, in addition to normal live provider, guest terms, operations and booking approvals. Source freshness and unresolved conflicts are checked inside local inventory transactions. This accepts residual Airbnb refresh-lag risk; it does not promise cross-platform atomicity. See `SHARED-ICAL-INSTANT-SPEC.md`. Public preview still overrides all flags; no real payments or new credentials were enabled by this implementation.

@@ -31,6 +31,7 @@ interface Props {
   onCreateBooking: () => Promise<void>;
   onConfirmPayment: (paymentIntentId: string) => Promise<void>;
   onPaymentUncertain?: (message:string) => void;
+  onBeforePayment?: () => Promise<void>;
 }
 
 export default function CheckoutForm({
@@ -41,6 +42,7 @@ export default function CheckoutForm({
   onCreateBooking,
   onConfirmPayment,
   onPaymentUncertain,
+  onBeforePayment,
 }: Props) {
   const [stripe, setStripe] = useState<Stripe | null>(null);
   const [canPayRequest, setCanPayRequest] = useState(false);
@@ -96,7 +98,7 @@ export default function CheckoutForm({
             setPaying(true);
             setError("");
             try {
-              await confirmWalletPayment(s, clientSecret, ev, onConfirmPayment, () => !cancelled && (!paymentExpiresAt || Date.parse(paymentExpiresAt) > Date.now()));
+              await confirmWalletPayment(s, clientSecret, ev, onConfirmPayment, () => !cancelled && (!paymentExpiresAt || Date.parse(paymentExpiresAt) > Date.now()), onBeforePayment);
 
             } catch {
               if (!cancelled) { setUncertain(true); setError(PAYMENT_UNCERTAIN_NOTICE); onPaymentUncertain?.(PAYMENT_UNCERTAIN_NOTICE); }
@@ -141,6 +143,8 @@ export default function CheckoutForm({
     setPaying(true);
     setError("");
     try {
+      await onBeforePayment?.();
+      if(paymentExpiresAt && Date.parse(paymentExpiresAt)<=Date.now())throw new Error("Payment hold expired.");
       const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
         clientSecret,
         { payment_method: { card: cardElementRef.current } },
@@ -260,10 +264,13 @@ export async function confirmWalletPayment(
   stripe: Stripe, clientSecret: string, event: PaymentRequestPaymentMethodEvent,
   onConfirm: (id: string) => Promise<void>,
   isActive: () => boolean = () => true,
+  beforePayment?: () => Promise<void>,
 ): Promise<void> {
   if (!isActive()) { event.complete("fail"); throw new Error("Payment step expired or was closed before wallet authorization."); }
   let initial;
   try {
+    await beforePayment?.();
+    if(!isActive())throw new Error("Payment step expired during verification.");
     initial = await stripe.confirmCardPayment(clientSecret,
       { payment_method: event.paymentMethod.id }, { handleActions: false });
   } catch (error) { event.complete("fail"); throw error; }
@@ -275,6 +282,8 @@ export async function confirmWalletPayment(
   let intent = initial.paymentIntent;
   if (intent.status === "requires_action") {
     if (!isActive()) throw new Error("Payment step closed before authentication; verify this attempt before paying again.");
+    await beforePayment?.();
+    if(!isActive())throw new Error("Payment step expired during verification.");
     const result = await stripe.confirmCardPayment(clientSecret);
     if (result.error) throw new Error(result.error.message ?? "Payment authentication failed.");
     intent = result.paymentIntent;

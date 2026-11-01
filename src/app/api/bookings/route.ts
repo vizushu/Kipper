@@ -71,10 +71,11 @@ export async function POST(req: Request) {
     let paymentIntentId: string | undefined;
     // Create only in the immutable quote/booking payment mode, after explicit runtime gates.
     try {
+      if(!await adapter.getPaymentEligibleBooking(booking.id))return apiError("PAYMENT_FAILED", "Availability changed or this hold expired. No payment step was opened; please choose dates again.",409);
       const pi = await createPaymentIntent(quote, booking.idempotencyKey, booking.id);
       paymentIntentId = pi.id;
       const withPi = await adapter.attachPaymentIntent(booking.id, pi.id);
-      if (!withPi) return apiError("PAYMENT_FAILED", "Your booking hold expired or is no longer available. Please request a fresh quote.", 409);
+      if (!withPi) { await adapter.recordPaymentSetupFailure(booking.id,pi.id,new Date().toISOString()); return apiError("PAYMENT_FAILED", "Your booking hold expired or is no longer available. Please request a fresh quote.", 409); }
       const accessToken = createBookingAccessToken(withPi.reference);
       const response = json({ booking: guestSafeBooking(withPi), clientSecret: pi.clientSecret, accessToken }, 201);
       response.cookies.set(bookingSessionCookie(accessToken));
@@ -82,9 +83,13 @@ export async function POST(req: Request) {
       return response;
     } catch (stripeErr) {
       // Booking exists (pending_payment); payment setup failed.
-      if (paymentIntentId) await adapter.failPendingBookingPayment(booking.id, paymentIntentId);
-      const message =
-        stripeErr instanceof Error ? stripeErr.message : "Payment setup failed.";
+      if (paymentIntentId) {
+        // Any post-provider failure needs reconciliation, including a thrown attachment.
+        // Persistence can itself fail; still return only a generic failure, never credentials.
+        try { await adapter.recordPaymentSetupFailure(booking.id, paymentIntentId, new Date().toISOString()); } catch { /* Later verified provider events retain independent exception handling. */ }
+        try { await adapter.failPendingBookingPayment(booking.id, paymentIntentId); } catch { /* Do not expose storage/provider details. */ }
+      }
+      const message = "Payment setup could not be completed. Please contact Casa Pacifica if you already submitted payment.";
       return apiError("PAYMENT_FAILED", message, 500);
     }
   } catch (e) {

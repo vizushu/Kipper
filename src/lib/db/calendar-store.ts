@@ -1,7 +1,10 @@
+import {createHash} from 'node:crypto';
+import {validatedAirbnbCalendarUrl} from '../calendar-feed';
 import { listProperties } from '../property';
 import { isValidDateStr } from '../dates';
 export interface CalendarEvent { uidHash:string; from:string; to:string }
 export interface CalendarStatus {
+ configurationMatches?:boolean;
  propertyId:string;sourceId:string;status:'pending'|'healthy'|'failed'|'conflict';
  lastSuccessAt:string|null;lastAttemptAt:string;blockCount:number;conflictCount:number;lastReviewedAt:string|null;reviewCount:number;
 }
@@ -14,6 +17,10 @@ export interface CalendarStore {
  listCalendarBlockIds(propertyId:string):Promise<string[]>;
  listCalendarExportRanges(propertyId:string,nowISO:string):Promise<{id:string;from:string;to:string}[]>;
  resolveCalendarConflict(propertyId:string,sourceId:string,nowISO:string):Promise<boolean>;
+}
+/** Server-only fingerprint: never serialize this value or the underlying private feed URL. */
+export function configuredCalendarFingerprint():string|null {
+ try {const value=process.env.AIRBNB_ICAL_URL;if(!value)return null;const url=validatedAirbnbCalendarUrl(value);url.searchParams.sort();return createHash('sha256').update(url.href).digest('hex');}catch{return null;}
 }
 export const CALENDAR_MAX_AGE_MS=15*60_000;
 export const CALENDAR_LEASE_MS=2*60_000;
@@ -31,5 +38,5 @@ export function validateCalendarEvents(events:CalendarEvent[]):void {
 export function calendarStatusReady(status:CalendarStatus|null,nowISO:string,required=false):boolean {
  const now=calendarTime(nowISO);if(!status)return !required;
  const success=status.lastSuccessAt?Date.parse(status.lastSuccessAt):NaN;
- return status.status==='healthy'&&status.conflictCount===0&&Number.isFinite(success)&&success<=now&&now-success<CALENDAR_MAX_AGE_MS;
+ return status.configurationMatches!==false&&(!required||status.configurationMatches===true)&&status.status==='healthy'&&status.conflictCount===0&&Number.isFinite(success)&&success<=now&&now-success<CALENDAR_MAX_AGE_MS;
 }

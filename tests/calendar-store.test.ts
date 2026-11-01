@@ -1,15 +1,16 @@
 import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import Database from 'better-sqlite3';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
 import {SqliteAdapter} from '../src/lib/db/sqlite';
 import {SupabaseAdapter} from '../src/lib/db/supabase';
-import {calendarStatusReady,calendarPropertyId,type CalendarEvent} from '../src/lib/db/calendar-store';
+import {configuredCalendarFingerprint,calendarStatusReady,calendarPropertyId,type CalendarEvent} from '../src/lib/db/calendar-store';
 import type {NewBookingInput} from '../src/lib/db/adapter';
 let dir:string,a:SqliteAdapter,b:SqliteAdapter;
 const p='casa-pacifica',s='airbnb-primary';const now=()=>new Date().toISOString();
 const event=(from='2027-02-10',to='2027-02-12',uid='a'):CalendarEvent=>({uidHash:uid.repeat(64),from,to});
 const booking=(key='test',from='2027-02-20',to='2027-02-22'):NewBookingInput=>({propertyId:p,checkIn:from,checkOut:to,nights:2,guests:{adults:2,children:0,infants:0},pets:0,guest:{name:'Synthetic',email:'fixture@example.test'},lineItems:[],totalCents:10000,currency:'USD',idempotencyKey:key});
 async function sync(events:CalendarEvent[],allowEmpty=false,source=s){const lease=await a.beginCalendarSync(p,source,now());expect(lease).not.toBeNull();return a.completeCalendarSync({propertyId:p,sourceId:source,leaseId:lease!.leaseId,events,nowISO:now(),allowEmpty});}
-beforeEach(()=>{vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-31T12:00:00.000Z'));vi.stubEnv('CALENDAR_SYNC_REQUIRED','false');dir=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-store-'));a=new SqliteAdapter(path.join(dir,'db'));b=new SqliteAdapter(path.join(dir,'db'));});
+beforeEach(()=>{vi.stubEnv('AIRBNB_ICAL_URL','https://www.airbnb.com/calendar/ical/syntheticA.ics?s=synthetic');vi.useFakeTimers();vi.setSystemTime(new Date('2026-10-31T12:00:00.000Z'));vi.stubEnv('CALENDAR_SYNC_REQUIRED','false');dir=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-store-'));a=new SqliteAdapter(path.join(dir,'db'));b=new SqliteAdapter(path.join(dir,'db'));});
 afterEach(()=>{a.close();b.close();fs.rmSync(dir,{recursive:true,force:true});vi.useRealTimers();vi.unstubAllEnvs();});
 it('canonically maps both versions and aliases to one physical inventory',async()=>{
  expect(calendarPropertyId('casa-pacifica-3br')).toBe(p);expect(calendarPropertyId('casa-pacifica-5br')).toBe(p);expect(calendarPropertyId('casa-pacifica-san-diego')).toBe(p);
@@ -83,4 +84,37 @@ it('an expired matching sync lease immediately marks failed while retaining the 
 
 it('leaves ordinary unconfigured Supabase availability readable but rejects enabled shared calendar',async()=>{
  vi.stubEnv('SUPABASE_URL','https://synthetic.invalid');vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY','synthetic-no-network');vi.stubEnv('CALENDAR_SYNC_ENABLED','false');vi.stubEnv('CALENDAR_SYNC_REQUIRED','false');const supa=new SupabaseAdapter();expect(await supa.getCalendarStatus(p,s)).toBeNull();vi.stubEnv('CALENDAR_SYNC_ENABLED','true');await expect(supa.getCalendarStatus(p,s)).rejects.toThrow('not implemented');await expect(supa.createBookingIfAvailable(booking())).rejects.toThrow('supported adapter');
+});
+it('rechecks source state before exposing provider setup and at intent attachment',async()=>{
+ await sync([event()]);const held=await a.createBookingIfAvailable(booking('setup-race'));
+ expect((await a.getPaymentEligibleBooking(held.id))?.id).toBe(held.id);
+ const lease=await a.beginCalendarSync(p,s,now());await a.failCalendarSync(p,s,lease!.leaseId,now());
+ expect(await a.getPaymentEligibleBooking(held.id)).toBeNull();expect(await a.attachPaymentIntent(held.id,'pi_not_exposed')).toBeNull();expect((await a.getBooking(held.id))?.stripePaymentIntentId).toBeUndefined();
+});
+it('a block inserted after hold prevents attaching a new payment intent',async()=>{
+ const held=await a.createBookingIfAvailable(booking('manual-block-race'));await a.createBlock({propertyId:p,from:held.checkIn,to:held.checkOut,reason:'Synthetic private operator detail'});
+ expect(await a.getPaymentEligibleBooking(held.id)).toBeNull();expect(await a.attachPaymentIntent(held.id,'pi_not_exposed')).toBeNull();
+});
+it('shared-live local transaction requires actual recent dispatcher heartbeat',async()=>{
+ vi.stubEnv('SITE_PREVIEW_MODE','false');vi.stubEnv('INVENTORY_POLICY','shared_ical');vi.stubEnv('BOOKING_PAYMENT_MODE','live');await sync([event()]);
+ await expect(a.createBookingIfAvailable(booking('dispatcher-missing'))).rejects.toThrow();
+ await a.completeOperatorAlertRun(now());const held=await a.createBookingIfAvailable(booking('dispatcher-ok'));expect(held.status).toBe('pending_payment');
+ vi.advanceTimersByTime(900000);expect(await a.getPaymentEligibleBooking(held.id)).toBeNull();
+});
+it('binds fresh snapshots to the configured feed, preserving blocks until the replacement feed succeeds',async()=>{
+ await sync([event()]);expect(calendarStatusReady(await a.getCalendarStatus(p,s),now(),true)).toBe(true);const oldBlocks=await a.listCalendarBlockIds(p);
+ vi.stubEnv('AIRBNB_ICAL_URL','https://www.airbnb.com/calendar/ical/syntheticB.ics?s=synthetic');expect(await a.getCalendarStatus(p,s)).toMatchObject({configurationMatches:false});expect(calendarStatusReady(await a.getCalendarStatus(p,s),now(),true)).toBe(false);await expect(a.createBookingIfAvailable(booking())).rejects.toThrow('calendar verification');expect(await a.listCalendarBlockIds(p)).toEqual(oldBlocks);
+ await a.recordCalendarHealthAlert(p,false,now());await a.recordCalendarHealthAlert(p,true,now());expect((await a.listOperatorAlerts()).find(j=>j.kind==='calendar_health')?.status).toBe('pending');
+ await sync([event('2027-02-12','2027-02-14','b')]);expect(calendarStatusReady(await a.getCalendarStatus(p,s),now(),true)).toBe(true);expect((await a.createBookingIfAvailable(booking())).status).toBe('pending_payment');expect(JSON.stringify(await a.getCalendarStatus(p,s))).not.toMatch(/synthetic|fingerprint|https/);
+});
+it('rejects an in-flight old-feed lease after a runtime configuration switch',async()=>{
+ await sync([event()]);const oldBlocks=await a.listCalendarBlockIds(p);const lease=await a.beginCalendarSync(p,s,now());vi.stubEnv('AIRBNB_ICAL_URL','https://www.airbnb.com/calendar/ical/syntheticB.ics?s=synthetic');
+ expect(await a.completeCalendarSync({propertyId:p,sourceId:s,leaseId:lease!.leaseId,events:[event('2027-02-12','2027-02-14','b')],nowISO:now()})).toMatchObject({applied:false});expect(await a.getCalendarStatus(p,s)).toMatchObject({status:'failed',configurationMatches:false});expect(await a.listCalendarBlockIds(p)).toEqual(oldBlocks);await expect(a.createBookingIfAvailable(booking())).rejects.toThrow('calendar verification');
+});
+
+it('normalizes validated URL fingerprints without returning any secret source data',()=>{
+ vi.stubEnv('AIRBNB_ICAL_URL','https://www.airbnb.com:443/calendar/ical/syntheticA.ics?b=two&a=one');const fingerprint=configuredCalendarFingerprint();expect(fingerprint).toMatch(/^[a-f0-9]{64}$/);vi.stubEnv('AIRBNB_ICAL_URL','https://www.airbnb.com/calendar/ical/syntheticA.ics?a=one&b=two');expect(configuredCalendarFingerprint()).toBe(fingerprint);vi.stubEnv('AIRBNB_ICAL_URL','https://127.0.0.1/private');expect(configuredCalendarFingerprint()).toBeNull();
+});
+it('legacy unbound snapshots cannot certify a configured feed or shared inventory',async()=>{
+ await sync([event()]);const raw=new Database(path.join(dir,'db'));raw.prepare('UPDATE calendar_sources SET success_fingerprint=NULL').run();raw.close();expect((await a.getCalendarStatus(p,s))?.configurationMatches).toBe(false);await expect(a.createBookingIfAvailable(booking())).rejects.toThrow('calendar verification');expect(await a.listCalendarBlockIds(p)).toHaveLength(1);
 });

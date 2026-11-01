@@ -1,3 +1,5 @@
+import {SqliteOperatorAlerts} from "./sqlite-operator-alerts";
+import type {OperatorAlertEnvelope} from "./operator-alerts";
 import {SqliteCalendarStore} from "./sqlite-calendar-store";
 import {calendarPropertyId,type CalendarSnapshot} from "./calendar-store";
 import { SqliteSecurityStore } from "./sqlite-security-store";
@@ -185,6 +187,7 @@ export class SqliteAdapter implements DataAdapter {
   private paymentExceptions: SqlitePaymentExceptions;
   private security: SqliteSecurityStore;
   private calendars: SqliteCalendarStore;
+  private operatorAlerts: SqliteOperatorAlerts;
 
   constructor(dbPath?: string) {
     this.db = new Database(resolveDbPath(dbPath));
@@ -195,6 +198,7 @@ export class SqliteAdapter implements DataAdapter {
     if (!columns.some(c => c.name === "stay_snapshot_json")) this.db.exec("ALTER TABLE bookings ADD COLUMN stay_snapshot_json TEXT");
     if (!columns.some(c => c.name === "hold_expires_at")) this.db.exec("ALTER TABLE bookings ADD COLUMN hold_expires_at TEXT");
     if (!columns.some(c => c.name === "payment_mode")) this.db.exec("ALTER TABLE bookings ADD COLUMN payment_mode TEXT NOT NULL DEFAULT 'test' CHECK(payment_mode IN ('test','live'))");
+    this.operatorAlerts = new SqliteOperatorAlerts(this.db);
     this.paymentExceptions = new SqlitePaymentExceptions(this.db);
     this.security = new SqliteSecurityStore(this.db);
     this.calendars = new SqliteCalendarStore(this.db);
@@ -361,9 +365,20 @@ export class SqliteAdapter implements DataAdapter {
     return this.db.transaction(() => this.expirePendingNow(now)).immediate();
   }
 
+  private paymentEligibleNow(id:string):Booking|null {
+    const now=new Date().toISOString();this.expirePendingNow(now);
+    const row=this.db.prepare('SELECT * FROM bookings WHERE id=?').get(id) as BookingRow|undefined;
+    if(!row||row.status!=='pending_payment'||!row.hold_expires_at||row.hold_expires_at<=now)return null;
+    try{this.calendars.assertFresh(row.property_id,now);}catch{return null;}
+    const block=this.db.prepare('SELECT 1 FROM blocks WHERE property_id=? AND from_date<? AND to_date>? LIMIT 1').get(row.property_id,row.check_out,row.check_in);
+    const overlap=this.db.prepare("SELECT 1 FROM bookings WHERE id!=? AND property_id=? AND status IN ('confirmed','pending_payment') AND check_in<? AND check_out>? LIMIT 1").get(id,row.property_id,row.check_out,row.check_in);
+    return block||overlap?null:rowToBooking(row);
+  }
+  async getPaymentEligibleBooking(id:string):Promise<Booking|null>{return this.db.transaction(()=>this.paymentEligibleNow(id)).immediate();}
+
   async attachPaymentIntent(id: string, paymentIntentId: string): Promise<Booking | null> {
     return this.db.transaction(() => {
-      this.expirePendingNow(new Date().toISOString());
+      if(!this.paymentEligibleNow(id))return null;
       this.db.prepare(`UPDATE bookings SET stripe_payment_intent_id = ? WHERE id = ? AND status = 'pending_payment' AND (stripe_payment_intent_id IS NULL OR stripe_payment_intent_id = ?)`).run(paymentIntentId, id, paymentIntentId);
       const row = this.db.prepare('SELECT * FROM bookings WHERE id = ?').get(id) as BookingRow | undefined;
       return row && row.status === 'pending_payment' && row.stripe_payment_intent_id === paymentIntentId ? rowToBooking(row) : null;
@@ -506,6 +521,17 @@ export class SqliteAdapter implements DataAdapter {
       .all(propertyId, checkOut, checkIn) as BookingRow[];
     return rows.map(rowToBooking);
   }
+
+  listOperatorAlerts=()=>this.operatorAlerts.listOperatorAlerts();
+  claimOperatorAlerts=(now:string,limit:number,id?:string)=>this.operatorAlerts.claimOperatorAlerts(now,limit,id);
+  prepareOperatorAlertMessage=(id:string,lease:string,envelope:OperatorAlertEnvelope,now:string)=>this.operatorAlerts.prepareOperatorAlertMessage(id,lease,envelope,now);
+  finishOperatorAlert=(id:string,lease:string,outcome:'sent'|'simulated'|'failed',now:string)=>this.operatorAlerts.finishOperatorAlert(id,lease,outcome,now);
+  recordCalendarHealthAlert=(p:string,healthy:boolean,now:string)=>this.operatorAlerts.recordCalendarHealthAlert(p,healthy,now);
+  completeOperatorAlertRun=(now:string)=>this.operatorAlerts.completeOperatorAlertRun(now);
+  getOperatorAlertReadiness=(now:string)=>this.operatorAlerts.getOperatorAlertReadiness(now);
+  recordPaymentSetupFailure=(booking:string,pi:string,now:string)=>this.operatorAlerts.recordPaymentSetupFailure(booking,pi,now);
+  reviewPaymentSetupFailure=(id:string,note:string,key:string,now:string)=>this.operatorAlerts.reviewPaymentSetupFailure(id,note,key,now);
+  listPaymentSetupFailures=()=>this.operatorAlerts.listPaymentSetupFailures();
 
   beginCalendarSync=(p:string,s:string,now?:string)=>this.calendars.beginCalendarSync(p,s,now);
   completeCalendarSync=(input:CalendarSnapshot)=>this.calendars.completeCalendarSync(input);
