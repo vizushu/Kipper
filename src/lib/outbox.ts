@@ -1,3 +1,5 @@
+import {boundedBody} from "./email-webhook";
+import {PROVIDER_MESSAGE_ID} from "./db/email-evidence";
 import {configuredReplyTo,liveEmailDeliveryConfigured,validateDeliveryEnvelope} from "./email-delivery";
 import { storedPaymentMode } from "./payment-mode";
 /** Durable, bounded delivery. Default disabled; public preview cannot claim or send. */
@@ -9,7 +11,8 @@ import {isPublicPreview} from './booking-launch';
 import {formatCents} from './types';
 
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-export type OutboxDelivery=(job:OutboxJob,envelope:OutboxEnvelope)=>Promise<'sent'|'simulated'>;
+export type OutboxDeliveryResult='sent'|'simulated'|{outcome:'sent';providerMessageId:string};
+export type OutboxDelivery=(job:OutboxJob,envelope:OutboxEnvelope)=>Promise<OutboxDeliveryResult>;
 export function outboxEnvelope(job:OutboxJob):OutboxEnvelope {
  const from=process.env.BOOKING_FROM_EMAIL??'Casa Pacifica <bookings@example.test>';
  const replyTo=configuredReplyTo();
@@ -25,7 +28,7 @@ export function outboxEnvelope(job:OutboxJob):OutboxEnvelope {
  return {from,...(replyTo?{replyTo}:{}),to:job.kind==='guest_confirmation'?b.guest.email:(process.env.HOST_NOTIFY_EMAIL??'host@example.test'),subject:`${job.kind==='guest_confirmation'?'Booking receipt':'New booking receipt'} — ${name} (${b.reference})`,html:`<h1>${escape(name)}</h1>${summary}`};
 }
 const liveConfigured=liveEmailDeliveryConfigured;
-export async function deliverOutboxMessage(job:OutboxJob,envelope:OutboxEnvelope):Promise<'sent'|'simulated'> {
+export async function deliverOutboxMessage(job:OutboxJob,envelope:OutboxEnvelope):Promise<'simulated'|{outcome:'sent';providerMessageId:string}> {
  if(isPublicPreview())throw new Error('Preview delivery blocked');
  if(process.env.EMAIL_DELIVERY_MODE==='local'){
   const dir=process.env.EMAIL_LOCAL_DIR??path.join(process.cwd(),'.dev-emails');await fs.mkdir(dir,{recursive:true,mode:0o700});
@@ -39,7 +42,10 @@ export async function deliverOutboxMessage(job:OutboxJob,envelope:OutboxEnvelope
  validateDeliveryEnvelope(envelope);
  const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:`Bearer ${process.env.RESEND_API_KEY}`,'Content-Type':'application/json','Idempotency-Key':job.dedupeKey},body:JSON.stringify({from:envelope.from,to:[envelope.to],subject:envelope.subject,html:envelope.html,...(envelope.replyTo?{reply_to:envelope.replyTo}:{})}),signal:AbortSignal.timeout(10_000)});
  if(!response.ok)throw new Error('Email provider did not acknowledge delivery');
- return 'sent';
+ let accepted:unknown;try{accepted=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(await boundedBody(response,4096)));}catch{throw new Error('Email provider acceptance could not be verified');}
+ const id=(accepted as {id?:unknown})?.id;
+ if(typeof id!=='string'||!PROVIDER_MESSAGE_ID.test(id))throw new Error('Email provider acceptance could not be verified');
+ return {outcome:'sent',providerMessageId:id.toLowerCase()};
 }
 export async function processOutbox(adapter:DataAdapter,options:{jobId?:string;limit?:number;now?:()=>Date;deliver?:OutboxDelivery}={}) {
  const result={claimed:0,sent:0,simulated:0,retried:0,suppressed:0,disabled:false};
@@ -50,7 +56,9 @@ export async function processOutbox(adapter:DataAdapter,options:{jobId?:string;l
   try{
    const envelope=await adapter.prepareOutboxMessage(job.id,job.leaseToken!,job.envelope??outboxEnvelope(job),now().toISOString());
    if(!envelope){result.suppressed++;continue;}
-   const outcome=await (options.deliver??deliverOutboxMessage)(job,envelope);
+   const delivered=await (options.deliver??deliverOutboxMessage)(job,envelope);
+   const outcome=typeof delivered==='string'?delivered:delivered.outcome;
+   if(typeof delivered!=='string'&&!await adapter.recordOutboxAcceptance(job.id,job.leaseToken!,delivered.providerMessageId,now().toISOString()))throw new Error('Email acceptance persistence failed');
    if(await adapter.finishOutbox(job.id,job.leaseToken!,outcome,now().toISOString()))result[outcome]++;else result.suppressed++;
   }catch{
    // No exception/provider body/recipient/token in persistence or logs.

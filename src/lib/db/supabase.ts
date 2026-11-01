@@ -1,3 +1,4 @@
+import {PROVIDER_MESSAGE_ID,validEmailProviderEvent,type EmailDeliveryEvidence,type EmailProviderEvent} from "./email-evidence";
 import type {OperatorAlert,OperatorAlertEnvelope,OperatorAlertReadiness,PaymentSetupFailure} from "./operator-alerts";
 import type {CalendarSnapshot,CalendarStatus} from "./calendar-store";
 import { rateLimitWindow,securityTimestamp,validateAdminSession,validateSecurityHash,type AdminSession,type RateLimitResult } from "./security-store";
@@ -205,6 +206,18 @@ export class SupabaseAdapter implements DataAdapter {
     if(note.trim().length<10||note.length>1000||idempotencyKey.length<8||idempotencyKey.length>128)throw new Error('Review needs an explanatory note and idempotency key.');
     const result = await this.req<SnakePaymentException|null>('POST','/rpc/review_payment_exception',{p_id:id,p_note:note.trim(),p_idempotency_key:idempotencyKey});
     return result ? toPaymentException(result) : null;
+  }
+
+  async recordOutboxAcceptance(jobId:string,leaseToken:string,providerMessageId:string,now:string):Promise<boolean> {
+    if(!PROVIDER_MESSAGE_ID.test(providerMessageId)||!Number.isFinite(Date.parse(now)))return false;
+    return this.req('POST','/rpc/record_outbox_acceptance',{p_job_id:jobId,p_lease_token:leaseToken,p_provider_message_id:providerMessageId,p_now:now});
+  }
+  async recordEmailProviderEvent(event:EmailProviderEvent):Promise<'recorded'|'duplicate'|'unknown'|'conflict'> {
+    if(!validEmailProviderEvent(event))return 'conflict';
+    return this.req('POST','/rpc/record_email_provider_event',{p_event:event});
+  }
+  async getEmailDeliveryEvidence(jobId:string):Promise<EmailDeliveryEvidence|null> {
+    return this.req('POST','/rpc/get_email_delivery_evidence',{p_job_id:jobId});
   }
 
   async ensureReceiptOutbox(bookingId: string): Promise<void> {

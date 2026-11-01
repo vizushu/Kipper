@@ -11,19 +11,19 @@ const booking={id:'bk_fixture',reference:'CP-FIXTURE',propertyId:'casa-pacifica'
 const job={id:'mail_fixture',bookingId:booking.id,kind:'guest_confirmation',dedupeKey:'guest_confirmation/bk_fixture/v1',status:'processing',payload:{booking},attempts:1,createdAt:booking.createdAt,nextAttemptAt:booking.createdAt,leaseToken:'fixture'} as OutboxJob;
 beforeEach(()=>{
  for(const [key,value] of Object.entries({SITE_PREVIEW_MODE:'false',EMAIL_DELIVERY_MODE:'live',EMAIL_LIVE_APPROVED:'true',RESEND_API_KEY:'synthetic-no-real-key',BOOKING_FROM_EMAIL:'Casa Pacifica <sender@example.test>',HOST_NOTIFY_EMAIL:'host@example.test',BOOKING_REPLY_TO_EMAIL:'replies@example.test',BOOKING_PAYMENT_MODE:'closed',BOOKING_TEST_MODE:'true',LIVE_BOOKING_APPROVED:'false',OPERATOR_ALERTS_APPROVED:'true',OPERATOR_ALERT_DELIVERY_QA_APPROVED:'true'}))vi.stubEnv(key,value);
- vi.spyOn(globalThis,'fetch').mockResolvedValue(new Response('{}'));
+ vi.spyOn(globalThis,'fetch').mockImplementation(async()=>new Response(JSON.stringify({id:'11111111-1111-4111-8111-111111111111'})));
 });
 afterEach(()=>{vi.unstubAllEnvs();vi.restoreAllMocks();});
 it('delivers historical paid live receipt when new bookings are closed or in test mode',async()=>{
  expect(liveEmailDeliveryConfigured()).toBe(true);
- expect(await deliverOutboxMessage(job,outboxEnvelope(job))).toBe('sent');
+ expect(await deliverOutboxMessage(job,outboxEnvelope(job))).toEqual({outcome:'sent',providerMessageId:'11111111-1111-4111-8111-111111111111'});
  const options=vi.mocked(fetch).mock.calls[0][1]!;
  expect((options.headers as Record<string,string>)['Idempotency-Key']).toBe(job.dedupeKey);
  expect(JSON.parse(String(options.body)).reply_to).toBe('replies@example.test');
 });
 it('allows authorized historical live recovery independently of booking mode',async()=>{
  const recovery={...job,kind:'access_recovery',payload:{recovery:{recipient:'guest@example.test',token:'fixture-token',reference:booking.reference,expiresAt:'2027-01-01T00:00:00Z',paymentMode:'live'}}} as OutboxJob;
- expect(await deliverOutboxMessage(recovery,outboxEnvelope(recovery))).toBe('sent');
+ expect(await deliverOutboxMessage(recovery,outboxEnvelope(recovery))).toEqual({outcome:'sent',providerMessageId:'11111111-1111-4111-8111-111111111111'});
 });
 it.each([{paymentMode:'test',paymentStatus:'paid_test'},{paymentStatus:'unpaid'},{status:'cancelled'}])('never upgrades synthetic/unpaid/cancelled snapshots to live receipt delivery',async patch=>{
  const changed={...job,payload:{booking:{...booking,...patch} as Booking}};

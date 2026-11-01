@@ -706,3 +706,96 @@ begin
 end; $$;
 revoke execute on function consume_security_rate_limit(text,integer,integer,timestamptz),create_admin_session(jsonb),get_admin_session(text,timestamptz),revoke_admin_session(text,timestamptz) from public,anon,authenticated;
 grant execute on function consume_security_rate_limit(text,integer,integer,timestamptz),create_admin_session(jsonb),get_admin_session(text,timestamptz),revoke_admin_session(text,timestamptz) to service_role;
+
+-- Private Resend delivery evidence; acceptance is not inbox delivery.
+-- These records never contain recipients, message bodies, access tokens, or provider response bodies.
+create table if not exists email_delivery_evidence (
+ provider_message_id text primary key check(provider_message_id ~* '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'),
+ job_id text not null unique references delivery_outbox(id),
+ accepted_at timestamptz not null,
+ status text not null default 'accepted' check(status in ('accepted','delivered','bounced','complained')),
+ status_at timestamptz not null
+);
+create table if not exists email_acceptance_attempts (
+ job_id text not null references delivery_outbox(id),
+ attempt integer not null check(attempt>0),
+ provider_message_id text not null references email_delivery_evidence(provider_message_id),
+ accepted_at timestamptz not null,
+ primary key(job_id,attempt)
+);
+create table if not exists email_provider_events (
+ event_id text primary key check(event_id ~ '^[A-Za-z0-9_-]{1,128}$'),
+ provider_message_id text not null references email_delivery_evidence(provider_message_id),
+ type text not null check(type in ('delivered','bounced','complained')),
+ occurred_at timestamptz not null,
+ received_at timestamptz not null,
+ payload_hash text not null check(payload_hash ~ '^[a-f0-9]{64}$')
+);
+alter table email_delivery_evidence enable row level security;
+alter table email_acceptance_attempts enable row level security;
+alter table email_provider_events enable row level security;
+revoke all on email_delivery_evidence,email_acceptance_attempts,email_provider_events from public,anon,authenticated;
+grant all on email_delivery_evidence,email_acceptance_attempts,email_provider_events to service_role;
+
+create or replace function record_outbox_acceptance(p_job_id text,p_lease_token text,p_provider_message_id text,p_now timestamptz)
+returns boolean language plpgsql security invoker set search_path=public as $$
+declare job delivery_outbox%rowtype; existing email_delivery_evidence%rowtype; attempt_id text;
+begin
+ if p_provider_message_id is null or p_provider_message_id !~* '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+  or p_now is null or not isfinite(p_now) then raise exception 'Invalid email acceptance evidence.'; end if;
+ select * into job from delivery_outbox where id=p_job_id and status='processing' and lease_token=p_lease_token and lease_until>p_now for update;
+ if not found or job.attempts<1 then return false; end if;
+ -- Serialize assignments of the same external identity, including different jobs.
+ perform pg_advisory_xact_lock(hashtextextended('email-provider:'||p_provider_message_id,0));
+ select * into existing from email_delivery_evidence where job_id=p_job_id;
+ if found and existing.provider_message_id<>p_provider_message_id then return false; end if;
+ select * into existing from email_delivery_evidence where provider_message_id=p_provider_message_id;
+ if found and existing.job_id<>p_job_id then return false; end if;
+ insert into email_delivery_evidence(provider_message_id,job_id,accepted_at,status,status_at)
+ values(p_provider_message_id,p_job_id,p_now,'accepted',p_now) on conflict(provider_message_id) do nothing;
+ select provider_message_id into attempt_id from email_acceptance_attempts where job_id=p_job_id and attempt=job.attempts;
+ if found and attempt_id<>p_provider_message_id then return false; end if;
+ insert into email_acceptance_attempts(job_id,attempt,provider_message_id,accepted_at)
+ values(p_job_id,job.attempts,p_provider_message_id,p_now) on conflict(job_id,attempt) do nothing;
+ return true;
+end; $$;
+
+create or replace function record_email_provider_event(p_event jsonb)
+returns text language plpgsql security invoker set search_path=public as $$
+declare event_id_value text:=p_event->>'eventId'; provider_id text:=p_event->>'providerMessageId';
+ event_type text:=p_event->>'type'; digest text:=p_event->>'payloadHash'; occurred timestamptz; received timestamptz;
+ existing email_provider_events%rowtype; evidence email_delivery_evidence%rowtype; incoming_rank integer; current_rank integer;
+begin
+ if event_id_value is null or event_id_value !~ '^[A-Za-z0-9_-]{1,128}$'
+  or provider_id is null or provider_id !~* '^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$'
+  or event_type is null or event_type not in ('delivered','bounced','complained')
+  or digest is null or digest !~ '^[a-f0-9]{64}$' then raise exception 'Invalid email event evidence.'; end if;
+ occurred:=(p_event->>'occurredAt')::timestamptz; received:=(p_event->>'receivedAt')::timestamptz;
+ if occurred is null or received is null or not isfinite(occurred) or not isfinite(received) then raise exception 'Invalid email event time.'; end if;
+ -- This is durable event-ID replay protection, not just a timestamp check.
+ perform pg_advisory_xact_lock(hashtextextended('email-event:'||event_id_value,0));
+ select * into existing from email_provider_events where event_id=event_id_value;
+ if found then
+  if existing.provider_message_id=provider_id and existing.type=event_type and existing.occurred_at=occurred and existing.payload_hash=digest then return 'duplicate'; end if;
+  return 'conflict';
+ end if;
+ select * into evidence from email_delivery_evidence where provider_message_id=provider_id for update;
+ if not found then return 'unknown'; end if;
+ insert into email_provider_events(event_id,provider_message_id,type,occurred_at,received_at,payload_hash)
+ values(event_id_value,provider_id,event_type,occurred,received,digest);
+ incoming_rank:=case event_type when 'delivered' then 1 when 'bounced' then 2 else 3 end;
+ current_rank:=case evidence.status when 'accepted' then 0 when 'delivered' then 1 when 'bounced' then 2 else 3 end;
+ if incoming_rank>current_rank then
+  update email_delivery_evidence set status=event_type,status_at=occurred where provider_message_id=provider_id;
+
+ end if;
+ return 'recorded';
+end; $$;
+
+create or replace function get_email_delivery_evidence(p_job_id text)
+returns jsonb language sql security invoker set search_path=public as $$
+ select jsonb_build_object('providerMessageId',provider_message_id,'jobId',job_id,'acceptedAt',accepted_at,'status',status,'statusAt',status_at)
+ from email_delivery_evidence where job_id=p_job_id;
+$$;
+revoke execute on function record_outbox_acceptance(text,text,text,timestamptz),record_email_provider_event(jsonb),get_email_delivery_evidence(text) from public,anon,authenticated;
+grant execute on function record_outbox_acceptance(text,text,text,timestamptz),record_email_provider_event(jsonb),get_email_delivery_evidence(text) to service_role;

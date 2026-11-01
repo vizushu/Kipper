@@ -1,3 +1,4 @@
+import {SqliteEmailEvidence} from "./sqlite-email-evidence";
 import {SqliteOperatorAlerts} from "./sqlite-operator-alerts";
 import type {OperatorAlertEnvelope} from "./operator-alerts";
 import {SqliteCalendarStore} from "./sqlite-calendar-store";
@@ -184,6 +185,7 @@ const SETTING_KEYS = [
 export class SqliteAdapter implements DataAdapter {
   private db: SqliteDb;
   private workflows: SqliteWorkflows;
+  private emailEvidence: SqliteEmailEvidence;
   private paymentExceptions: SqlitePaymentExceptions;
   private security: SqliteSecurityStore;
   private calendars: SqliteCalendarStore;
@@ -203,6 +205,7 @@ export class SqliteAdapter implements DataAdapter {
     this.security = new SqliteSecurityStore(this.db);
     this.calendars = new SqliteCalendarStore(this.db);
     this.workflows = new SqliteWorkflows(this.db, (id) => {const row=this.db.prepare("SELECT * FROM bookings WHERE id=?").get(id) as BookingRow|undefined;return row?rowToBooking(row):null;});
+    this.emailEvidence = new SqliteEmailEvidence(this.db);
     this.seedSettingsIfEmpty();
   }
 
@@ -415,6 +418,9 @@ export class SqliteAdapter implements DataAdapter {
   recordPaymentException = (input:PaymentExceptionInput) => this.paymentExceptions.recordPaymentException(input);
   listPaymentExceptions = () => this.paymentExceptions.listPaymentExceptions();
   reviewPaymentException = (id:string,note:string,key:string) => this.paymentExceptions.reviewPaymentException(id,note,key);
+  recordOutboxAcceptance:SqliteEmailEvidence['recordOutboxAcceptance']=(...args)=>this.emailEvidence.recordOutboxAcceptance(...args);
+  recordEmailProviderEvent:SqliteEmailEvidence['recordEmailProviderEvent']=(event)=>this.emailEvidence.recordEmailProviderEvent(event);
+  getEmailDeliveryEvidence:SqliteEmailEvidence['getEmailDeliveryEvidence']=(id)=>this.emailEvidence.getEmailDeliveryEvidence(id);
   ensureReceiptOutbox = (id:string) => this.workflows.ensureReceiptOutbox(id);
   claimOutbox = (now:string,limit:number,jobId?:string) => this.workflows.claimOutbox(now,limit,jobId);
   prepareOutboxMessage = (id:string,lease:string,envelope:OutboxEnvelope,now:string) => this.workflows.prepareOutboxMessage(id,lease,envelope,now);

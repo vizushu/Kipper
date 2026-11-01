@@ -1,3 +1,4 @@
+import type {EmailEvidenceStore} from "./email-evidence";
 import type {OperatorAlertStore} from "./operator-alerts";
 import type { CalendarStore } from "./calendar-store";
 import type { SecurityStore } from "./security-store";
@@ -74,7 +75,7 @@ export interface UpdateBookingPatch {
   adminNotes?: string;
 }
 
-export interface DataAdapter extends WorkflowStore, PaymentExceptionStore, SecurityStore, CalendarStore, OperatorAlertStore {
+export interface DataAdapter extends EmailEvidenceStore, WorkflowStore, PaymentExceptionStore, SecurityStore, CalendarStore, OperatorAlertStore {
   // ---- bookings ---------------------------------------------------------
   /**
    * Atomically: re-check that [checkIn, checkOut) has no overlapping
