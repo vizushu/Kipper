@@ -14,13 +14,13 @@ export async function deliverOperatorAlert(job:OperatorAlert,envelope:OperatorAl
  const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${process.env.RESEND_API_KEY}`,'content-type':'application/json','Idempotency-Key':job.dedupeKey},body:JSON.stringify({from:envelope.from,to:[envelope.to],subject:envelope.subject,text:envelope.text,...(envelope.replyTo?{reply_to:envelope.replyTo}:{})}),signal:AbortSignal.timeout(10_000)});
  if(!response.ok)throw new Error('Operator delivery not acknowledged');return 'sent';
 }
-export async function dispatchOperatorAlerts(adapter:DataAdapter,options:{now?:()=>Date;deliver?:(job:OperatorAlert,envelope:OperatorAlertEnvelope)=>Promise<'sent'|'simulated'>}={}){
+export async function dispatchOperatorAlerts(adapter:DataAdapter,options:{limit?:number;now?:()=>Date;deliver?:(job:OperatorAlert,envelope:OperatorAlertEnvelope)=>Promise<'sent'|'simulated'>}={}){
  const result={sent:0,simulated:0,failed:0,disabled:false};
  if(process.env.STAGING_TEST_MODE==='true'||process.env.SITE_PREVIEW_MODE==='true'||(!options.deliver&&!operatorAlertsConfigured()))return {...result,disabled:true};
  const now=options.now??(()=>new Date());let configured=true;try{validatedAirbnbCalendarUrl(process.env.AIRBNB_ICAL_URL??'');}catch{configured=false;}
  const status=await adapter.getCalendarStatus('casa-pacifica','airbnb-primary');
  await adapter.recordCalendarHealthAlert('casa-pacifica',configured&&calendarStatusReady(status,now().toISOString(),true),now().toISOString());
- for(const job of await adapter.claimOperatorAlerts(now().toISOString(),10)){
+ for(const job of await adapter.claimOperatorAlerts(now().toISOString(),Math.max(1,Math.min(10,Math.floor(options.limit??10))))){
   try{const envelope=await adapter.prepareOperatorAlertMessage(job.id,job.leaseToken!,job.envelope??operatorAlertEnvelope(job),now().toISOString());if(!envelope)continue;
    const outcome=await(options.deliver??deliverOperatorAlert)(job,envelope);if(await adapter.finishOperatorAlert(job.id,job.leaseToken!,outcome,now().toISOString()))result[outcome]++;
   }catch{await adapter.finishOperatorAlert(job.id,job.leaseToken!,'failed',now().toISOString());result.failed++;}

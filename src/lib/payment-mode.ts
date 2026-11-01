@@ -26,7 +26,7 @@ export function livePaymentBlockers(): string[] {
     if(process.env.INVENTORY_EXCLUSIVE_DIRECT_APPROVED!=='true')missing.push('INVENTORY_EXCLUSIVE_DIRECT_APPROVED');
     if(process.env.CALENDAR_SYNC_ENABLED==='true'||process.env.CALENDAR_SYNC_REQUIRED==='true'||process.env.CALENDAR_EXPORT_ENABLED==='true')missing.push('SHARED_CALENDAR_REVIEW_WORKFLOW_REQUIRED');
   }
-  if (!process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_')) missing.push('LIVE_STRIPE_SECRET_REQUIRED');
+  if (stripeKeyMode(process.env.STRIPE_SECRET_KEY) !== 'live') missing.push('LIVE_STRIPE_SECRET_REQUIRED');
   if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith('pk_live_')) missing.push('LIVE_STRIPE_PUBLISHABLE_REQUIRED');
   if (!process.env.STRIPE_WEBHOOK_SECRET) missing.push('SIGNED_WEBHOOK_CONFIGURATION_REQUIRED');
   return missing;
@@ -48,5 +48,5 @@ export function canFulfillPaymentMode(mode?: PaymentMode): boolean {
   try { return getBookingPaymentMode() === storedPaymentMode(mode); } catch { return false; }
 }
 export function stripeKeyMode(key: string | undefined): PaymentMode | null {
-  return (key?.startsWith('sk_test_') || (process.env.STAGING_TEST_MODE === 'true' && key?.startsWith('rk_test_'))) ? 'test' : key?.startsWith('sk_live_') ? 'live' : null;
+  return (key?.startsWith('sk_test_') || (process.env.STAGING_TEST_MODE === 'true' && key?.startsWith('rk_test_'))) ? 'test' : (key?.startsWith('sk_live_') || key?.startsWith('rk_live_')) ? 'live' : null;
 }
