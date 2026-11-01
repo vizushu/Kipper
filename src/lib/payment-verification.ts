@@ -68,11 +68,11 @@ export function verifyTestWebhook(
   key: string | undefined,
   webhookSecret: string | undefined
 ): Stripe.Event {
-  if (!webhookSecret || !key?.startsWith("sk_test_")) {
+  if (!webhookSecret || stripeKeyMode(key) !== 'test') {
     throw new PaymentVerificationError("Stripe test webhook is not configured.", 503);
   }
   if (!signature) throw new PaymentVerificationError("Missing stripe-signature.");
-  const stripe = new Stripe(key);
+  const stripe = new Stripe(key!);
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
@@ -86,6 +86,7 @@ export function verifyTestWebhook(
 /** Signature/mode authentication stays independent of fulfillment gates for durable exception recording. */
 export function verifyStripeWebhook(rawBody: string, signature: string | null, key: string | undefined, webhookSecret: string | undefined): Stripe.Event {
   const mode = stripeKeyMode(key);
+  if (process.env.STAGING_TEST_MODE === 'true' && mode !== 'test') throw new PaymentVerificationError('Live webhooks are blocked in staging.', 503);
   if (!webhookSecret || !key || !mode) throw new PaymentVerificationError('Stripe signed webhook is not configured.', 503);
   if (!signature) throw new PaymentVerificationError('Missing stripe-signature.');
   let event: Stripe.Event;

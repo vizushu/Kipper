@@ -29,6 +29,7 @@ export function outboxEnvelope(job:OutboxJob):OutboxEnvelope {
 }
 const liveConfigured=liveEmailDeliveryConfigured;
 export async function deliverOutboxMessage(job:OutboxJob,envelope:OutboxEnvelope):Promise<'simulated'|{outcome:'sent';providerMessageId:string}> {
+ if(process.env.STAGING_TEST_MODE==='true')throw new Error('Staging delivery blocked');
  if(isPublicPreview())throw new Error('Preview delivery blocked');
  if(process.env.EMAIL_DELIVERY_MODE==='local'){
   const dir=process.env.EMAIL_LOCAL_DIR??path.join(process.cwd(),'.dev-emails');await fs.mkdir(dir,{recursive:true,mode:0o700});
@@ -49,7 +50,7 @@ export async function deliverOutboxMessage(job:OutboxJob,envelope:OutboxEnvelope
 }
 export async function processOutbox(adapter:DataAdapter,options:{jobId?:string;limit?:number;now?:()=>Date;deliver?:OutboxDelivery}={}) {
  const result={claimed:0,sent:0,simulated:0,retried:0,suppressed:0,disabled:false};
- if(isPublicPreview()||(!options.deliver&&process.env.EMAIL_DELIVERY_MODE!=='local'&&!liveConfigured()))return {...result,disabled:true};
+ if(process.env.STAGING_TEST_MODE==='true'||isPublicPreview()||(!options.deliver&&process.env.EMAIL_DELIVERY_MODE!=='local'&&!liveConfigured()))return {...result,disabled:true};
  const now=options.now??(()=>new Date());
  const jobs=await adapter.claimOutbox(now().toISOString(),options.limit??10,options.jobId);result.claimed=jobs.length;
  for(const job of jobs){

@@ -1,6 +1,6 @@
 import {createHash,timingSafeEqual} from 'node:crypto';
 /** Independent, explicit calendar-only approval. Never enables guest booking or payment. */
-export function calendarOperationsApproved(){return process.env.CALENDAR_OPERATIONS_APPROVED==='true';}
+export function calendarOperationsApproved(){return process.env.STAGING_TEST_MODE!=='true'&&process.env.CALENDAR_OPERATIONS_APPROVED==='true';}
 export function calendarSyncEnabled(){return calendarOperationsApproved()&&process.env.CALENDAR_SYNC_ENABLED==='true';}
 export function calendarWorkerAuthorized(request:Request):boolean {
  const secret=process.env.CALENDAR_WORKER_SECRET;

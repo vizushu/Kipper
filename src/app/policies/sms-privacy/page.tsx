@@ -1,7 +1,9 @@
+import {isStagingTest} from "@/lib/staging-session";
 import type { Metadata } from "next";
 import SmsPolicyShell from "../SmsPolicyShell";
 export const metadata: Metadata = { title: "Privacy Policy — SMS support", description: "Prelaunch SMS privacy disclosures for Casa Pacifica / Ask Kipper.", robots: { index: false, follow: false } };
 export default function SmsPrivacyPage() {
+  if(isStagingTest())return <p>Synthetic staging only. External guest contact is disabled.</p>;
   return <SmsPolicyShell title="Privacy Policy">
     <p>Casa Pacifica / Ask Kipper SMS support is operated by Renier De La Cruz. The service has not launched. These disclosures describe the planned service; this website is not collecting SMS messages or enrolling anyone in SMS support.</p>
     <h2>Information and purpose</h2>

@@ -85,6 +85,7 @@ function hostHtml(booking: Booking, property: Property): string {
 }
 
 async function deliver(to: string, subject: string, html: string, kind: "guest" | "host", reference: string, booking?: Booking): Promise<void> {
+  if (process.env.STAGING_TEST_MODE === "true") throw new Error("Staging delivery blocked");
   if (isPublicPreview()) throw new Error("Preview delivery blocked");
   const apiKey = process.env.RESEND_API_KEY;
   const replyTo=configuredReplyTo();

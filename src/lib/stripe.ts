@@ -7,6 +7,7 @@ export interface CreatedPaymentIntent { id: string; clientSecret: string; amount
 export type VerifiedPaymentIntent = PaymentEvidence;
 function stripeClient(mode: PaymentMode, requireFulfillment = true): Stripe {
   if (process.env.SITE_PREVIEW_MODE === 'true') throw new Error('Payments are unavailable in public preview.');
+  if (process.env.STAGING_TEST_MODE === 'true' && mode !== 'test') throw new Error('Live payments are blocked in staging.');
   if (requireFulfillment && !canFulfillPaymentMode(mode)) throw new Error('Payment mode is not approved or enabled.');
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key || stripeKeyMode(key) !== mode) throw new Error('Stripe credential mode does not match the booking.');

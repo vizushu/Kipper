@@ -34,6 +34,7 @@ export function livePaymentBlockers(): string[] {
 export function getBookingPaymentMode(): PaymentMode | null {
   if (process.env.SITE_PREVIEW_MODE === 'true') return null;
   const mode = requestedPaymentMode();
+  if (process.env.STAGING_TEST_MODE === 'true') return mode === 'test' && stripeKeyMode(process.env.STRIPE_SECRET_KEY) === 'test' && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.startsWith('pk_test_') && !!process.env.STRIPE_WEBHOOK_SECRET ? 'test' : null;
   if (mode === 'closed' || (mode === 'live' && livePaymentBlockers().length)) return null;
   return mode;
 }
@@ -47,5 +48,5 @@ export function canFulfillPaymentMode(mode?: PaymentMode): boolean {
   try { return getBookingPaymentMode() === storedPaymentMode(mode); } catch { return false; }
 }
 export function stripeKeyMode(key: string | undefined): PaymentMode | null {
-  return key?.startsWith('sk_test_') ? 'test' : key?.startsWith('sk_live_') ? 'live' : null;
+  return (key?.startsWith('sk_test_') || (process.env.STAGING_TEST_MODE === 'true' && key?.startsWith('rk_test_'))) ? 'test' : key?.startsWith('sk_live_') ? 'live' : null;
 }

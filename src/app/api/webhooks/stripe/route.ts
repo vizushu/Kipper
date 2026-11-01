@@ -1,3 +1,4 @@
+import {stagingStripeBody} from "@/lib/staging-webhook";
 import {canFulfillPaymentMode} from '@/lib/payment-mode';
 import {isPublicPreview} from '@/lib/booking-launch';
 import Stripe from 'stripe';
@@ -12,7 +13,7 @@ import {json} from '../../_helpers';
 export async function POST(req:Request){
  if(isPublicPreview())return json({error:'Payments are disabled in this preview.'},503);
  let event:Stripe.Event;
- try{event=verifyStripeWebhook(await req.text(),req.headers.get('stripe-signature'),process.env.STRIPE_SECRET_KEY,process.env.STRIPE_WEBHOOK_SECRET);}
+ try{event=verifyStripeWebhook(process.env.STAGING_TEST_MODE==='true'?await stagingStripeBody(req):await req.text(),req.headers.get('stripe-signature'),process.env.STRIPE_SECRET_KEY,process.env.STRIPE_WEBHOOK_SECRET);}
  catch(error){return json({error:error instanceof Error?error.message:'Invalid webhook.'},error instanceof PaymentVerificationError?error.httpStatus:400);}
  if(event.type!=='payment_intent.succeeded'&&event.type!=='payment_intent.payment_failed')return json({received:true,ignored:event.type});
  const pi=event.data.object as Stripe.PaymentIntent;

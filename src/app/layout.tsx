@@ -5,6 +5,8 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PwaConnection from "@/components/PwaConnection";
+import StagingNotice from "@/components/StagingNotice";
+import {isStagingTest} from "@/lib/staging-session";
 import PreviewBanner from "@/components/PreviewBanner";
 import { isPublicPreview } from "@/lib/booking-launch";
 
@@ -36,7 +38,7 @@ const siteMetadata: Metadata = {
 };
 
 export function generateMetadata(): Metadata {
-  return { ...siteMetadata, ...(isPublicPreview() ? { robots: { index: false, follow: false, noarchive: true, googleBot: { index: false, follow: false, noimageindex: true } } } : {}) };
+  return { ...siteMetadata, ...(isPublicPreview() || isStagingTest() ? { robots: { index: false, follow: false, noarchive: true, googleBot: { index: false, follow: false, noimageindex: true } } } : {}) };
 }
 
 export default function RootLayout({
@@ -45,17 +47,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const preview = isPublicPreview();
+  const staging = isStagingTest();
   return (
     <html lang="en" style={fontVariables}>
       <body className={`bg-paper font-sans text-ink antialiased ${preview ? "public-preview pt-7 [&>header]:top-7 [&_[role=dialog]]:top-7" : ""}`}>
         {preview && <PreviewBanner />}
+        {staging && <StagingNotice />}
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-ink focus:px-4 focus:py-2 focus:text-paper"
         >
           Skip to content
         </a>
-        <PwaConnection />
+        {!staging && <PwaConnection />}
         <Header />
         <main id="main" className="min-h-[70vh]">
           {children}

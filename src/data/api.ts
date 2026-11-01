@@ -8,6 +8,8 @@
  * fallback for rates, so availability-dependent UI shows an honest error
  * state instead of fake numbers.
  */
+import {cookies} from "next/headers";
+import {isStagingTest,stagingOrigin,STAGING_COOKIE,validStagingSession} from "@/lib/staging-session";
 import type {
   Booking,
   Property,
@@ -16,6 +18,7 @@ import type {
 import { FALLBACK_PROPERTIES, PROPERTY } from "./property";
 
 function baseUrl(): string {
+  if(isStagingTest()){const origin=stagingOrigin();if(!origin)throw new Error("Staging origin unavailable");return origin;}
   return (
     process.env.NEXT_PUBLIC_SITE_URL ?? process.env.RENDER_EXTERNAL_URL ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
@@ -24,7 +27,13 @@ function baseUrl(): string {
 
 async function get<T>(path: string, headers?: HeadersInit): Promise<T | null> {
   try {
-    const res = await fetch(`${baseUrl()}${path}`, { cache: "no-store", headers });
+    const requestHeaders=new Headers(headers);
+    if(isStagingTest()){
+      const session=(await cookies()).get(STAGING_COOKIE)?.value;
+      if(!await validStagingSession(session))return null;
+      requestHeaders.set("cookie",`${STAGING_COOKIE}=${session}`);
+    }
+    const res = await fetch(`${baseUrl()}${path}`, { cache: "no-store", headers:requestHeaders, ...(isStagingTest()?{redirect:"error" as const}:{}) });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {

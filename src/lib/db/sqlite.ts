@@ -114,9 +114,11 @@ CREATE INDEX IF NOT EXISTS idx_quotes_expires ON quotes (expires_at);
 `;
 
 function resolveDbPath(dbPath?: string): string {
-  const file = dbPath ?? process.env.SQLITE_PATH ?? path.join(process.cwd(), "data", "bookings.db");
+  const staging = process.env.STAGING_TEST_MODE === "true";
+  const file = staging ? "/tmp/kipper-staging/bookings.db" : dbPath ?? process.env.SQLITE_PATH ?? path.join(process.cwd(), "data", "bookings.db");
+  if (staging && (fs.lstatSync("/tmp/kipper-staging", {throwIfNoEntry:false})?.isSymbolicLink() || fs.lstatSync(file, {throwIfNoEntry:false})?.isSymbolicLink())) throw new Error("Unsafe staging database path");
   const dir = path.dirname(file);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   return file;
 }
 

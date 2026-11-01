@@ -16,7 +16,7 @@ export async function deliverOperatorAlert(job:OperatorAlert,envelope:OperatorAl
 }
 export async function dispatchOperatorAlerts(adapter:DataAdapter,options:{now?:()=>Date;deliver?:(job:OperatorAlert,envelope:OperatorAlertEnvelope)=>Promise<'sent'|'simulated'>}={}){
  const result={sent:0,simulated:0,failed:0,disabled:false};
- if(process.env.SITE_PREVIEW_MODE==='true'||(!options.deliver&&!operatorAlertsConfigured()))return {...result,disabled:true};
+ if(process.env.STAGING_TEST_MODE==='true'||process.env.SITE_PREVIEW_MODE==='true'||(!options.deliver&&!operatorAlertsConfigured()))return {...result,disabled:true};
  const now=options.now??(()=>new Date());let configured=true;try{validatedAirbnbCalendarUrl(process.env.AIRBNB_ICAL_URL??'');}catch{configured=false;}
  const status=await adapter.getCalendarStatus('casa-pacifica','airbnb-primary');
  await adapter.recordCalendarHealthAlert('casa-pacifica',configured&&calendarStatusReady(status,now().toISOString(),true),now().toISOString());

@@ -1,3 +1,4 @@
+import {isStagingTest} from "@/lib/staging-session";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PropertyExperience from "@/components/PropertyExperience";
@@ -13,5 +14,5 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const property = await getProperty("casa-pacifica");
   if (!property) notFound();
   const selection = parseStaySelection(await searchParams ?? {}, Math.min(property.maxGuests, property.maxTotalOccupancy), property.maxStayNights);
-  return <article className="mx-auto max-w-[1164px] pb-6 sm:px-[22px]"><PropertyExperience key={staySelectionKey(property.id, selection)} initialSelection={selection} publicPreview={isPublicPreview()} property={{ ...property, address: "", zip: "", latitude: 0, longitude: 0 }} /></article>;
+  return <article className="mx-auto max-w-[1164px] pb-6 sm:px-[22px]"><PropertyExperience stagingTest={isStagingTest()} key={staySelectionKey(property.id, selection)} initialSelection={selection} publicPreview={isPublicPreview()} property={{ ...property, address: "", zip: "", latitude: 0, longitude: 0 }} /></article>;
 }

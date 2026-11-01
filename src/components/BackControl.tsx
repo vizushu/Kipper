@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ButtonHTMLAttributes, ComponentProps } from "react";
 /** Long, thin return arrow matching the requested ⟵ silhouette, independent of other icons. */
 function BackArrow() {
-  return <svg aria-hidden="true" focusable="false" viewBox="0 0 32 16" fill="none" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="miter" className="h-4 w-7 shrink-0"><path d="M30 8H2m7-4L2 8l7 4"/></svg>;
+  return <svg aria-hidden="true" focusable="false" viewBox="0 0 32 16" fill="none" stroke="currentColor" strokeWidth="1.15" strokeLinecap="round" strokeLinejoin="miter" className="shrink-0" style={{ width: "1.5em", height: ".75em" }}><path d="M30 8H2m7-4L2 8l7 4"/></svg>;
 }
 
 /** One visual language for return navigation; callers retain the correct destination. */

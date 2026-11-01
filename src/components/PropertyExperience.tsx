@@ -18,7 +18,7 @@ import RoomCards from "@/components/RoomCards";
 import FaqAccordion from "@/components/FaqAccordion";
 import { IconClock, IconShield, IconCheck, IconUsers, IconBed, IconBath } from "@/components/icons";
 function Section({title,children}:{title:string;children:ReactNode}) {return <section className="casa-section"><h2 className="mb-6 font-display">{title}</h2>{children}</section>;}
-export default function PropertyExperience({property,publicPreview=false,initialSelection}:{property:Property;publicPreview?:boolean;initialSelection?:StaySelection}) {
+export default function PropertyExperience({property,publicPreview=false,stagingTest=false,initialSelection}:{property:Property;publicPreview?:boolean;stagingTest?:boolean;initialSelection?:StaySelection}) {
   const [range,setRange]=useState<DateRange|null>(initialSelection?.range??null);
   const resolution=resolveStayConfiguration(property,range?.checkIn,range?.checkOut);
   const config=resolution.configuration;
@@ -48,7 +48,7 @@ export default function PropertyExperience({property,publicPreview=false,initial
           <PoliciesDialog property={property}/>
         </Section>
       </>}
-      <Section title="Your San Diego neighborhood."><p className="text-sm text-moss">{property.neighborhood}, {property.city}</p><NeighborhoodMap/><p className="mt-3 text-xs text-moss">The exact address is shared with confirmed guests.</p></Section>
+      <Section title="Your San Diego neighborhood."><p className="text-sm text-moss">{property.neighborhood}, {property.city}</p>{stagingTest?<p className="mt-4 text-sm text-moss">External maps are disabled on this synthetic test site.</p>:<NeighborhoodMap/>}<p className="mt-3 text-xs text-moss">The exact address is shared with confirmed guests.</p></Section>
       {isCasa&&<Section title="Stories from our guests."><GuestReviewCards reviews={CASA_PACIFICA_REVIEWS}/></Section>}
       {showDetails&&<details className="mt-8 border-t border-line pt-5"><summary className="cursor-pointer py-2 text-sm">More about the home</summary><Section title="The space"><p className="text-sm leading-7 text-moss">Explore the photos, amenities and accommodation details for your selected dates.</p></Section><Section title="Frequently asked questions"><FaqAccordion faqs={property.faqs.filter(item=>!/upstairs|downstairs|shared indoor|shared space/i.test(`${item.q} ${item.a}`))}/></Section></details>}
       <p className="mt-8 text-xs text-moss">Short-term rental license · {property.license}</p>

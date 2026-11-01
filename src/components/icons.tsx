@@ -19,6 +19,16 @@ function base(props: P) {
   };
 }
 
+/** Navigation glyphs track adjacent type; their enclosing tap targets stay full size. */
+function arrowBase(props: P) {
+  return base({
+    strokeWidth: 1.15,
+    strokeLinejoin: "miter",
+    ...props,
+    style: { ...props.style, width: "1em", height: "1em", flexShrink: 0 },
+  });
+}
+
 export const IconSearch = (p: P) => (
   <svg {...base(p)}>
     <circle cx="11" cy="11" r="7" />
@@ -68,22 +78,22 @@ export const IconX = (p: P) => (
   </svg>
 );
 export const IconChevronLeft = (p: P) => (
-  <svg {...base({ strokeWidth: 1.15, strokeLinejoin: "miter", ...p })}>
+  <svg {...arrowBase(p)}>
     <path d="m14.5 5.5-7 6.5 7 6.5" />
   </svg>
 );
 export const IconChevronRight = (p: P) => (
-  <svg {...base({ strokeWidth: 1.15, strokeLinejoin: "miter", ...p })}>
+  <svg {...arrowBase(p)}>
     <path d="m9.5 5.5 7 6.5-7 6.5" />
   </svg>
 );
 export const IconChevronDown = (p: P) => (
-  <svg {...base({ strokeWidth: 1.15, strokeLinejoin: "miter", ...p })}>
+  <svg {...arrowBase(p)}>
     <path d="m5.5 9.5 6.5 7 6.5-7" />
   </svg>
 );
 export const IconArrowRight = (p: P) => (
-  <svg {...base({ strokeWidth: 1.15, strokeLinejoin: "miter", ...p })}>
+  <svg {...arrowBase(p)}>
     <path d="M2 12h20m-7-4 7 4-7 4" />
   </svg>
 );
@@ -202,14 +212,14 @@ export const IconFlame = (p: P) => (
 );
 
 export const IconArrowUpRight = (p: P) => (
-  <svg {...base({ strokeWidth: 1.15, strokeLinejoin: "miter", ...p })}><path d="M3 21 21 3M13 4l8-1-1 8" /></svg>
+  <svg {...arrowBase(p)}><path d="M3 21 21 3M13 4l8-1-1 8" /></svg>
 );
 
 export const IconArrowLeft = (p: P) => (
-  <svg {...base({ strokeWidth: 1.15, strokeLinejoin: "miter", ...p })}><path d="M22 12H2m7-4-7 4 7 4" /></svg>
+  <svg {...arrowBase(p)}><path d="M22 12H2m7-4-7 4 7 4" /></svg>
 );
 
 /** Upload-style sharing arrow; the surrounding circular button remains unchanged. */
 export const IconShare = (p: P) => (
-  <svg {...base({ strokeWidth: 1.15, strokeLinejoin: "miter", ...p })}><path d="M12 17V1m-4 7 4-7 4 7M5 12H3v10h18V12h-2"/></svg>
+  <svg {...arrowBase(p)}><path d="M12 17V1m-4 7 4-7 4 7M5 12H3v10h18V12h-2"/></svg>
 );

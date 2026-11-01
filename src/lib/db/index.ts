@@ -16,11 +16,14 @@ import { SupabaseAdapter, SupabaseNotConfiguredError } from "./supabase";
 declare global {
   // eslint-disable-next-line no-var
   var __cp_adapter: DataAdapter | undefined;
+  var __cp_adapter_staging: boolean | undefined;
 }
 
 export function getAdapter(): DataAdapter {
-  if (globalThis.__cp_adapter) return globalThis.__cp_adapter;
-  const which = (process.env.DATA_ADAPTER ?? "sqlite").toLowerCase();
+  const staging = process.env.STAGING_TEST_MODE === "true";
+  if (globalThis.__cp_adapter && globalThis.__cp_adapter_staging === staging) return globalThis.__cp_adapter;
+  if (globalThis.__cp_adapter) resetAdapter();
+  const which = staging ? "sqlite" : (process.env.DATA_ADAPTER ?? "sqlite").toLowerCase();
   let adapter: DataAdapter;
   if (which === "supabase") {
     adapter = new SupabaseAdapter(); // throws SupabaseNotConfiguredError when env is missing
@@ -32,6 +35,7 @@ export function getAdapter(): DataAdapter {
     );
   }
   globalThis.__cp_adapter = adapter;
+  globalThis.__cp_adapter_staging = staging;
   return adapter;
 }
 

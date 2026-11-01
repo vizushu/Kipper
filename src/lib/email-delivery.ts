@@ -19,7 +19,7 @@ export function configuredReplyTo():string|undefined {
  return value;
 }
 export function liveEmailDeliveryConfigured():boolean {
- if(isPublicPreview()||process.env.EMAIL_DELIVERY_MODE!=='live'||process.env.EMAIL_LIVE_APPROVED!=='true')return false;
+ if(process.env.STAGING_TEST_MODE==='true'||isPublicPreview()||process.env.EMAIL_DELIVERY_MODE!=='live'||process.env.EMAIL_LIVE_APPROVED!=='true')return false;
  const key=process.env.RESEND_API_KEY;
  if(!key?.trim()||/[\r\n\x00-\x1f\x7f]/.test(key)||!validEmailAddress(process.env.BOOKING_FROM_EMAIL,true)||!validEmailAddress(process.env.HOST_NOTIFY_EMAIL))return false;
  try{configuredReplyTo();return true;}catch{return false;}

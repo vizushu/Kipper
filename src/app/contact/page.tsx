@@ -1,3 +1,4 @@
+import {isStagingTest} from "@/lib/staging-session";
 import { BackLink } from "@/components/BackControl";
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 
 /** One contact entry. Legacy community invites are deliberately not guest support. */
 export default function ContactPage() {
+  if(isStagingTest())return <p>Synthetic staging only. External guest contact is disabled.</p>;
   return <div className="mx-auto max-w-[590px] px-5 pb-20 pt-8 sm:px-8 sm:py-12">
     <BackLink href="/properties/casa-pacifica" className="mb-7"/>
     <p className="casa-eyebrow mb-3">Ask Kipper · Casa Pacifica</p>

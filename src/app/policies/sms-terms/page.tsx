@@ -1,8 +1,10 @@
+import {isStagingTest} from "@/lib/staging-session";
 import type { Metadata } from "next";
 import Link from "next/link";
 import SmsPolicyShell from "../SmsPolicyShell";
 export const metadata: Metadata = { title: "Terms & Conditions — SMS support", description: "Prelaunch SMS terms for guest-initiated Casa Pacifica / Ask Kipper support.", robots: { index: false, follow: false } };
 export default function SmsTermsPage() {
+  if(isStagingTest())return <p>Synthetic staging only. External guest contact is disabled.</p>;
   return <SmsPolicyShell title="Terms & Conditions">
     <p>Casa Pacifica / Ask Kipper SMS support is operated by Renier De La Cruz. SMS support is not yet available. These terms describe the planned service, not an active subscription.</p>
     <h2>SMS Terms</h2>

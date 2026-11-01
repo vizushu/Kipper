@@ -11,7 +11,7 @@ function signingKey(secret:string|undefined):Buffer {
  return key;
 }
 export function emailWebhookEnabled():boolean {
- if(process.env.SITE_PREVIEW_MODE==='true'||process.env.EMAIL_WEBHOOK_APPROVED!=='true')return false;
+ if(process.env.STAGING_TEST_MODE==='true'||process.env.SITE_PREVIEW_MODE==='true'||process.env.EMAIL_WEBHOOK_APPROVED!=='true')return false;
  try{signingKey(process.env.RESEND_WEBHOOK_SECRET);return true;}catch{return false;}
 }
 export async function boundedBody(message:Request|Response,maxBytes:number):Promise<Buffer>{

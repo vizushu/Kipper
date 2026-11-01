@@ -100,6 +100,7 @@ export function isPublicCalendarAddress(address:string):boolean {
 }
 
 export async function fetchAirbnbCalendar(value:string):Promise<string> {
+  if(process.env.STAGING_TEST_MODE==='true')throw new Error('Calendar transport blocked in staging.');
  const url=validatedAirbnbCalendarUrl(value);
  const deadline=Date.now()+TIMEOUT_MS;
  let dnsTimer:ReturnType<typeof setTimeout>|undefined;

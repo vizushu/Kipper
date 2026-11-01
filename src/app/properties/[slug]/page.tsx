@@ -1,3 +1,4 @@
+import {isStagingTest} from "@/lib/staging-session";
 import { BackLink } from "@/components/BackControl";
 import { parseStaySelection, staySelectionKey } from "@/lib/stay-selection";
 import { isPublicPreview } from "@/lib/booking-launch";
@@ -23,6 +24,6 @@ export default async function PropertyPage({ params, searchParams }: { params: P
   return <article className="mx-auto max-w-[1164px] pb-6 sm:px-[22px]">
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
     <nav aria-label="Breadcrumb" className="px-5 py-3 text-xs text-moss"><BackLink href="/properties"/></nav>
-    <PropertyExperience publicPreview={isPublicPreview()} key={staySelectionKey(property.id, selection)} initialSelection={selection} property={{ ...property, address: "", zip: "", latitude: 0, longitude: 0 }} />
+    <PropertyExperience stagingTest={isStagingTest()} publicPreview={isPublicPreview()} key={staySelectionKey(property.id, selection)} initialSelection={selection} property={{ ...property, address: "", zip: "", latitude: 0, longitude: 0 }} />
   </article>;
 }
