@@ -26,7 +26,7 @@ function lineItemsHtml(booking: Booking): string {
     .map(
       (li) =>
         `<tr><td style="padding:6px 0;">${esc(li.label)}${li.detail ? `<br><small style="color:#666;">${esc(li.detail)}</small>` : ""}</td>` +
-        `<td style="padding:6px 0;text-align:right;white-space:nowrap;">${esc(formatCents(li.amountCents))}</td></tr>`
+        `<td style="padding:6px 0;text-align:right;white-space:nowrap;">${li.amountCents===0&&li.referenceAmountCents?`<del>${esc(formatCents(li.referenceAmountCents))}</del> → `:""}${esc(formatCents(li.amountCents))}</td></tr>`
     )
     .join("");
 }

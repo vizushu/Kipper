@@ -71,7 +71,7 @@ afterEach(() => {
 describe('booking routes with real durable storage and synthetic provider boundaries', () => {
   it('quotes, reserves, verifies payment, deduplicates webhooks and delivers two receipts exactly once', async () => {
     const quote = await getQuote();
-    expect(quote.cleaningFeeCents).toBe(18000); expect(quote.staySnapshot).toMatchObject({ bedrooms: 3, maxGuests: 8, taxRatePct: 12.75, cleaningFeeCents: 18000 });
+    expect(quote.cleaningFeeCents).toBe(0); expect(quote.staySnapshot).toMatchObject({ bedrooms: 3, maxGuests: 8, taxRatePct: 12.75, cleaningFeeCents: 0 });
     const { response, booking } = await reserve(quote);
     expect(response.headers.get('set-cookie')).toMatch(/HttpOnly/i);
     expect(response.headers.get('cache-control')).toContain('no-store');

@@ -149,8 +149,9 @@ const CASA_PACIFICA: Property = {
   cancellationPolicy:
     CANCELLATION_POLICY.text,
   petPolicy: {
-    allowed: true,
-    feePerStayCents: 5000,
+    allowed: false,
+    onlineApprovalPending: true,
+    feePerStayCents: 0,
     maxPets: 1,
   },
   photos: [
@@ -186,7 +187,7 @@ const CASA_PACIFICA: Property = {
     },
     {
       q: "Can we bring a pet?",
-      a: "One pet max, $50 per stay. Please let us know in advance so we can prepare.",
+      a: "Please contact us before booking with a pet. Pet eligibility and any fee need confirmation; online pet bookings are not available yet.",
     },
     {
       q: "What are the check-in and checkout times?",
@@ -208,10 +209,12 @@ const CASA_PACIFICA: Property = {
     "Exterior security camera",
   ],
   // Pricing configuration (defaults; admin-editable via /api/admin/*)
-  baseNightlyCents: 34900,
-  minNightlyCents: 34900,
-  maxNightlyCents: 103000,
-  cleaningFeeCents: 18000, // Approved for the current 3-bedroom accommodation
+  pricingMode: "flat",
+  baseNightlyCents: 44900,
+  minNightlyCents: 44900,
+  maxNightlyCents: 44900,
+  cleaningFeeCents: 0, // Waived for new direct bookings; old accepted quotes remain unchanged.
+  cleaningFeeReferenceCents: 18000, // Actual prior standard fee, display-only.
   taxRatePct: 12.75, // Verified San Diego Zone 2, effective 2025-05-01
   minStayNights: 1,
   maxStayNights: 28,

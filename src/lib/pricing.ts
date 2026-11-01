@@ -7,7 +7,10 @@ import { acceptedCancellationTerms } from "./cancellation-review";
  * The frontend must always call POST /api/quote and render the returned
  * quote — it must never compute totals itself.
  *
- * Pricing rules (Renier's Smart Pricing band; admin-editable via settings):
+ * Current Casa Pacifica policy: flat $449/night, no weekend/season uplift,
+ * no automatic promotion or online pet fee. Legacy sample behavior below remains
+ * solely for explicitly configured legacy/test properties, not current production:
+ * Legacy sample rules:
  * - Base $349/night (34900¢)
  * - Friday & Saturday nights ×1.20
  * - June–August nights ×1.15
@@ -60,19 +63,11 @@ export interface PricingSettings {
 }
 
 export const DEFAULT_PRICING_SETTINGS: PricingSettings = {
-  cleaningFeeCents: 18000, // Approved current 3BR cleaning fee
+  cleaningFeeCents: 0, // Owner-approved waiver for new direct bookings
   taxRatePct: 12.75, // Verified Zone 2 TOT; collection-time policy, effective 2025-05-01
   minStayNights: 1,
   maxStayNights: 28,
-  promos: [
-    {
-      code: "DIRECT10",
-      type: "percent",
-      percent: 10,
-      description:
-        "10% off the nightly subtotal — honors Renier's promised 10%-off for direct rebookings",
-    },
-  ],
+  promos: [], // No promotion is approved for the permanent flat-rate policy.
 };
 
 /** Quote validity window. */
@@ -170,6 +165,8 @@ export function nightlyRateCents(
   date: string,
   rateOverrides: Record<string, number>
 ): number {
+  // Explicit owner-approved flat policy supersedes legacy seasonal rules and stale overrides.
+  if (property.pricingMode === "flat") return property.baseNightlyCents;
   const override = rateOverrides[date];
   let rate: number;
   if (override != null) {
@@ -212,6 +209,9 @@ export function computeQuote(input: ComputeQuoteInput): Quote {
   if (!isWhole(pets) || pets < 0) {
     throw new BookingError("GUEST_LIMIT", "Pet count must be a whole number ≥ 0.");
   }
+  if (pets > 0 && (property.petPolicy.onlineApprovalPending || !property.petPolicy.allowed)) {
+    throw new BookingError("GUEST_LIMIT", "Please contact Casa Pacifica before booking with a pet; online pet bookings are not available yet.");
+  }
   if (pets > property.petPolicy.maxPets) {
     throw new BookingError(
       "GUEST_LIMIT",
@@ -221,7 +221,7 @@ export function computeQuote(input: ComputeQuoteInput): Quote {
 
   let promo: PromoCode | undefined;
   if (promoCode) {
-    promo = findPromo(settings, promoCode);
+    promo = property.pricingMode === "flat" ? undefined : findPromo(settings, promoCode);
     if (!promo) {
       // No dedicated code exists in the fixed BookingError union; INVALID_DATES
       // is the closest "bad input" bucket. Message names the problem clearly.
@@ -255,7 +255,7 @@ export function computeQuote(input: ComputeQuoteInput): Quote {
   const lineItems: LineItem[] = [
     {
       label: `${nights} night${nights === 1 ? "" : "s"} × avg $${(avgNightly / 100).toFixed(2)}`,
-      detail: "Nightly rates vary by date — see nightly breakdown.",
+      detail: property.pricingMode === "flat" ? "Flat nightly rate for this stay." : "Nightly rates vary by date — see nightly breakdown.",
       amountCents: subtotalCents,
     },
   ];
@@ -266,7 +266,7 @@ export function computeQuote(input: ComputeQuoteInput): Quote {
       amountCents: -discountCents,
     });
   }
-  lineItems.push({ label: "Cleaning fee", amountCents: cleaningFeeCents });
+  lineItems.push({ label: "Cleaning fee", amountCents: cleaningFeeCents, ...(cleaningFeeCents === 0 && property.cleaningFeeReferenceCents ? {referenceAmountCents: property.cleaningFeeReferenceCents, detail: "Waived for direct bookings"} : {}) });
   if (petFeeCents > 0) {
     lineItems.push({
       label: "Pet fee",

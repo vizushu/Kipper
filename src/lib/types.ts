@@ -36,6 +36,7 @@ export interface BedLayout {
 }
 
 export interface PetPolicy {
+  onlineApprovalPending?: boolean;
   allowed: boolean;
   feePerStayCents: number;
   maxPets: number;
@@ -131,10 +132,12 @@ export interface Property {
   faqs: Faq[];
   safetyDevices: string[];
   // Pricing configuration (defaults; admin-editable)
+  pricingMode?: "flat" | "legacy_sample";
   baseNightlyCents: number;
   minNightlyCents: number;
   maxNightlyCents: number;
-  cleaningFeeCents: number; // SAMPLE default until Renier confirms
+  cleaningFeeCents: number;
+  cleaningFeeReferenceCents?: number;
   taxRatePct: number; // SAMPLE default until Renier confirms
   minStayNights: number;
   maxStayNights: number;
@@ -176,6 +179,7 @@ export interface LineItem {
   label: string;
   detail?: string;
   amountCents: number; // negative for discounts
+  referenceAmountCents?: number; // Disclosed usual fee, never included in arithmetic.
 }
 
 export interface Quote {

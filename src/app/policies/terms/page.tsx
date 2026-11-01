@@ -31,7 +31,7 @@ export default function TermsPage() {
         <li>Quiet hours 10:00 PM – 8:00 AM.</li>
         <li>No parties, events, or large gatherings. No commercial photography or filming.</li>
         <li>No smoking, vaping, marijuana, hookah, or illegal drugs anywhere on the property.</li>
-        <li>Pets: one pet maximum, $50 per stay. You are responsible for any pet damage.</li>
+        <li>Pets: contact us before booking. Pet eligibility and any fee require confirmation; online pet bookings are not available yet.</li>
         <li>Please do not block the neighbor's driveway, and keep outdoor noise respectful, especially at night.</li>
       </ul>
       <h2>Payment</h2>

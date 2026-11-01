@@ -5,14 +5,14 @@ import { NextRequest } from 'next/server';
 import { computeQuote, DEFAULT_PRICING_SETTINGS } from '../src/lib/pricing';
 import { getProperty } from '../src/lib/property';
 import { acceptedCancellationTerms, reviewBookingCancellation } from '../src/lib/cancellation-review';
-import { CANCELLATION_POLICY } from '../src/lib/cancellation';
+import { CANCELLATION_POLICY, ACCEPTED_CANCELLATION_TEXTS } from '../src/lib/cancellation';
 import type { Booking } from '../src/lib/types';
 import CancellationReview from '../src/app/admin/(guarded)/CancellationReview';
 import { GET } from '../src/app/api/admin/bookings/[id]/cancellation-review/route';
 const db = vi.hoisted(() => ({ getBooking: vi.fn(), cancelBooking: vi.fn(), updateBooking: vi.fn() }));
 vi.mock('../src/lib/db', () => ({ getAdapter: () => db }));
-function fixture(): Booking {
-  const q = computeQuote({ property: getProperty('casa-pacifica')!, settings: DEFAULT_PRICING_SETTINGS, rateOverrides: {},
+function fixture(legacy = true): Booking {
+  const q = computeQuote({ property: {...getProperty('casa-pacifica')!,cancellationPolicyVersion: legacy ? 'firm-2026-10-30' : CANCELLATION_POLICY.version,cancellationPolicy: legacy ? ACCEPTED_CANCELLATION_TEXTS['firm-2026-10-30'] : CANCELLATION_POLICY.text,pricingMode:'legacy_sample',baseNightlyCents:34900,minNightlyCents:34900,maxNightlyCents:103000,petPolicy:{allowed:true,feePerStayCents:5000,maxPets:1}}, settings: {...DEFAULT_PRICING_SETTINGS,cleaningFeeCents:legacy ? 18000 : 0,promos:[{code:'DIRECT10',type:'percent',percent:10}]}, rateOverrides: {},
     checkIn: '2027-02-20', checkOut: '2027-02-22', guests: { adults: 2, children: 0, infants: 0 }, pets: 1, promoCode: 'DIRECT10', now: new Date('2026-10-30T12:00:00Z') });
   return { id: 'synthetic-review', reference: 'CP-SYNTHETIC', propertyId: q.propertyId, checkIn: q.checkIn, checkOut: q.checkOut, nights: q.nights,
     guests: q.guests, pets: q.pets, guest: { name: 'Synthetic', email: 'synthetic@example.test' }, lineItems: q.lineItems, totalCents: q.totalCents,
@@ -101,5 +101,34 @@ describe('read-only admin review boundary', () => {
   it('returns not found without inventing a booking or amount', async()=>{db.getBooking.mockResolvedValue(null);expect((await GET(request(),{params:Promise.resolve({id:'missing'})})).status).toBe(404);});
   it('renders a clearly read-only review action, no cancel/refund form',()=>{
     const html=renderToStaticMarkup(<CancellationReview bookingId="synthetic-review"/>);expect(html).toContain('Review cancellation (no action)');expect(html).not.toContain('<form');expect(html).not.toContain('Issue refund');
+  });
+});
+
+describe('new waived cleaning contracts retain historical refund interpretation', () => {
+  it.each([
+    ['2027-01-21T23:00:00.000Z',100], ['2027-01-21T23:00:00.001Z',50],
+    ['2027-02-05T23:00:00.000Z',50], ['2027-02-05T23:00:00.001Z',0],
+    ['2027-02-20T22:59:59Z',0], ['2027-02-20T23:00:00Z',0],
+  ])('new $0 contract at %s preserves accommodation %s without fictional cleaning refund',(timestamp,percentage)=>{
+    const booking=fixture(false), before=JSON.stringify(booking);
+    const review=reviewBookingCancellation(booking,at(timestamp));
+    expect(booking.staySnapshot!.cancellationTerms!.version).toBe('firm-cleaning-waived-2026-11-01');
+    expect(booking.staySnapshot!.priceBreakdown!.cleaningFeeCents).toBe(0);
+    expect(review).toMatchObject({status:'review_available',accommodationPercent:percentage,cleaningRefundCents:0,taxAdjustment:'manual_review',refundExecuted:false,bookingChanged:false});
+    expect(review.reviewedSubtotalCents).toBe(review.accommodationRefundCents);
+    expect(JSON.stringify(booking)).toBe(before);
+  });
+  it('does not reinterpret historical $180 contracts under the new current policy',()=>{
+    expect(CANCELLATION_POLICY.text).toContain('$0 charged');
+    const old=fixture(), current=fixture(false);
+    expect(reviewBookingCancellation(old,at('2027-02-01T12:00:00Z'))).toMatchObject({policyVersion:'firm-2026-10-30',cleaningRefundCents:18000});
+    expect(reviewBookingCancellation(current,at('2027-02-01T12:00:00Z'))).toMatchObject({policyVersion:'firm-cleaning-waived-2026-11-01',cleaningRefundCents:0});
+  });
+  it('requires manual review for charged cleaning paired with waived policy text',()=>{
+    const b=fixture();
+    b.staySnapshot!.cancellationPolicyVersion=CANCELLATION_POLICY.version;
+    b.staySnapshot!.cancellationPolicy=CANCELLATION_POLICY.text;
+    b.staySnapshot!.cancellationTerms!.version=CANCELLATION_POLICY.version;
+    expect(reviewBookingCancellation(b,at('2027-02-01T12:00:00Z')).status).toBe('manual_review');
   });
 });

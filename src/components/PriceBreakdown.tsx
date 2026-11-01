@@ -19,13 +19,13 @@ export default function PriceBreakdown({
         <dt className="text-base font-semibold text-ink">Stay total <span className="font-normal text-stone-500">(USD)</span></dt>
         <dd className="text-xl font-semibold text-ink">{formatCents(quote.totalCents)}</dd>
       </dl>
-      <p className="mb-3 text-xs leading-relaxed text-stone-500">Includes accommodation, mandatory cleaning, selected extras and applicable taxes. No payment-processing surcharge is added.</p>
+      <p className="mb-3 text-xs leading-relaxed text-stone-500">Includes accommodation, any charged fees and applicable taxes. No payment-processing surcharge is added.</p>
       <dl>
         {quote.lineItems.map((item, i) => <PriceRow key={`${item.label}-${i}`} item={item} />)}
       </dl>
       {showSampleBadge && (
         <p className="mt-3 text-xs text-stone-500">
-          <SampleBadge /> Test quote only. Cleaning and tax inputs are confirmed; nightly rates and final checkout approval remain pending.
+          <SampleBadge /> Test quote only. No reservation or payment is made in test mode.
         </p>
       )}
       <p className="mt-2 text-xs text-stone-500">
@@ -56,6 +56,7 @@ function PriceRow({ item }: { item: LineItem }) {
           isDiscount ? "text-moss" : "text-ink",
         )}
       >
+        {item.amountCents === 0 && item.referenceAmountCents != null && item.referenceAmountCents > 0 && <><span className="sr-only">Usual fee </span><del className="mr-2 text-stone-400" aria-label={`Usual fee ${formatCents(item.referenceAmountCents)}, waived`}>{formatCents(item.referenceAmountCents)}</del><span className="sr-only">Charged </span></>}
         {isDiscount ? "−" : ""}
         {formatCents(Math.abs(item.amountCents))}
       </dd>

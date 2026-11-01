@@ -19,10 +19,11 @@ import {
   weekdayInLA,
 } from "../src/lib/dates";
 
-const property = getProperty("casa-pacifica")!;
+const property = {...getProperty("casa-pacifica")!,pricingMode:"legacy_sample" as const,baseNightlyCents:34900,minNightlyCents:34900,maxNightlyCents:103000,petPolicy:{allowed:true,feePerStayCents:5000,maxPets:1}};
 const settings: PricingSettings = {
   ...DEFAULT_PRICING_SETTINGS,
-  promos: [...DEFAULT_PRICING_SETTINGS.promos],
+  cleaningFeeCents:18000,
+  promos: [{code:"DIRECT10",type:"percent",percent:10}],
 };
 
 const isSummer = (d: string) => {

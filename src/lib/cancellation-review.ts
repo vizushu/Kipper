@@ -1,11 +1,13 @@
 import { storedPaymentMode } from "./payment-mode";
 /** Read-only cancellation review. Never imports payment providers or mutates a booking. */
-import { previewCancellation } from './cancellation';
+import { previewCancellation, ACCEPTED_CANCELLATION_TEXTS } from './cancellation';
 import type { AcceptedCancellationTerms, AcceptedPriceBreakdown, Booking, StaySnapshot } from './types';
 
 // Version-specific interpretation, not the mutable current listing or current pricing settings.
-const SUPPORTED_VERSION = 'firm-2026-10-30';
-const ACCEPTED_POLICY_TEXT = 'Accommodation: 100% refund at least 30 days before check-in; 50% from 15 to fewer than 30 days; no accommodation refund under 15 days. The $180 cleaning fee is fully refundable when cancelled before arrival. Tax adjustments are calculated separately after verification.';
+function supportedPolicy(snapshot: StaySnapshot): snapshot is StaySnapshot & { cancellationPolicyVersion: string } {
+  return typeof snapshot.cancellationPolicyVersion === 'string' && Object.prototype.hasOwnProperty.call(ACCEPTED_CANCELLATION_TEXTS, snapshot.cancellationPolicyVersion) &&
+    snapshot.cancellationPolicy === ACCEPTED_CANCELLATION_TEXTS[snapshot.cancellationPolicyVersion];
+}
 function localCheckIn(time: string): string | undefined {
   const match = /^(1[0-2]|[1-9]):([0-5]\d) (AM|PM)$/.exec(time);
   if (!match) return;
@@ -14,12 +16,12 @@ function localCheckIn(time: string): string | undefined {
 }
 export function acceptedCancellationTerms(snapshot: StaySnapshot): AcceptedCancellationTerms | undefined {
   const checkInLocalTime = localCheckIn(snapshot.checkInTime);
-  if (snapshot.cancellationPolicyVersion !== SUPPORTED_VERSION || snapshot.cancellationPolicy !== ACCEPTED_POLICY_TEXT || snapshot.timezone !== 'America/Los_Angeles' || !checkInLocalTime) return;
-  return { version: SUPPORTED_VERSION, timezone: snapshot.timezone, checkInLocalTime,
+  if (!supportedPolicy(snapshot) || snapshot.timezone !== 'America/Los_Angeles' || !checkInLocalTime) return;
+  return { version: snapshot.cancellationPolicyVersion, timezone: snapshot.timezone, checkInLocalTime,
     fullRefundDays: 30, partialRefundDays: 15, partialRefundPercent: 50, cleaningRefundBeforeArrival: true };
 }
 function validTerms(snapshot: StaySnapshot, terms: AcceptedCancellationTerms): boolean {
-  return snapshot.cancellationPolicyVersion === SUPPORTED_VERSION && snapshot.cancellationPolicy === ACCEPTED_POLICY_TEXT && terms.version === SUPPORTED_VERSION &&
+  return supportedPolicy(snapshot) && terms.version === snapshot.cancellationPolicyVersion &&
     snapshot.timezone === 'America/Los_Angeles' && terms.timezone === snapshot.timezone &&
     terms.checkInLocalTime === localCheckIn(snapshot.checkInTime) &&
     terms.fullRefundDays === 30 && terms.partialRefundDays === 15 && terms.partialRefundPercent === 50 && terms.cleaningRefundBeforeArrival === true;
@@ -27,7 +29,7 @@ function validTerms(snapshot: StaySnapshot, terms: AcceptedCancellationTerms): b
 function validPrices(booking: Booking, price: AcceptedPriceBreakdown): boolean {
   const amounts = [price.accommodationSubtotalCents, price.accommodationDiscountCents, price.accommodationNetCents,
     price.cleaningFeeCents, price.petFeeCents, price.taxesCents, price.totalCents, booking.totalCents];
-  return amounts.every(n => Number.isSafeInteger(n) && n >= 0) && price.currency === 'USD' && booking.currency === price.currency &&
+  return (booking.staySnapshot?.cancellationPolicyVersion !== 'firm-cleaning-waived-2026-11-01' || price.cleaningFeeCents === 0) && amounts.every(n => Number.isSafeInteger(n) && n >= 0) && price.currency === 'USD' && booking.currency === price.currency &&
     price.accommodationSubtotalCents - price.accommodationDiscountCents === price.accommodationNetCents &&
     price.accommodationNetCents + price.cleaningFeeCents + price.petFeeCents + price.taxesCents === price.totalCents &&
     price.totalCents === booking.totalCents && price.cleaningFeeCents === booking.staySnapshot?.cleaningFeeCents &&

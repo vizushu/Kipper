@@ -2,7 +2,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import type { StaySelection } from "@/lib/stay-selection";
-import type { Property } from "@/lib/types";
+import {formatCents, type Property} from "@/lib/types";
 import { resolveStayConfiguration } from "@/lib/accommodation";
 import type { DateRange } from "@/components/AvailabilityCalendar";
 import PhotoGallery from "@/components/PhotoGallery";
@@ -44,6 +44,7 @@ export default function PropertyExperience({property,publicPreview=false,initial
             <div className="flex gap-4"><IconCheck className="mt-1 h-6 w-6 shrink-0"/><p><strong className="block font-medium">A little care goes a long way</strong><span className="text-moss">No parties or smoking · quiet after 10 pm</span></p></div>
             <div className="flex gap-4"><IconShield className="mt-1 h-6 w-6 shrink-0"/><p><strong className="block font-medium">Know your cancellation options</strong><span className="text-moss">Full accommodation refund 30+ days before arrival</span></p></div>
           </div>
+          {property.cleaningFeeCents===0&&property.cleaningFeeReferenceCents!=null&&<p className="mt-5 text-sm text-moss">Cleaning fee: <del aria-label={`Usual cleaning fee ${formatCents(property.cleaningFeeReferenceCents)}, waived`}>{formatCents(property.cleaningFeeReferenceCents)}</del> <strong className="font-medium text-ink">{formatCents(0)}</strong> · Waived for direct bookings</p>}
           <PoliciesDialog property={property}/>
         </Section>
       </>}

@@ -1,13 +1,17 @@
 import { diffNights, isValidDateStr } from './dates';
+export const ACCEPTED_CANCELLATION_TEXTS: Readonly<Record<string, string>> = Object.freeze({
+  'firm-2026-10-30': 'Accommodation: 100% refund at least 30 days before check-in; 50% from 15 to fewer than 30 days; no accommodation refund under 15 days. The $180 cleaning fee is fully refundable when cancelled before arrival. Tax adjustments are calculated separately after verification.',
+  'firm-cleaning-waived-2026-11-01': 'Accommodation: 100% refund at least 30 days before check-in; 50% from 15 to fewer than 30 days; no accommodation refund under 15 days. The cleaning fee is waived ($0 charged), so there is no cleaning fee to refund. Tax adjustments are calculated separately after verification.',
+});
 export const CANCELLATION_POLICY = {
-  version: 'firm-2026-10-30',
+  version: 'firm-cleaning-waived-2026-11-01',
   timezone: 'America/Los_Angeles' as const,
   checkInLocalTime: '15:00:00',
   fullRefundDays: 30,
   partialRefundDays: 15,
   partialRefundPercent: 50,
   cleaningRefundBeforeArrival: true,
-  text: 'Accommodation: 100% refund at least 30 days before check-in; 50% from 15 to fewer than 30 days; no accommodation refund under 15 days. The $180 cleaning fee is fully refundable when cancelled before arrival. Tax adjustments are calculated separately after verification.'
+  text: ACCEPTED_CANCELLATION_TEXTS['firm-cleaning-waived-2026-11-01']
 };
 /** Preview only. Never calls a payment provider or issues a refund. Cutoffs use LA wall time. */
 export function previewCancellation(checkIn: string, cancelledAt: Date, accommodationCents: number, cleaningFeeCents: number, policy = CANCELLATION_POLICY) {

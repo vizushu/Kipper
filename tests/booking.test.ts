@@ -71,12 +71,11 @@ afterAll(() => {
 describe("settings", () => {
   it("seeds defaults on first run", async () => {
     const s = await adapter.getSettings();
-    expect(s.cleaningFeeCents).toBe(18000);
+    expect(s.cleaningFeeCents).toBe(0);
     expect(s.taxRatePct).toBe(12.75);
     expect(s.minStayNights).toBe(1);
     expect(s.maxStayNights).toBe(28);
-    expect(s.promos).toHaveLength(1);
-    expect(s.promos[0].code).toBe("DIRECT10");
+    expect(s.promos).toHaveLength(0);
   });
 
   it("applies partial updates", async () => {
