@@ -1,3 +1,4 @@
+import {operatorRehearsalConfig} from './operator-rehearsal-config';
 import {configuredReplyTo,liveEmailDeliveryConfigured,validateDeliveryEnvelope} from "./email-delivery";
 /** Independent operator notification path: failures must still alert when booking closes. */
 import {createHash,timingSafeEqual} from 'node:crypto';
@@ -5,13 +6,16 @@ import type {DataAdapter} from './db/adapter';
 import type {OperatorAlert,OperatorAlertEnvelope} from './db/operator-alerts';
 import {calendarStatusReady} from './db/calendar-store';
 import {validatedAirbnbCalendarUrl} from './calendar-feed';
-export function operatorAlertsConfigured(){return liveEmailDeliveryConfigured()&&process.env.OPERATOR_ALERTS_APPROVED==='true'&&process.env.OPERATOR_ALERT_DELIVERY_QA_APPROVED==='true';}
+export function operatorAlertTransportConfigured(){return liveEmailDeliveryConfigured()&&process.env.OPERATOR_ALERTS_APPROVED==='true';}
+export function operatorAlertsConfigured(){return operatorAlertTransportConfigured()&&process.env.OPERATOR_ALERT_DELIVERY_QA_APPROVED==='true';}
 export function operatorAlertWorkerAuthorized(req:Request){const key=process.env.OPERATOR_ALERT_WORKER_SECRET;const candidate=req.headers.get('authorization')??'';if(!operatorAlertsConfigured()||!key||!/^[-_A-Za-z0-9]{43,128}$/.test(key)||!candidate.startsWith('Bearer ')||candidate.length>256)return false;return timingSafeEqual(createHash('sha256').update(key).digest(),createHash('sha256').update(candidate.slice(7)).digest());}
 export function operatorAlertEnvelope(job:OperatorAlert):OperatorAlertEnvelope{const replyTo=configuredReplyTo();return {...(replyTo?{replyTo}:{}),from:process.env.BOOKING_FROM_EMAIL!,to:process.env.HOST_NOTIFY_EMAIL!,subject:'Casa Pacifica: operational review required',text:`Casa Pacifica needs operator attention.\nCategory: ${job.kind}\nIncident: ${job.incidentId}\nEpisode: ${job.episode}\n\nSign in to the Casa Pacifica host dashboard to inspect calendar and payment review. Do not assume a reservation was cancelled, dates released, or money refunded. Resolve the actual platform conflict before resuming affected bookings. This message contains no guest or access details.`};}
-export async function deliverOperatorAlert(job:OperatorAlert,envelope:OperatorAlertEnvelope):Promise<'sent'>{
- if(!operatorAlertsConfigured()||job.paymentMode!=='live')throw new Error('Operator delivery disabled');
+export async function deliverOperatorAlert(job:OperatorAlert,envelope:OperatorAlertEnvelope,rehearsalFingerprint?:string):Promise<'sent'>{
+ if(!operatorAlertTransportConfigured()||job.paymentMode!=='live')throw new Error('Operator delivery disabled');
+ if(job.kind!=='operator_rehearsal'&&!operatorAlertsConfigured())throw new Error('Operator delivery QA incomplete');
+ if(job.kind==='operator_rehearsal'){const config=operatorRehearsalConfig();if(!config||config.fingerprint!==rehearsalFingerprint||job.id!==config.alertId||job.incidentId!==config.id||JSON.stringify(envelope)!==JSON.stringify(config.envelope))throw new Error('Rehearsal delivery disabled');}
  validateDeliveryEnvelope(envelope);
- const response=await fetch('https://api.resend.com/emails',{method:'POST',headers:{authorization:`Bearer ${process.env.RESEND_API_KEY}`,'content-type':'application/json','Idempotency-Key':job.dedupeKey},body:JSON.stringify({from:envelope.from,to:[envelope.to],subject:envelope.subject,text:envelope.text,...(envelope.replyTo?{reply_to:envelope.replyTo}:{})}),signal:AbortSignal.timeout(10_000)});
+ const response=await fetch('https://api.resend.com/emails',{method:'POST',redirect:'error',headers:{authorization:`Bearer ${process.env.RESEND_API_KEY}`,'content-type':'application/json','Idempotency-Key':job.dedupeKey},body:JSON.stringify({from:envelope.from,to:[envelope.to],subject:envelope.subject,text:envelope.text,...(envelope.replyTo?{reply_to:envelope.replyTo}:{})}),signal:AbortSignal.timeout(10_000)});
  if(!response.ok)throw new Error('Operator delivery not acknowledged');return 'sent';
 }
 export async function dispatchOperatorAlerts(adapter:DataAdapter,options:{limit?:number;now?:()=>Date;deliver?:(job:OperatorAlert,envelope:OperatorAlertEnvelope)=>Promise<'sent'|'simulated'>}={}){
