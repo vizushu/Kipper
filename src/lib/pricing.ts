@@ -108,7 +108,7 @@ export function validateGuests(guests: GuestCount, property: Property): void {
   if (overnight > property.maxGuests || overnight > property.maxTotalOccupancy) {
     throw new BookingError(
       "GUEST_LIMIT",
-      `This home permits at most ${Math.min(property.maxGuests, property.maxTotalOccupancy)} people total, including infants and daytime visitors; you entered ${overnight} staying guests.`
+      `This home permits at most ${Math.min(property.maxGuests, property.maxTotalOccupancy)} overnight guests, including infants; you entered ${overnight} staying guests.`
     );
   }
 }

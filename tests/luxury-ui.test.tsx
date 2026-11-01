@@ -41,7 +41,7 @@ it('keeps inclusive occupancy and transition without the removed access emphasis
   const html = renderToStaticMarkup(<PropertyExperience property={property} publicPreview />);
   expect(html.indexOf('Before you book')).toBeLessThan(html.indexOf('The space'));
   expect(html).not.toContain('separate private residence');
-  expect(html).toContain('Maximum 8 guests, including children, infants and visitors.');
+  expect(html).toContain('Maximum 8 overnight guests, including children and infants; 10 people total including approved daytime visitors.');
   expect(html).toContain('5 bedrooms · 3 baths available in 03/27');
   expect(html).not.toContain(property.address);
 });

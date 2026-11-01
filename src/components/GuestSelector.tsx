@@ -34,7 +34,7 @@ export default function GuestSelector({ value, onChange, maxGuests, compact }: P
     <div className={cn(!compact && "rounded-2xl border border-stone-200 bg-white p-4")}>
       <p className="text-sm font-medium text-ink">Guests</p>
       <p className="text-xs text-stone-500">
-        Max {maxGuests} people total, including infants and daytime visitors
+        Max {maxGuests} overnight guests, including children and infants
       </p>
       <div className="mt-2 divide-y divide-stone-100">
         {ROWS.map((row) => {

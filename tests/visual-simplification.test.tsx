@@ -22,7 +22,7 @@ it('removes menu and intro review clutter, and places exact screenshot sections 
  expect(html).not.toMatch(/Wi-Fi 7|5 GHz|Warm and welcoming staff/);
 });
 it('does not change current headcount or future booking authority',()=>{
- const p=getProperty('casa-pacifica')!;expect(p.maxGuests).toBe(8);expect(p.maxTotalOccupancy).toBe(8);
+ const p=getProperty('casa-pacifica')!;expect(p.maxGuests).toBe(8);expect(p.maxTotalOccupancy).toBe(10);
  expect(resolveStayConfiguration(p,'2027-03-01','2027-03-03').status).toBe('pending_approval');
  expect(resolveStayConfiguration(p,'2027-02-28','2027-03-02').status).toBe('manual_review');
 });

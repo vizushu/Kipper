@@ -19,7 +19,7 @@ it('presents current icon facts and a quiet expansion indicator without removed 
 });
 it('uses an actual modal for policies with current limits and a direct Ask Kipper route',()=>{
  const html=renderToStaticMarkup(<PoliciesDialog property={getProperty('casa-pacifica')!}/>);
- expect(html).toContain('<dialog');expect(html).not.toContain('<details');expect(html).toContain('Maximum 8 guests');
+ expect(html).toContain('<dialog');expect(html).not.toContain('<details');expect(html).toContain('Maximum 8 overnight guests');
  for(const section of ['House rules','Pool &amp; safety','Cancellation','Questions before booking?'])expect(html).toContain(section);
  expect(html).toContain('href="/contact"');expect(html).not.toContain('15 guests');
  const source=readFileSync('src/components/PoliciesDialog.tsx','utf8');expect(source).toContain('showModal()');expect(source).toContain('getBoundingClientRect');expect(source).toContain('opener.focus()');

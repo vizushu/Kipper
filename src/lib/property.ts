@@ -18,7 +18,7 @@ const CASA_PACIFICA: Property = {
   taxPolicyVersion: "san-diego-zone2-2025-05-01",
   // Legal host/homeowner identity must be verified before displaying a host card.
   configurations: [
-    { id: "casa-pacifica-3br", label: "3-bedroom accommodation", effectiveFrom: "2020-01-01", effectiveTo: "2027-03-01", bedrooms: 3, maxGuests: 8, maxTotalOccupancy: 8, checkoutApproved: true },
+    { id: "casa-pacifica-3br", label: "3-bedroom accommodation", effectiveFrom: "2020-01-01", effectiveTo: "2027-03-01", bedrooms: 3, maxGuests: 8, maxTotalOccupancy: 10, checkoutApproved: true },
     { id: "casa-pacifica-5br", label: "5-bedroom accommodation", effectiveFrom: "2027-03-01", bedrooms: 5, checkoutApproved: false },
   ],
   id: "casa-pacifica",
@@ -35,7 +35,7 @@ const CASA_PACIFICA: Property = {
   latitude: 32.912,
   longitude: -117.139,
   maxGuests: 8, // overnight
-  maxTotalOccupancy: 8, // incl. daytime visitors
+  maxTotalOccupancy: 10, // incl. approved daytime visitors
   bedrooms: 3,
   bathrooms: 2,
   bedLayout: [], // Bed count and mapping await owner confirmation.
@@ -126,7 +126,7 @@ const CASA_PACIFICA: Property = {
     },
   ],
   houseRules: [
-    "Maximum 8 overnight guests (8 total on the property including daytime visitors)",
+    "Maximum 8 overnight guests, including children and infants; maximum 10 people on the property including approved daytime visitors",
     "Check-in from 3:00 PM; checkout by 11:00 AM",
     "Quiet hours 10:00 PM – 8:00 AM",
     "No parties or events",
@@ -205,6 +205,7 @@ const CASA_PACIFICA: Property = {
     "Smoke alarm",
     "Carbon monoxide alarm",
     "Fire extinguisher",
+    "First aid kit",
     "Exterior security camera",
   ],
   // Pricing configuration (defaults; admin-editable via /api/admin/*)

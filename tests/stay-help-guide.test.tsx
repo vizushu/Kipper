@@ -16,7 +16,7 @@ it('offers a working blank email action before optional closed guide questions',
 });
 it('limits public answers to verified facts and makes timing and unavailable checkout explicit',()=>{
  const property=getProperty('casa-pacifica')!;const html=renderToStaticMarkup(<StayHelpGuide/>);
- for(const text of ['Verified stay guide—not live AI or chat','8 people total','children, infants and visitors','March 1, 2027','does not change automatically mid-stay','Online reservations and payments are not open yet','does not reserve the property','3:00 PM','11:00 AM'])expect(html).toContain(text);
+ for(const text of ['Verified stay guide—not live AI or chat','8 overnight guests','children and infants','10','approved daytime visitors','March 1, 2027','does not change automatically mid-stay','Online reservations and payments are not open yet','does not reserve the property','3:00 PM','11:00 AM'])expect(html).toContain(text);
  expect(html).toContain(CANCELLATION_POLICY.text);
  for(const privateValue of [property.address,String(property.latitude),String(property.longitude)])expect(html).not.toContain(privateValue);
  expect(html).not.toMatch(/15 guests|Wi-Fi 7|sauna|Queen bed|upstairs|downstairs|shared space|\$449/);

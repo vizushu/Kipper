@@ -21,7 +21,7 @@ export default function TermsPage() {
       </p>
       <h2>Occupancy & guests</h2>
       <ul>
-        <li>Maximum 8 people total on the property, including overnight guests and daytime visitors.</li>
+        <li>Maximum 8 overnight guests, including children and infants; maximum 10 people on the property including approved daytime visitors.</li>
         <li>Only registered guests may stay overnight. Daytime visitors must be approved in advance.</li>
         <li>Children must be supervised around the pool at all times. Pool use is at your own risk — no lifeguard on duty.</li>
       </ul>
