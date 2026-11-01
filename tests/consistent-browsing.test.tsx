@@ -32,7 +32,7 @@ it('maps only broad neighborhood geography with no marker or property inputs',()
  expect(html).toContain('referrerPolicy="no-referrer"');
 });
 it('keeps Back labels consistent and adds the Ask Kipper diagonal arrow',()=>{
- expect(renderToStaticMarkup(<Header/>)).toContain('M6 18 18 6M6 6h12v12');
+ expect(renderToStaticMarkup(<Header/>)).toContain('M3 21 21 3M13 4l8-1-1 8');
  for(const path of ['src/app/contact/page.tsx','src/components/RoomCards.tsx','src/components/BookingWidget.tsx']){
   const source=readFileSync(path,'utf8');expect(source).toContain('BackControl');expect(source).not.toMatch(/Back to the home|Close room details/);
  }

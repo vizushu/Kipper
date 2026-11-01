@@ -3,13 +3,13 @@ import {expect,it,vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {readFileSync} from 'node:fs';
 import {BackButton,BackLink} from '../src/components/BackControl';
-import {IconArrowLeft,IconArrowRight,IconArrowUpRight} from '../src/components/icons';
+import {IconArrowLeft,IconArrowRight,IconArrowUpRight,IconShare,IconChevronDown} from '../src/components/icons';
 import NeighborhoodMap from '../src/components/NeighborhoodMap';
 vi.mock('next/navigation',()=>({usePathname:()=>'/'}));
 it('uses one thin full-arrow Back style for links and buttons, with no duplicate close',()=>{
  const button=renderToStaticMarkup(<BackButton onClick={()=>{}}/>);
  const link=renderToStaticMarkup(<BackLink href="/properties"/>);
- for(const html of [button,link]){expect(html).toContain('M20 12H4m6-6-6 6 6 6');expect(html).toContain('stroke-width="1.5"');expect(html).toContain('>Back');expect(html).toContain('min-h-11');}
+ for(const html of [button,link]){expect(html).toContain('M30 8H2m7-4L2 8l7 4');expect(html).toContain('stroke-width="1.15"');expect(html).toContain('viewBox="0 0 32 16"');expect(html).toContain('aria-hidden="true"');expect(html).toContain('w-7');expect(html).toContain('>Back');expect(html).toContain('min-h-11');}
  expect(link).toContain('href="/properties"');expect(button).toContain('type="button"');
  for(const path of ['components/PhotoGallery','components/ShareStay','components/RoomCards','components/BookingWidget','app/contact/page','app/properties/[slug]/page','app/booking/[reference]/page']){
   const source=readFileSync('src/'+path+'.tsx','utf8');expect(source).toContain('BackControl');expect(source).not.toMatch(/← Back|IconChevronLeft|Close gallery|Close booking panel/);
@@ -26,7 +26,7 @@ it('keeps album, individual-photo and video titles on one scale and preserves hi
  const css=readFileSync('src/app/globals.css','utf8');expect(css).not.toContain('font: inherit;');expect(css).not.toContain('.casa-editorial h2 {');
 });
 it('uses the same thin navigation icon family, including calendar arrows',()=>{
- for(const Icon of [IconArrowLeft,IconArrowRight,IconArrowUpRight]){const html=renderToStaticMarkup(<Icon/>);expect(html).toContain('stroke-width="1.5"');expect(html).toContain('viewBox="0 0 24 24"');}
+ for(const Icon of [IconArrowLeft,IconArrowRight,IconArrowUpRight,IconShare,IconChevronDown]){const html=renderToStaticMarkup(<Icon/>);expect(html).toContain('stroke-width="1.15"');expect(html).toContain('viewBox="0 0 24 24"');}
  const source=readFileSync('src/components/AvailabilityCalendar.tsx','utf8');expect(source).toContain('IconArrowLeft');expect(source).not.toContain('IconChevron');
 });
 it('brands the broad neighborhood circle without changing geography or implying a property pin',()=>{
@@ -44,4 +44,11 @@ it('shares the normal page-title scale across public routes without changing che
 
 it('keeps the main amenities heading on the editorial scale after dialog CSS isolation',()=>{
  expect(readFileSync('src/components/PropertyExperience.tsx','utf8')).toContain('<h2 className="casa-page-heading mb-6">The good kind of staying in.</h2>');
+});
+
+it("keeps diagonal and share arrows long and narrow without changing their controls",()=>{
+ expect(renderToStaticMarkup(<IconArrowUpRight/>)).toContain("M3 21 21 3M13 4l8-1-1 8");
+ expect(renderToStaticMarkup(<IconShare/>)).toContain("M12 17V1m-4 7 4-7 4 7");
+ expect(readFileSync("src/components/ShareStay.tsx","utf8")).toContain("<IconShare");
+ for(const name of ["Header","Footer","PoliciesDialog","AmenityHighlights","NeighborhoodMap"]) expect(readFileSync(`src/components/${name}.tsx`,"utf8")).toContain("IconArrowUpRight");
 });
