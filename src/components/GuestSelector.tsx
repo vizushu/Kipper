@@ -81,10 +81,5 @@ export default function GuestSelector({ value, onChange, maxGuests, compact }: P
   );
 }
 
-export function guestSummary(g: GuestCount): string {
-  const parts: string[] = [];
-  const total = g.adults + g.children + g.infants;
-  parts.push(`${total} guest${total === 1 ? "" : "s"}`);
-  if (g.infants > 0) parts.push(`including ${g.infants} infant${g.infants === 1 ? "" : "s"}`);
-  return parts.join(", ");
-}
+// Client consumers retain this export; server components import the pure helper directly.
+export { guestSummary } from "@/lib/guest-summary";

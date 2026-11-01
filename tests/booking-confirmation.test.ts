@@ -2,6 +2,8 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import Page from "../src/app/booking/[reference]/page";
+// Model the Next.js server boundary: importing a callable helper from this client module must fail.
+vi.mock("@/components/GuestSelector", () => { throw new Error("Client-only module imported by server confirmation"); });
 const mock = vi.hoisted(() => ({ lookup: vi.fn(), token: "scoped-token" as string | undefined }));
 vi.mock("@/data/api", () => ({ getBookingByReference: mock.lookup }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => mock.token ? { value: mock.token } : undefined }) }));
@@ -42,4 +44,9 @@ it("distinguishes synthetic confirmation from a real paid reservation", async ()
  expect(renderToStaticMarkup(await Page(args))).toContain('Test booking confirmed — no real reservation');
  mock.lookup.mockResolvedValue({...booking,status:'confirmed',paymentStatus:'paid',paymentMode:'live'});
  expect(renderToStaticMarkup(await Page(args))).toContain('Your booking is confirmed');
+});
+
+it("renders infant headcount from the server-safe shared formatter", async () => {
+ mock.lookup.mockResolvedValue({...booking,guests:{adults:2,children:1,infants:1}});
+ expect(renderToStaticMarkup(await Page(args))).toContain("4 guests, including 1 infant");
 });

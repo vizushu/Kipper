@@ -9,7 +9,7 @@ import { Badge, Button, Card, DetailRow } from "@/components/ui";
 import { IconCheck, IconKey } from "@/components/icons";
 import { getBookingByReference } from "@/data/api";
 import { formatCents } from "@/lib/types";
-import { guestSummary } from "@/components/GuestSelector";
+import { guestSummary } from "@/lib/guest-summary";
 
 export const metadata: Metadata = {
   title: "Booking confirmation",
