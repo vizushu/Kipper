@@ -1,3 +1,7 @@
+> Brand direction (October 30, 2026): Casa Pacifica is the property booking site. Kipper refers only to the concierge AI in development, not the accommodation or legal host. Do not build the separate startup website in this task.
+
+> Positioning correction (October 30, 2026): Kipper is a concierge-AI startup, not identified as property manager, legal host, or merchant. Hide host cards until homeowner/host identity is verified. This supersedes older hosting language. Reservations and payments remain disabled.
+
 # Kipper Design System — Phase 1 Spec
 
 **Status:** Spec for review (no code changes yet). Applies to the portfolio site (Phase 2), property pages (Phase 3), and everything after.
@@ -44,7 +48,7 @@ Type scale (to enforce, not suggest): title 32–40px display / section 22–24p
 | Fact row | `guests · bedrooms · beds · baths` with middot separators, muted | Single source: property record |
 | Rating line | `★ x.xx · n reviews` — **only when reviews exist**; otherwise omit entirely (never fake) | Casa Pacifica: omit until real reviews |
 | Badge card | `TrustStrip` — one badge max ("Best rate — book direct") | Already have the copy; restyle to the reference card |
-| Host card | `HostCard` — avatar/logo, "Hosted by Kipper", one credibility line | Credibility line must be true (e.g. "Independent host · San Diego") — no invented Superhost claims |
+| Host card | `HostCard` — avatar/logo, "Hosted by [verified homeowner/host]", one credibility line | Credibility line must be true (e.g. "Verified host details only") — no invented Superhost claims |
 | Highlight cards | `HighlightCard` — icon + bold lead + ≤2 lines muted | Map to real differentiators (heated pool, sleeps 8, near La Jolla) |
 | Sticky bottom CTA | `StickyBookBar` (mobile) — left: price state + rating; right: "Check availability" | Already have sticky bottom bar concept — restyle to match reference proportions |
 | Listing cards (portfolio) | Photo, name, place, fact row, nightly price, rating-if-real | Phase 2 |

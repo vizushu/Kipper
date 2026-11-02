@@ -28,7 +28,7 @@ You are **Claude**, the engineering execution arm of the Kipper team. Read this 
 - **Done**: Phase 0 (business plan draft), Phase 1 (design-system spec at `docs/DESIGN-SYSTEM.md`), Phase 2 (portfolio site: home, listings index, about, contact).
 - **Gated**: Phase 3 (repeatable property pages) — 3 wireframe concepts are in founder + Astra review (re-addressed from Argon Oct 15). DO NOT start Phase 3 implementation until Renier confirms the chosen direction.
 - **Stack**: Next.js 15 + TypeScript + Tailwind (App Router), mobile-first. SQLite (better-sqlite3) for dev; Supabase/PostgreSQL prod adapter written (project not yet created). Stripe test-mode checkout; Resend-compatible email (dev file logger). CI runs typecheck + tests + build on every push/PR.
-- **Product direction**: Kipper Property Management portfolio site — every listing bookable in one place, Airbnb-like simplicity. Concierge AI (guest concierge + operator AI with native dynamic pricing) comes in Phases 5a/5b.
+- **Product direction**: Kipper is a concierge-AI startup. Casa Pacifica is the property booking-site brand; Kipper is only the concierge AI in development. A separate Kipper startup website is planned but outside this repository task; it does not identify Kipper as legal host, property manager, or merchant. Reservations/payments remain disabled pending verified legal parties, responsibilities, and launch approval. This October 30 user correction supersedes earlier operator branding.
 - **Launch**: Casa Pacifica solo. No production deploy yet.
 
 ## First session checklist

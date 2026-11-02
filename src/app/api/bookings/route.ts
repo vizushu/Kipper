@@ -1,3 +1,9 @@
+import { consumeBookingRequest } from "@/lib/booking-abuse";
+import { getBookingPaymentMode, storedPaymentMode } from "@/lib/payment-mode";
+import { bookingSessionCookie } from "@/lib/booking-session";
+import { snapshotForStay } from "@/lib/accommodation";
+import { createBookingAccessToken, isBookingAccessConfigured } from "@/lib/booking-access";
+import { isBookingEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
 import { z } from "zod";
 import { createBookingForQuote, guestSafeBooking } from "@/lib/bookings";
 import { getAdapter } from "@/lib/db";
@@ -23,11 +29,24 @@ const bookingSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  if (!isBookingEnabled()) return apiError("BOOKING_NOT_OPEN", BOOKING_LAUNCH_MESSAGE, 503);
+  if (!isBookingAccessConfigured()) return apiError("BOOKING_NOT_OPEN", "Booking access is not configured.", 503);
+  const adapter = getAdapter();
+  const throttle = async (email?: string) => {
+    try {
+      const budget = await consumeBookingRequest(adapter, email);
+      if (budget.allowed) return null;
+      const response = apiError("TOO_MANY_REQUESTS", "Too many booking requests. Please wait before trying again.", 429);
+      response.headers.set("Retry-After", String(budget.retryAfterSeconds));
+      return response;
+    } catch { return apiError("BOOKING_UNAVAILABLE", "Booking requests are temporarily unavailable. Please try again later.", 503); }
+  };
+  const globalLimit = await throttle(); if (globalLimit) return globalLimit;
   const parsed = await parseBody(req, bookingSchema);
   if (!parsed.ok) return parsed.response;
   const { quoteId, guest, idempotencyKey } = parsed.data;
 
-  const adapter = getAdapter();
+  const guestLimit = await throttle(guest.email); if (guestLimit) return guestLimit;
   const quote = await adapter.getQuote(quoteId);
   if (!quote) {
     return bookingErrorResponse(
@@ -37,23 +56,40 @@ export async function POST(req: Request) {
       )
     );
   }
+  if (storedPaymentMode(quote.paymentMode) !== getBookingPaymentMode()) return apiError("QUOTE_EXPIRED", "Payment mode changed. Please request a new quote.", 409);
   const property = getProperty(quote.propertyId);
   if (!property) return notFound("Property not found.");
 
   try {
+    // A quote cannot authorize a configuration that has since been disabled.
+    const currentSnapshot = snapshotForStay(property, quote.checkIn, quote.checkOut);
+    if (!quote.staySnapshot || quote.staySnapshot.configurationId !== currentSnapshot.configurationId) {
+      return bookingErrorResponse(new BookingError("QUOTE_EXPIRED", "Accommodation details changed. Please request a fresh quote."));
+    }
     const { booking } = await createBookingForQuote(adapter, quote, guest, idempotencyKey);
 
-    // Create the test-mode PaymentIntent for the booking total.
+    let paymentIntentId: string | undefined;
+    // Create only in the immutable quote/booking payment mode, after explicit runtime gates.
     try {
-      const pi = await createPaymentIntent(quote, booking.idempotencyKey);
-      await adapter.updateBooking(booking.id, { stripePaymentIntentId: pi.id });
-      const withPi = (await adapter.getBooking(booking.id)) ?? booking;
-      return json({ booking: guestSafeBooking(withPi), clientSecret: pi.clientSecret }, 201);
+      if(!await adapter.getPaymentEligibleBooking(booking.id))return apiError("PAYMENT_FAILED", "Availability changed or this hold expired. No payment step was opened; please choose dates again.",409);
+      const pi = await createPaymentIntent(quote, booking.idempotencyKey, booking.id);
+      paymentIntentId = pi.id;
+      const withPi = await adapter.attachPaymentIntent(booking.id, pi.id);
+      if (!withPi) { await adapter.recordPaymentSetupFailure(booking.id,pi.id,new Date().toISOString()); return apiError("PAYMENT_FAILED", "Your booking hold expired or is no longer available. Please request a fresh quote.", 409); }
+      const accessToken = createBookingAccessToken(withPi.reference);
+      const response = json({ booking: guestSafeBooking(withPi), clientSecret: pi.clientSecret, accessToken }, 201);
+      response.cookies.set(bookingSessionCookie(accessToken));
+      response.headers.set("Cache-Control", "private, no-store");
+      return response;
     } catch (stripeErr) {
       // Booking exists (pending_payment); payment setup failed.
-      await adapter.updateBooking(booking.id, { paymentStatus: "failed" });
-      const message =
-        stripeErr instanceof Error ? stripeErr.message : "Payment setup failed.";
+      if (paymentIntentId) {
+        // Any post-provider failure needs reconciliation, including a thrown attachment.
+        // Persistence can itself fail; still return only a generic failure, never credentials.
+        try { await adapter.recordPaymentSetupFailure(booking.id, paymentIntentId, new Date().toISOString()); } catch { /* Later verified provider events retain independent exception handling. */ }
+        try { await adapter.failPendingBookingPayment(booking.id, paymentIntentId); } catch { /* Do not expose storage/provider details. */ }
+      }
+      const message = "Payment setup could not be completed. Please contact Casa Pacifica if you already submitted payment.";
       return apiError("PAYMENT_FAILED", message, 500);
     }
   } catch (e) {

@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button, SampleBadge } from "@/components/ui";
 import { IconX } from "@/components/icons";
-import { CASA_PACIFICA_ID, PROPERTY } from "@/data/property";
+import { CASA_PACIFICA_ID, PUBLIC_RATE_DEFAULTS } from "@/data/public-config";
 import { formatCents, type RateOverride } from "@/lib/types";
 
 interface Settings {
@@ -21,10 +21,10 @@ interface Settings {
 }
 
 const FALLBACK_SETTINGS: Settings = {
-  cleaningFeeCents: PROPERTY.cleaningFeeCents,
-  taxRatePct: PROPERTY.taxRatePct,
-  minStayNights: PROPERTY.minStayNights,
-  maxStayNights: PROPERTY.maxStayNights,
+  cleaningFeeCents: PUBLIC_RATE_DEFAULTS.cleaningFeeCents,
+  taxRatePct: PUBLIC_RATE_DEFAULTS.taxRatePct,
+  minStayNights: PUBLIC_RATE_DEFAULTS.minStayNights,
+  maxStayNights: PUBLIC_RATE_DEFAULTS.maxStayNights,
   isSample: true,
 };
 
@@ -255,7 +255,7 @@ export default function AdminRatesPage() {
               </h2>
               {overrides.length === 0 ? (
                 <p className="mt-2 text-sm text-stone-500">
-                  No overrides in the next 3 months. Base rate {formatCents(PROPERTY.baseNightlyCents)}/night applies.
+                  Current flat room price {formatCents(PUBLIC_RATE_DEFAULTS.inclusiveNightlyCents)}/night includes the allowance. Date overrides do not apply while flat pricing is active.
                 </p>
               ) : (
                 <ul className="mt-3 space-y-2">

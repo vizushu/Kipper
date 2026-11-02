@@ -1,3 +1,5 @@
+import { assertCalendarReady } from "@/lib/calendar-sync";
+import { isBookingEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
 import { computeAvailabilityDays } from "@/lib/availability";
 import { addDays, isValidDateStr, todayInLA } from "@/lib/dates";
 import { BookingError } from "@/lib/types";
@@ -8,6 +10,7 @@ const DEFAULT_WINDOW_DAYS = 60;
 const MAX_WINDOW_DAYS = 365;
 
 export async function GET(req: Request) {
+  if (!isBookingEnabled()) return apiError("BOOKING_NOT_OPEN", BOOKING_LAUNCH_MESSAGE, 503);
   const url = new URL(req.url);
   const propertyId = url.searchParams.get("propertyId") ?? "casa-pacifica";
   let from = url.searchParams.get("from") ?? todayInLA();
@@ -27,6 +30,7 @@ export async function GET(req: Request) {
   if (!ctx) return notFound("Property not found.");
 
   try {
+    await assertCalendarReady(ctx.adapter, ctx.property.id);
     const days = computeAvailabilityDays({
       property: ctx.property,
       settings: ctx.settings,

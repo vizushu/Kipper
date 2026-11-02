@@ -1,3 +1,4 @@
+import { resolveStayConfiguration } from "./accommodation";
 /**
  * Availability computation.
  *
@@ -77,6 +78,7 @@ export function computeAvailabilityDays(input: AvailabilityInput): AvailabilityD
       available = false;
       blockedReason = "blocked";
     }
+    if (available && resolveStayConfiguration(property, date, addDays(date, 1)).status !== "available") { available = false; blockedReason = "blocked"; }
     return {
       date,
       available,
@@ -128,7 +130,7 @@ export function assertRangeAvailable(input: RangeCheckInput): void {
   if (conflictingBlock) {
     throw new BookingError(
       "UNAVAILABLE",
-      `Those dates are blocked${conflictingBlock.reason ? `: ${conflictingBlock.reason}` : "."}`
+      "Those dates are unavailable. Please choose another stay."
     );
   }
 }

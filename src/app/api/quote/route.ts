@@ -1,9 +1,13 @@
+import { assertCalendarReady } from "@/lib/calendar-sync";
+import { getBookingPaymentMode } from "@/lib/payment-mode";
+import { isBookingEnabled, BOOKING_LAUNCH_MESSAGE } from "@/lib/booking-launch";
 import { z } from "zod";
 import { assertRangeAvailable } from "@/lib/availability";
 import { computeQuote } from "@/lib/pricing";
 import { BookingError } from "@/lib/types";
 import { loadPricingContext } from "../_context";
 import {
+  apiError,
   bookingErrorResponse,
   dateStrSchema,
   guestsSchema,
@@ -22,6 +26,7 @@ const quoteSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  if (!isBookingEnabled()) return apiError("BOOKING_NOT_OPEN", BOOKING_LAUNCH_MESSAGE, 503);
   const parsed = await parseBody(req, quoteSchema);
   if (!parsed.ok) return parsed.response;
   const body = parsed.data;
@@ -29,7 +34,11 @@ export async function POST(req: Request) {
   const ctx = await loadPricingContext(body.propertyId, body.checkIn, body.checkOut);
   if (!ctx) return notFound("Property not found.");
 
+  if (ctx.settings.cleaningFeeCents !== ctx.property.cleaningFeeCents || ctx.settings.taxRatePct !== ctx.property.taxRatePct) {
+    return apiError("PRICING_REVIEW_REQUIRED", "Stored pricing settings need host review before a quote can be issued.", 503);
+  }
   try {
+    await assertCalendarReady(ctx.adapter, ctx.property.id);
     // Availability + min/max-stay validation before pricing.
     assertRangeAvailable({
       settings: ctx.settings,
@@ -50,6 +59,7 @@ export async function POST(req: Request) {
       promoCode: body.promoCode,
     });
 
+    quote.paymentMode = getBookingPaymentMode()!;
     await ctx.adapter.saveQuote(quote);
     return json({ quote });
   } catch (e) {

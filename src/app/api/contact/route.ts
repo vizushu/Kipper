@@ -1,3 +1,4 @@
+import { isPublicPreview } from "@/lib/booking-launch";
 /**
  * POST /api/contact — contact-form submission.
  *
@@ -21,6 +22,8 @@ function bad(message: string) {
 }
 
 export async function POST(req: NextRequest) {
+  if (process.env.STAGING_TEST_MODE === "true") return NextResponse.json({error:"Contact delivery is disabled in staging."},{status:503,headers:{"Cache-Control":"private, no-store"}});
+  if (isPublicPreview()) return NextResponse.json({error:"This preview does not accept messages or guest data."},{status:503,headers:{"Cache-Control":"no-store"}});
   let body: unknown;
   try {
     body = await req.json();

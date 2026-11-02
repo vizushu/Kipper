@@ -1,15 +1,20 @@
+import { BackLink } from "@/components/BackControl";
+import { bookingStatusHeading } from "@/lib/booking-flow-state";
+import { cookies } from "next/headers";
+import { BOOKING_SESSION_COOKIE } from "@/lib/booking-session";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Badge, Button, Card, DetailRow } from "@/components/ui";
-import { IconCheck, IconClock, IconKey, IconMoon, IconPin, IconWifi } from "@/components/icons";
-import { getBookingByReference, getProperty } from "@/data/api";
+import { IconCheck, IconKey } from "@/components/icons";
+import { getBookingByReference } from "@/data/api";
 import { formatCents } from "@/lib/types";
-import { guestSummary } from "@/components/GuestSelector";
+import { guestSummary } from "@/lib/guest-summary";
 
 export const metadata: Metadata = {
   title: "Booking confirmation",
   description: "Your Casa Pacifica booking confirmation and arrival details.",
+  referrer: "no-referrer",
   robots: { index: false, follow: false },
 };
 
@@ -29,35 +34,35 @@ export default async function BookingConfirmationPage({
   params: Promise<{ reference: string }>;
 }) {
   const { reference } = await params;
-  const booking = await getBookingByReference(reference);
+  const token = (await cookies()).get(BOOKING_SESSION_COOKIE)?.value;
+  if (!token) notFound();
+  const booking = await getBookingByReference(reference, token);
   if (!booking) notFound();
 
-  const property = await getProperty("casa-pacifica-san-diego");
-  const propertyName = property?.name ?? "Casa Pacifica";
-  const propertyAddress = property
-    ? `${property.address}, ${property.city}, ${property.state} ${property.zip}`
-    : "10840 New Salem Point, San Diego, CA 92126";
+  const snapshot = booking.staySnapshot;
+  const originalTerms = "Consult your original confirmation for the agreed terms.";
+  const propertyName = snapshot?.propertyName ?? "Your booked property (see original confirmation)";
 
   const statusTone =
-    booking.status === "confirmed" ? "moss" : booking.status === "cancelled" ? "clay" : "stone";
+    booking.status === "confirmed" && ["paid", "paid_test"].includes(booking.paymentStatus) ? "moss" : booking.status === "cancelled" ? "clay" : "stone";
   const statusLabel =
     booking.status === "confirmed"
-      ? "Confirmed"
+      ? booking.paymentStatus === "paid_test" || booking.paymentMode !== "live" ? "Test confirmation" : booking.paymentStatus === "paid" ? "Confirmed" : "Payment review"
       : booking.status === "cancelled"
         ? "Cancelled"
         : "Pending payment";
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <div className="text-center">
+    <div className="mx-auto max-w-[590px] px-5 py-10 pb-20 sm:px-8">
+      <div className="text-center" data-booking-status={booking.status}>
         <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-moss/10 text-moss">
           <IconCheck className="h-7 w-7" />
         </span>
-        <h1 className="mt-4 font-display text-3xl font-medium text-ink">
-          You're booked{booking.guest.name ? `, ${booking.guest.name.split(" ")[0]}` : ""}!
+        <h1 className="casa-page-heading">
+          {bookingStatusHeading(booking)}
         </h1>
         <p className="mt-2 text-stone-600">
-          A confirmation email is on its way to {booking.guest.email}.
+          Guest contact: {booking.guest.email}.
         </p>
         <div className="mt-4 flex items-center justify-center gap-3">
           <Badge tone="cream" className="px-4 py-1.5 font-mono text-sm tracking-widest">
@@ -68,12 +73,12 @@ export default async function BookingConfirmationPage({
       </div>
 
       <div className="mt-8 grid gap-6">
-        <Card className="p-6">
-          <h2 className="font-display text-xl font-medium text-ink">Your stay</h2>
+        <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+          <h2 className="font-display text-2xl font-normal text-ink">Your stay</h2>
           <dl className="mt-2 divide-y divide-stone-100">
             <DetailRow label="Property" value={propertyName} />
-            <DetailRow label="Check-in" value={`${fmtDate(booking.checkIn)} · from 3:00 PM`} />
-            <DetailRow label="Check-out" value={`${fmtDate(booking.checkOut)} · by 11:00 AM`} />
+            <DetailRow label="Check-in" value={`${fmtDate(booking.checkIn)} · ${snapshot ? `from ${snapshot.checkInTime}` : originalTerms}`} />
+            <DetailRow label="Check-out" value={`${fmtDate(booking.checkOut)} · ${snapshot ? `by ${snapshot.checkOutTime}` : originalTerms}`} />
             <DetailRow
               label="Guests"
               value={`${guestSummary(booking.guests)}${booking.pets > 0 ? ` · ${booking.pets} pet` : ""}`}
@@ -82,8 +87,8 @@ export default async function BookingConfirmationPage({
           </dl>
         </Card>
 
-        <Card className="p-6">
-          <h2 className="font-display text-xl font-medium text-ink">Payment summary</h2>
+        <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+          <h2 className="font-display text-2xl font-normal text-ink">Payment summary</h2>
           <dl className="mt-2 divide-y divide-stone-100">
             {booking.lineItems.map((item, i) => (
               <DetailRow
@@ -93,7 +98,7 @@ export default async function BookingConfirmationPage({
               />
             ))}
             <div className="flex items-center justify-between py-3">
-              <dt className="text-base font-semibold text-ink">Total paid</dt>
+              <dt className="text-base font-semibold text-ink">Booking total</dt>
               <dd className="text-xl font-semibold text-ink">{formatCents(booking.totalCents)}</dd>
             </div>
           </dl>
@@ -102,68 +107,30 @@ export default async function BookingConfirmationPage({
           </p>
         </Card>
 
-        <Card className="p-6">
-          <h2 className="font-display text-xl font-medium text-ink">Arrival info</h2>
-          <ul className="mt-3 space-y-3 text-sm text-stone-600">
-            <li className="flex items-start gap-3">
-              <IconPin className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
-              <span>
-                <strong className="font-medium text-ink">Address:</strong> {propertyAddress}
-                <br />
-                Mira Mesa, San Diego — private entrance, driveway parking.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <IconKey className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
-              <span>
-                <strong className="font-medium text-ink">Check-in from 3:00 PM:</strong> self
-                check-in with the smart lock. Your entry code is sent by email before arrival.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <IconClock className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
-              <span>
-                <strong className="font-medium text-ink">Check-out by 11:00 AM.</strong> Checkout
-                instructions are in your confirmation email.
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <IconWifi className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
-              <span>
-                <strong className="font-medium text-ink">Wifi:</strong> network{" "}
-                <span className="font-mono">RTN</span> · password{" "}
-                <span className="font-mono">qwertyuiop</span>
-              </span>
-            </li>
-            <li className="flex items-start gap-3">
-              <IconMoon className="mt-0.5 h-4 w-4 shrink-0 text-clay" />
-              <span>
-                <strong className="font-medium text-ink">Quiet hours</strong> are 10:00 PM – 8:00 AM.
-                No parties or events; no smoking or vaping anywhere on the property.
-              </span>
-            </li>
-          </ul>
+        <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+          <h2 className="font-display text-2xl font-normal text-ink">Arrival info</h2>
+          <p className="mt-3 flex gap-3 text-sm text-stone-600">
+            <IconKey className="h-4 w-4 shrink-0 text-clay" />
+            Arrival instructions and access details are shared privately by your host. Consult your original confirmation.
+          </p>
+          {snapshot?.houseRules && <ul className="mt-3 list-disc pl-5 text-sm text-stone-600">
+            {snapshot.houseRules.map((rule) => <li key={rule}>{rule}</li>)}
+          </ul>}
+
         </Card>
 
-        <Card className="p-6">
-          <h2 className="font-display text-xl font-medium text-ink">Cancellation terms</h2>
+        <Card className="rounded-xl border-stone-300 bg-[#fffcf6] p-5 shadow-none sm:p-6">
+          <h2 className="font-display text-2xl font-normal text-ink">Cancellation terms</h2>
           <p className="mt-2 text-sm leading-relaxed text-stone-600">
-            {property?.cancellationPolicy ??
-              "Firm: full refund 30+ days before check-in, 50% refund 14–30 days before, no refund within 14 days."}{" "}
-            <Link href="/policies/cancellation" className="font-medium text-clay underline-offset-4 hover:underline">
-              Full policy
-            </Link>
+            {snapshot?.cancellationPolicy ?? originalTerms}
           </p>
         </Card>
 
         <div className="rounded-2xl bg-cream px-6 py-5 text-center">
           <p className="text-sm text-stone-600">
-            Need to change something? Your host <strong className="font-medium text-ink">Kipper</strong> is
-            one message away — reply to your confirmation email and we'll sort it out.
+            For changes to an existing stay, consult the verified host contact in your original confirmation.
           </p>
-          <Link href="/" className="mt-4 inline-block">
-            <Button variant="secondary">Back to home</Button>
-          </Link>
+          <BackLink href="/" className="mt-4"/>
         </div>
       </div>
     </div>

@@ -19,6 +19,16 @@ function base(props: P) {
   };
 }
 
+/** Navigation glyphs track adjacent type; their enclosing tap targets stay full size. */
+function arrowBase(props: P) {
+  return base({
+    strokeWidth: 1.15,
+    strokeLinejoin: "miter",
+    ...props,
+    style: { ...props.style, width: "1em", height: "1em", flexShrink: 0 },
+  });
+}
+
 export const IconSearch = (p: P) => (
   <svg {...base(p)}>
     <circle cx="11" cy="11" r="7" />
@@ -68,23 +78,23 @@ export const IconX = (p: P) => (
   </svg>
 );
 export const IconChevronLeft = (p: P) => (
-  <svg {...base(p)}>
+  <svg {...arrowBase(p)}>
     <path d="m14.5 5.5-7 6.5 7 6.5" />
   </svg>
 );
 export const IconChevronRight = (p: P) => (
-  <svg {...base(p)}>
+  <svg {...arrowBase(p)}>
     <path d="m9.5 5.5 7 6.5-7 6.5" />
   </svg>
 );
 export const IconChevronDown = (p: P) => (
-  <svg {...base(p)}>
+  <svg {...arrowBase(p)}>
     <path d="m5.5 9.5 6.5 7 6.5-7" />
   </svg>
 );
 export const IconArrowRight = (p: P) => (
-  <svg {...base(p)}>
-    <path d="M4 12h15m-6-7 7 7-7 7" />
+  <svg {...arrowBase(p)}>
+    <path d="M2 12h20m-7-4 7 4-7 4" />
   </svg>
 );
 export const IconShield = (p: P) => (
@@ -199,4 +209,17 @@ export const IconFlame = (p: P) => (
   <svg {...base(p)}>
     <path d="M12 3s5.5 4.5 5.5 9.5a5.5 5.5 0 0 1-11 0c0-2 1-3.7 2.3-5 .4 1.2 1 2 2 2.6C10.6 8 11 5 12 3Z" />
   </svg>
+);
+
+export const IconArrowUpRight = (p: P) => (
+  <svg {...arrowBase(p)}><path d="M3 21 21 3M13 4l8-1-1 8" /></svg>
+);
+
+export const IconArrowLeft = (p: P) => (
+  <svg {...arrowBase(p)}><path d="M22 12H2m7-4-7 4 7 4" /></svg>
+);
+
+/** Upload-style sharing arrow; the surrounding circular button remains unchanged. */
+export const IconShare = (p: P) => (
+  <svg {...arrowBase(p)}><path d="M12 17V1m-4 7 4-7 4 7M5 12H3v10h18V12h-2"/></svg>
 );

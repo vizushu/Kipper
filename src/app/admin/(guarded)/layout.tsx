@@ -5,6 +5,7 @@
  * cookies forwarded. Any non-OK response redirects to /admin/login.
  * Guests must never reach admin pages.
  */
+import { AdminLogout } from "@/components/AdminLogout";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
@@ -14,7 +15,7 @@ async function isAuthenticated(): Promise<boolean> {
   try {
     const h = await headers();
     const base =
-      process.env.NEXT_PUBLIC_SITE_URL ??
+      process.env.NEXT_PUBLIC_SITE_URL ?? process.env.RENDER_EXTERNAL_URL ??
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
     const res = await fetch(`${base}/api/admin/session`, {
       headers: { cookie: h.get("cookie") ?? "" },
@@ -27,6 +28,7 @@ async function isAuthenticated(): Promise<boolean> {
 }
 
 const NAV = [
+  { href: "/admin/payment-review", label: "Payment review" },
   { href: "/admin", label: "Reservations" },
   { href: "/admin/calendar", label: "Calendar" },
   { href: "/admin/rates", label: "Rates" },
@@ -54,6 +56,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
                 {item.label}
               </Link>
             ))}
+            <AdminLogout />
           </nav>
         </div>
       </header>

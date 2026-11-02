@@ -1,3 +1,9 @@
+import type {EmailEvidenceStore} from "./email-evidence";
+import type {OperatorAlertStore} from "./operator-alerts";
+import type { CalendarStore } from "./calendar-store";
+import type { SecurityStore } from "./security-store";
+import type { PaymentExceptionStore } from "./payment-exceptions";
+import type { WorkflowStore } from "./workflows";
 /**
  * DataAdapter — persistence interface for bookings, blocks, rate overrides,
  * settings, idempotency keys, and quotes.
@@ -40,6 +46,8 @@ export interface SettingsPatch {
 
 /** Everything needed to create a booking; id/createdAt are assigned by the adapter. */
 export interface NewBookingInput {
+  paymentMode?: Booking["paymentMode"];
+  staySnapshot?: Booking["staySnapshot"];
   propertyId: string;
   checkIn: string;
   checkOut: string;
@@ -67,7 +75,7 @@ export interface UpdateBookingPatch {
   adminNotes?: string;
 }
 
-export interface DataAdapter {
+export interface DataAdapter extends EmailEvidenceStore, WorkflowStore, PaymentExceptionStore, SecurityStore, CalendarStore, OperatorAlertStore {
   // ---- bookings ---------------------------------------------------------
   /**
    * Atomically: re-check that [checkIn, checkOut) has no overlapping
@@ -77,6 +85,11 @@ export interface DataAdapter {
    * ONE transaction — callers must not pre-check outside of it.
    */
   createBookingIfAvailable(input: NewBookingInput): Promise<Booking>;
+  expirePendingBookings(now?: string): Promise<number>;
+  confirmBookingPayment(id: string, paymentIntentId: string, confirmedAt: string): Promise<{booking: Booking; transitioned: boolean} | null>;
+  failPendingBookingPayment(id: string, paymentIntentId: string): Promise<boolean>;
+  getPaymentEligibleBooking(id:string):Promise<Booking|null>;
+  attachPaymentIntent(id: string, paymentIntentId: string): Promise<Booking | null>;
   getBooking(id: string): Promise<Booking | null>;
   getBookingByReference(reference: string): Promise<Booking | null>;
   getBookingByIdempotencyKey(key: string): Promise<Booking | null>;

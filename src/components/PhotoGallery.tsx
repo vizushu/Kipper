@@ -1,170 +1,156 @@
 "use client";
-/**
- * PhotoGallery — editorial mosaic + full lightbox.
- * First photo large, thumbnails beside; lightbox with keyboard nav + captions.
- */
+/** Prototype-inspired photo browsing; property assets remain the source of truth. */
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
-import { IconChevronLeft, IconChevronRight, IconExpand, IconX } from "@/components/icons";
-import { cn } from "@/components/cn";
+import ShareStay from "@/components/ShareStay";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { IconArrowLeft, IconArrowRight } from "@/components/icons";
+import { BackButton } from "@/components/BackControl";
+import Header from "@/components/Header";
 import type { Photo } from "@/lib/types";
 
-export default function PhotoGallery({ photos, propertyName }: { photos: Photo[]; propertyName: string }) {
-  const [lightbox, setLightbox] = useState<number | null>(null);
+type GalleryView = "albums" | "photo" | "video" | null;
+export function nextPhotoIndex(current: number, direction: number, count: number) {
+  return count > 0 ? ((current + direction) % count + count) % count : 0;
+}
 
-  const close = useCallback(() => setLightbox(null), []);
-  const step = useCallback(
-    (dir: 1 | -1) =>
-      setLightbox((i) => (i === null ? i : (i + dir + photos.length) % photos.length)),
-    [photos.length],
-  );
+/** Five-dot moving window represents position, not a limit on accessible photos. */
+export function photoDotWindow(current: number, count: number) {
+  const size = Math.min(5, Math.max(0, count));
+  const start = Math.max(0, Math.min(current - 2, count - size));
+  return Array.from({ length: size }, (_, index) => start + index);
+}
+
+/** Pointer lifecycle kept separate so interrupted/swiped gestures never become album taps. */
+export function createHeroGesture() {
+  let active: { id: number; x: number; y: number; moved: boolean } | null = null;
+  let suppressClick = false;
+  return {
+    start(id: number, x: number, y: number) { active = { id, x, y, moved: false }; suppressClick = false; },
+    move(id: number, x: number, y: number) {
+      if (active?.id !== id) return;
+      if (Math.hypot(x - active.x, y - active.y) > 8) active.moved = true;
+    },
+    end(id: number, x: number, y: number) {
+      if (active?.id !== id) return 0;
+      const dx = x - active.x, dy = y - active.y;
+      suppressClick = active.moved || Math.hypot(dx, dy) > 8;
+      active = null;
+      return Math.abs(dx) >= 40 && Math.abs(dx) > Math.abs(dy) * 1.25 ? (dx < 0 ? 1 : -1) : 0;
+    },
+    cancel(id: number) { if (active?.id === id) { active = null; suppressClick = true; } },
+    allowClick(detail: number) { return detail === 0 || !suppressClick; },
+  };
+}
+
+export default function PhotoGallery({ photos, propertyName }: { photos: Photo[]; propertyName: string }) {
+  const [hero, setHero] = useState(0);
+  const gesture = useRef(createHeroGesture());
+  const [selected, setSelected] = useState(0);
+  const [view, setView] = useState<GalleryView>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const returnToAlbum = useRef(false);
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const close = useCallback(() => setView(null), []);
+  const isOpen = view !== null;
+  const active = photos[hero] ?? photos[0];
+  const photo = photos[selected] ?? photos[0];
+  const step = useCallback((direction: number) => setSelected(current => nextPhotoIndex(current, direction, photos.length)), [photos.length]);
 
   useEffect(() => {
-    if (lightbox === null) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") close();
-      if (e.key === "ArrowRight") step(1);
-      if (e.key === "ArrowLeft") step(-1);
-    }
-    window.addEventListener("keydown", onKey);
+    if (!isOpen) return;
+    const opener = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") { event.preventDefault(); close(); }
+      if (viewRef.current === "photo" && ["ArrowLeft", "ArrowRight"].includes(event.key)) {
+        event.preventDefault(); step(event.key === "ArrowRight" ? 1 : -1);
+      }
+      if (event.key === "Tab") {
+        const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]') ?? []);
+        const first = controls[0], last = controls.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    }
+    document.addEventListener("keydown", onKey);
     return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
+      document.body.style.overflow = overflow;
+      document.removeEventListener("keydown", onKey);
+      if (opener?.isConnected) opener.focus();
     };
-  }, [lightbox, close, step]);
+  }, [isOpen, close, step]);
+  useEffect(() => {
+    if (!view) return;
+    const album = returnToAlbum.current && view === "albums" ? dialogRef.current?.querySelector<HTMLButtonElement>(`[data-album-index="${selected}"]`) : null;
+    (album ?? dialogRef.current?.querySelector<HTMLButtonElement>("[data-gallery-back]"))?.focus();
+    returnToAlbum.current = false;
+  }, [view]);
 
-  const [first, ...rest] = photos;
-  const thumbs = rest.slice(0, 4);
+  if (!active || !photo) return null;
+  const buttonStyle = "flex min-h-11 items-center justify-center rounded-lg border border-stone-300 bg-paper px-4 text-sm hover:bg-cream";
+  return <>
+    <div className="relative isolate w-full overflow-hidden bg-cream md:rounded-b-2xl" aria-roledescription="carousel" aria-label={`Photos of ${propertyName}`}>
+      <button type="button"
+        onClick={event => { if (gesture.current.allowClick(event.detail)) setView("albums"); }}
+        onPointerDown={event => {
+          if (!event.isPrimary || event.button !== 0) return;
+          gesture.current.start(event.pointerId, event.clientX, event.clientY);
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={event => gesture.current.move(event.pointerId, event.clientX, event.clientY)}
+        onPointerUp={event => {
+          const direction = gesture.current.end(event.pointerId, event.clientX, event.clientY);
+          if (direction) setHero(current => nextPhotoIndex(current, direction, photos.length));
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+        }}
+        onPointerCancel={event => gesture.current.cancel(event.pointerId)}
+        onLostPointerCapture={event => gesture.current.cancel(event.pointerId)}
+        onKeyDown={event => {
+          if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+            event.preventDefault(); setHero(current => nextPhotoIndex(current, event.key === "ArrowRight" ? 1 : -1, photos.length));
+          }
+        }}
+        style={{ touchAction: "pan-y pinch-zoom" }}
+        className="relative block h-[clamp(260px,66vw,540px)] w-full select-none focus-visible:outline-offset-[-5px]" aria-label="Open all photo albums" aria-describedby="gallery-swipe-instructions">
+        <Image src={active.src} alt={active.alt} fill priority sizes="100vw" className="pointer-events-none object-cover" draggable={false} />
+      </button>
+      <span id="gallery-swipe-instructions" className="sr-only">Swipe left or right, or use the left and right arrow keys, to browse photos. Activate to open all albums.</span>
+      <button type="button" onClick={() => setView("video")} className="absolute left-4 top-4 flex min-h-11 items-center gap-1.5 rounded-md bg-transparent px-1 text-[11px] font-medium text-white drop-shadow md:left-6 md:top-6">
+        <span className="flex items-center gap-1.5 rounded bg-black/25 px-2 py-1.5"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-3 w-3" aria-hidden="true"><path d="m8 4 12 8-12 8Z" /></svg>Video tour</span>
+      </button>
+      <ShareStay propertyName={propertyName} />
+      <div aria-hidden="true" data-photo-dots className="pointer-events-none absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-1.5">{photoDotWindow(hero, photos.length).map(index => <span key={index} className={`rounded-full ${index === hero ? "h-1.5 w-1.5 bg-white" : "h-1 w-1 bg-white/65"}`} />)}</div>
+      <span className="sr-only" aria-live="polite">{hero + 1} / {photos.length}<span className="sr-only"> photos · {active.room ?? active.alt}</span></span>
+    </div>
+    <button type="button" onClick={() => setView("albums")} className="sr-only focus:not-sr-only focus:min-h-11 focus:px-4 focus:py-3 focus:text-sm focus:underline">View all {photos.length} photos</button>
 
-  return (
-    <>
-      <div className="grid gap-2 sm:gap-3 md:grid-cols-4 md:grid-rows-2">
-        <button
-          type="button"
-          onClick={() => setLightbox(0)}
-          className="img-frame group relative aspect-[4/3] md:col-span-2 md:row-span-2 md:aspect-auto md:h-full md:min-h-[420px]"
-          aria-label={`View photo: ${first.alt}`}
-        >
-          <Image
-            src={first.src}
-            alt={first.alt}
-            fill
-            priority
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
-          />
-          <span className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-ink/70 px-3 py-1.5 text-xs font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
-            <IconExpand className="h-3.5 w-3.5" /> {photos.length} photos
-          </span>
-        </button>
-        {thumbs.map((photo, i) => (
-          <button
-            key={photo.src}
-            type="button"
-            onClick={() => setLightbox(i + 1)}
-            className="img-frame group relative hidden aspect-[4/3] md:block"
-            aria-label={`View photo: ${photo.alt}`}
-          >
-            <Image
-              src={photo.src}
-              alt={photo.alt}
-              fill
-              sizes="25vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-            />
-          </button>
-        ))}
-      </div>
-      {rest.length > 4 && (
-        <button
-          type="button"
-          onClick={() => setLightbox(0)}
-          className="mt-3 text-sm font-medium text-clay underline-offset-4 hover:underline"
-        >
-          View all {photos.length} photos
-        </button>
-      )}
-
-      {lightbox !== null && (
-        <div
-          className="fixed inset-0 z-50 flex flex-col bg-ink/95"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${propertyName} photo gallery`}
-          onClick={close}
-        >
-          <div className="flex items-center justify-between px-4 py-3 sm:px-6">
-            <p className="text-sm font-medium text-paper">
-              {lightbox + 1} / {photos.length}
-              {photos[lightbox].room && (
-                <span className="ml-2 text-paper/60">{photos[lightbox].room}</span>
-              )}
-            </p>
-            <button
-              type="button"
-              onClick={close}
-              aria-label="Close gallery"
-              className="rounded-full p-2 text-paper hover:bg-white/10"
-            >
-              <IconX className="h-6 w-6" />
-            </button>
-          </div>
-          <div
-            className="relative flex flex-1 items-center justify-center px-12 sm:px-20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => step(-1)}
-              aria-label="Previous photo"
-              className="absolute left-2 rounded-full bg-white/10 p-2.5 text-paper hover:bg-white/20 sm:left-6"
-            >
-              <IconChevronLeft className="h-6 w-6" />
-            </button>
-            <div className="relative h-full max-h-[70vh] w-full max-w-5xl">
-              <Image
-                key={photos[lightbox].src}
-                src={photos[lightbox].src}
-                alt={photos[lightbox].alt}
-                fill
-                sizes="100vw"
-                className="object-contain"
-                priority
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => step(1)}
-              aria-label="Next photo"
-              className="absolute right-2 rounded-full bg-white/10 p-2.5 text-paper hover:bg-white/20 sm:right-6"
-            >
-              <IconChevronRight className="h-6 w-6" />
-            </button>
-          </div>
-          <div className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-            <p className="text-sm text-paper">
-              {photos[lightbox].caption ?? photos[lightbox].alt}
-            </p>
-            <div className="mx-auto mt-3 flex max-w-3xl gap-2 overflow-x-auto pb-1">
-              {photos.map((photo, i) => (
-                <button
-                  key={photo.src}
-                  type="button"
-                  onClick={() => setLightbox(i)}
-                  aria-label={`Go to photo ${i + 1}: ${photo.alt}`}
-                  className={cn(
-                    "relative h-14 w-20 shrink-0 overflow-hidden rounded-lg",
-                    i === lightbox ? "ring-2 ring-clay" : "opacity-60 hover:opacity-100",
-                  )}
-                >
-                  <Image src={photo.src} alt="" fill sizes="80px" className="object-cover" />
-                </button>
-              ))}
-            </div>
-          </div>
+    {isOpen && <div ref={dialogRef} role="dialog" aria-modal="true" onClick={event => { if (event.target === event.currentTarget) close(); }} aria-label={`${propertyName} ${view === "video" ? "video tour" : "photo gallery"}`} className={`fixed inset-0 z-[60] overflow-y-auto text-ink ${view === "video" ? "bg-ink/65 px-4 py-8" : "bg-paper"}`} style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom))" }}>
+      {view !== "video" && <Header onNavigate={close}/>}
+      <div className={`mx-auto px-5 py-5 sm:px-8 ${view === "video" ? "max-w-xl rounded-2xl bg-paper shadow-xl" : "max-w-6xl"}`}>
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <BackButton data-gallery-back onClick={() => { if (view === "photo") { returnToAlbum.current = true; setView("albums"); } else close(); }}/>
         </div>
-      )}
-    </>
-  );
+        {view === "albums" && <>
+          <p className="text-xs uppercase tracking-[0.16em] text-stone-500">Photo albums</p>
+          <h2 className="casa-page-heading mt-3">Picture your days here.</h2>
+          <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3">{photos.map((item, index) => <button type="button" key={item.src} data-album-index={index} onClick={() => { setSelected(index); setView("photo"); }} className="overflow-hidden rounded-xl border border-stone-300 bg-white/40 text-left" aria-label={`View photo: ${item.alt}`}><div className="relative aspect-[1.25]"><Image src={item.src} alt={item.alt} fill sizes="(min-width:768px) 33vw, 50vw" className="object-cover" /></div><span className="block px-3 py-3 text-sm">{item.room ?? `Photo ${index + 1}`}</span></button>)}</div>
+        </>}
+        {view === "photo" && <>
+          <p className="text-xs uppercase tracking-[0.16em] text-stone-500" aria-live="polite">{selected + 1} of {photos.length}</p>
+          <h2 className="casa-page-heading mt-3">{photo.room ?? propertyName}</h2>
+          <div className="relative mt-7 h-[min(65vh,700px)] overflow-hidden rounded-xl bg-cream"><Image src={photo.src} alt={photo.alt} fill sizes="100vw" className="object-contain" priority /></div>
+          <div className="mt-4 flex justify-between gap-3"><button type="button" onClick={() => step(-1)} className={buttonStyle}><IconArrowLeft className="mr-2 h-4 w-4" />Previous photo</button><button type="button" onClick={() => step(1)} className={buttonStyle}>Next photo<IconArrowRight className="ml-2 h-4 w-4" /></button></div>
+          <p className="mt-4 text-sm leading-relaxed text-stone-600">{photo.caption ?? photo.alt}</p>
+        </>}
+        {view === "video" && <div className="mx-auto max-w-xl">
+          <h2 className="casa-page-heading">Video tour</h2>
+          <div className="relative mt-6 aspect-[4/3] overflow-hidden rounded-xl"><Image src={photos[0].src} alt={photos[0].alt} fill sizes="(max-width:640px) 100vw, 576px" className="object-cover" /></div>
+          <div className="my-5 rounded-xl bg-cream p-5"><p className="font-medium">A closer look is on the way.</p><p className="mt-2 text-sm leading-relaxed text-stone-600">The home’s video tour is not available yet. Explore the photo albums in the meantime.</p></div>
+          <button type="button" onClick={() => setView("albums")} className={`${buttonStyle} w-full`}>Explore the albums</button>
+        </div>}
+      </div>
+    </div>}
+  </>;
 }

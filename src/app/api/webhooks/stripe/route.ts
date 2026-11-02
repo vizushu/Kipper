@@ -1,83 +1,44 @@
-import Stripe from "stripe";
-import { guestSafeBooking } from "@/lib/bookings";
-import { getAdapter } from "@/lib/db";
-import { sendBookingConfirmation, sendHostNotification } from "@/lib/email";
-import { getProperty } from "@/lib/property";
-import { json } from "../../_helpers";
+import {stagingStripeBody} from "@/lib/staging-webhook";
+import {canFulfillPaymentMode} from '@/lib/payment-mode';
+import {isPublicPreview} from '@/lib/booking-launch';
+import Stripe from 'stripe';
+import {guestSafeBooking} from '@/lib/bookings';
+import {getAdapter} from '@/lib/db';
+import {tryProcessOutbox} from '@/lib/outbox';
+import {recordVerifiedPaymentException} from '@/lib/payment-exception-service';
+import {assertPaymentBinding,assertSuccessfulPayment,paymentEvidence,PaymentVerificationError,verifyStripeWebhook} from '@/lib/payment-verification';
+import {json} from '../../_helpers';
 
-/**
- * Stripe webhook (TEST MODE).
- *
- * - If STRIPE_WEBHOOK_SECRET is set, the signature is verified.
- * - Otherwise the payload is accepted in dev with a warning log
- *   (documented; set the secret before any real traffic).
- *
- * Handles payment_intent.succeeded → confirm booking + emails,
- *         payment_intent.payment_failed → mark payment failed.
- */
-export async function POST(req: Request) {
-  const rawBody = await req.text();
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  let event: Stripe.Event;
-  if (webhookSecret) {
-    const sig = req.headers.get("stripe-signature");
-    if (!sig) return json({ error: "Missing stripe-signature." }, 400);
-    const key = process.env.STRIPE_SECRET_KEY;
-    if (!key || key.startsWith("sk_live")) {
-      return json({ error: "Stripe not configured (test mode)." }, 500);
-    }
-    const stripe = new Stripe(key);
-    try {
-      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-    } catch (e) {
-      return json(
-        { error: e instanceof Error ? e.message : "Invalid webhook signature." },
-        400
-      );
-    }
-  } else {
-    console.warn(
-      "[webhook] STRIPE_WEBHOOK_SECRET not set — accepting unverified payload (dev only)."
-    );
-    try {
-      event = JSON.parse(rawBody) as Stripe.Event;
-    } catch {
-      return json({ error: "Invalid JSON payload." }, 400);
-    }
+/** Signed callbacks can record exceptions after a fulfillment gate closes; preview always blocks. */
+export async function POST(req:Request){
+ if(isPublicPreview())return json({error:'Payments are disabled in this preview.'},503);
+ let event:Stripe.Event;
+ try{event=verifyStripeWebhook(await stagingStripeBody(req),req.headers.get('stripe-signature'),process.env.STRIPE_SECRET_KEY,process.env.STRIPE_WEBHOOK_SECRET);}
+ catch(error){return json({error:error instanceof Error?error.message:'Invalid webhook.'},error instanceof PaymentVerificationError?error.httpStatus:400);}
+ if(event.type!=='payment_intent.succeeded'&&event.type!=='payment_intent.payment_failed')return json({received:true,ignored:event.type});
+ const pi=event.data.object as Stripe.PaymentIntent;
+ if(pi.livemode!==event.livemode)return json({error:'Payment object mode differs from the signed event.'},400);
+ const payment=paymentEvidence(pi),successful=event.type==='payment_intent.succeeded'&&payment.status==='succeeded'&&payment.amountReceivedCents>0;
+ try{
+  const adapter=getAdapter(),booking=await adapter.getBookingByPaymentIntentId(pi.id);
+  const review=async(reason:Parameters<typeof recordVerifiedPaymentException>[3])=>{
+   await recordVerifiedPaymentException(adapter,payment,event.id,reason,booking??undefined);
+   return json({received:true,reviewRequired:true}); // Durable case, not a confirmed reservation.
+  };
+  if(!booking){
+   // Ignore unrelated account payments; orphaned Casa Pacifica intents need reconciliation.
+   if(successful&&payment.metadata?.property_id==='casa-pacifica')return await review('unmatched_payment');
+   return json({received:true});
   }
-
-  const adapter = getAdapter();
-
-  if (event.type === "payment_intent.succeeded") {
-    const pi = event.data.object as Stripe.PaymentIntent;
-    const booking = await adapter.getBookingByPaymentIntentId(pi.id);
-    if (booking && booking.status !== "confirmed") {
-      const confirmed =
-        (await adapter.updateBooking(booking.id, {
-          status: "confirmed",
-          paymentStatus: "paid_test",
-          stripePaymentIntentId: pi.id,
-          confirmedAt: new Date().toISOString(),
-        })) ?? booking;
-      const property = getProperty(confirmed.propertyId);
-      if (property) {
-        await sendBookingConfirmation(confirmed, property);
-        await sendHostNotification(confirmed, property);
-      }
-      return json({ received: true, booking: guestSafeBooking(confirmed) });
-    }
-    return json({ received: true });
-  }
-
-  if (event.type === "payment_intent.payment_failed") {
-    const pi = event.data.object as Stripe.PaymentIntent;
-    const booking = await adapter.getBookingByPaymentIntentId(pi.id);
-    if (booking && booking.status !== "confirmed") {
-      await adapter.updateBooking(booking.id, { paymentStatus: "failed" });
-    }
-    return json({ received: true });
-  }
-
-  return json({ received: true, ignored: event.type });
+  try{assertPaymentBinding(booking,payment);}catch(error){if(successful)return await review('binding_mismatch');return json({error:error instanceof Error?error.message:'Invalid payment evidence.'},400);}
+  if(booking.status==='confirmed'){if(canFulfillPaymentMode(booking.paymentMode))await tryProcessOutbox(adapter);return json({received:true});}
+  if(booking.status==='cancelled'){if(successful)return await review('cancelled_booking');return json({received:true});}
+  if(event.type==='payment_intent.payment_failed'){await adapter.failPendingBookingPayment(booking.id,pi.id);return json({received:true});}
+  if(!successful)return json({error:'Successful paid evidence is incomplete.'},400);
+  if(!canFulfillPaymentMode(booking.paymentMode))return await review('launch_gate_closed');
+  try{assertSuccessfulPayment(booking,payment);}catch{return await review('binding_mismatch');}
+  const result=await adapter.confirmBookingPayment(booking.id,pi.id,new Date().toISOString());
+  if(!result)return await review('expired_or_conflicting_hold');
+  await tryProcessOutbox(adapter);return json({received:true,booking:guestSafeBooking(result.booking)});
+ }catch{return json({error:'Payment event could not be durably recorded; retry is required.'},503);}
 }

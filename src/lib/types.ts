@@ -36,16 +36,72 @@ export interface BedLayout {
 }
 
 export interface PetPolicy {
+  onlineApprovalPending?: boolean;
   allowed: boolean;
   feePerStayCents: number;
   maxPets: number;
 }
 
+export interface AccommodationConfiguration {
+  id: string;
+  label: string;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  bedrooms: number;
+  maxGuests?: number;
+  maxTotalOccupancy?: number;
+  checkoutApproved: boolean;
+}
+
+export interface AcceptedCancellationTerms {
+  version: string;
+  timezone: 'America/Los_Angeles';
+  checkInLocalTime: string;
+  fullRefundDays: number;
+  partialRefundDays: number;
+  partialRefundPercent: number;
+  cleaningRefundBeforeArrival: boolean;
+}
+export interface AcceptedPriceBreakdown {
+  accommodationSubtotalCents: number;
+  accommodationDiscountCents: number;
+  accommodationNetCents: number;
+  cleaningFeeCents: number;
+  petFeeCents: number;
+  taxesCents: number;
+  totalCents: number;
+  currency: Currency;
+}
+export interface StaySnapshot {
+  /** Immutable accepted calculation inputs; absent on legacy bookings. */
+  cancellationTerms?: AcceptedCancellationTerms;
+  priceBreakdown?: AcceptedPriceBreakdown;
+  cleaningFeeCents?: number;
+  taxRatePct?: number;
+  taxPolicyVersion?: string;
+  configurationId: string;
+  label: string;
+  bedrooms: number;
+  maxGuests: number;
+  maxTotalOccupancy: number;
+  propertyName: string;
+  timezone: 'America/Los_Angeles';
+  checkInTime: string;
+  checkOutTime: string;
+  houseRules: string[];
+  cancellationPolicy: string;
+  cancellationPolicyVersion?: string;
+}
+
 export interface Property {
+  configurations?: AccommodationConfiguration[];
+  taxPolicyVersion?: string;
+  license?: string;
+  hostName?: string;
   id: string;
   slug: string;
   name: string;
-  brandLine: string; // "Casa Pacifica · Operated by Kipper Property Management"
+  brandLine: string; // "Casa Pacifica · San Diego"
   tagline: string;
   address: string;
   city: string;
@@ -57,7 +113,7 @@ export interface Property {
   maxGuests: number; // overnight
   maxTotalOccupancy: number; // incl. daytime visitors
   bedrooms: number;
-  beds: number;
+  beds?: number; // Omitted until sleeping arrangements are confirmed.
   bathrooms: number;
   bedLayout: BedLayout[];
   description: string;
@@ -70,15 +126,20 @@ export interface Property {
   checkInMethod: string;
   quietHours: string;
   cancellationPolicy: string;
+  cancellationPolicyVersion?: string;
   petPolicy: PetPolicy;
   photos: Photo[];
   faqs: Faq[];
   safetyDevices: string[];
   // Pricing configuration (defaults; admin-editable)
+  pricingMode?: "flat" | "legacy_sample";
+  /** Optional inclusive room-price allowance; absent/0 is disabled. Not a payment-method fee. */
+  inclusiveNightlyAllowanceBps?: 0 | 300;
   baseNightlyCents: number;
   minNightlyCents: number;
   maxNightlyCents: number;
-  cleaningFeeCents: number; // SAMPLE default until Renier confirms
+  cleaningFeeCents: number;
+  cleaningFeeReferenceCents?: number;
   taxRatePct: number; // SAMPLE default until Renier confirms
   minStayNights: number;
   maxStayNights: number;
@@ -94,7 +155,6 @@ export interface PropertySummary {
   bedrooms: number;
   bathrooms: number;
   coverPhoto: Photo;
-  startingNightlyCents: number;
   amenityTags: string[];
 }
 
@@ -121,9 +181,12 @@ export interface LineItem {
   label: string;
   detail?: string;
   amountCents: number; // negative for discounts
+  referenceAmountCents?: number; // Disclosed usual fee, never included in arithmetic.
 }
 
 export interface Quote {
+  paymentMode?: PaymentMode; // Missing only on historical test quotes.
+  staySnapshot?: StaySnapshot;
   id: string;
   propertyId: string;
   propertySlug: string;
@@ -146,7 +209,8 @@ export interface Quote {
 }
 
 export type BookingStatus = "pending_payment" | "confirmed" | "cancelled";
-export type PaymentStatus = "unpaid" | "paid_test" | "failed" | "refunded";
+export type PaymentMode = "test" | "live";
+export type PaymentStatus = "unpaid" | "paid_test" | "paid" | "failed" | "refunded";
 
 export interface BookingGuest {
   name: string;
@@ -155,6 +219,9 @@ export interface BookingGuest {
 }
 
 export interface Booking {
+  paymentMode?: PaymentMode; // Persisted provenance; historical records default to test.
+  holdExpiresAt?: string;
+  staySnapshot?: StaySnapshot;
   id: string;
   reference: string; // guest-facing, e.g. "CP-7K2Q9A"
   propertyId: string;

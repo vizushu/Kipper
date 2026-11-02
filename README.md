@@ -1,7 +1,7 @@
 # Casa Pacifica — direct-booking website
 
 Premium direct-booking site for Casa Pacifica (10840 New Salem Point,
-San Diego, CA 92126), operated by Kipper Property Management.
+San Diego, CA 92126), branded Casa Pacifica. Kipper is only the concierge AI in development, not the property brand, legal host, property manager or merchant. The separate Kipper startup website is out of scope.
 Next.js 15 + TypeScript + Tailwind, mobile-first.
 
 ## Quickstart (dev, zero credentials)

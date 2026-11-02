@@ -1,6 +1,5 @@
 /**
- * PolicyShell — shared layout for the draft policy pages.
- * Every policy page is visibly marked as a draft under Renier's review.
+ * PolicyShell — shared policy layout with explicit draft/published status.
  */
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -10,10 +9,14 @@ export function PolicyShell({
   title,
   updated,
   children,
+  draft = true,
+  status = "Published policy",
 }: {
   title: string;
   updated: string;
   children: ReactNode;
+  draft?: boolean;
+  status?: string;
 }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -24,11 +27,11 @@ export function PolicyShell({
         / <span className="text-ink">{title}</span>
       </nav>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="font-display text-3xl font-medium text-ink">{title}</h1>
-        <SampleBadge />
+        <h1 className="casa-page-heading">{title}</h1>
+        {draft && <SampleBadge />}
       </div>
       <p className="mt-2 text-sm text-stone-500">
-        Draft — under Renier's review · Last updated {updated}
+        {draft ? "Draft — under Renier’s review" : status} · Last updated {updated}
       </p>
       <div className="prose-policy mt-6 space-y-4 text-[15px] leading-relaxed text-stone-600 [&_h2]:mt-8 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-medium [&_h2]:text-ink [&_li]:ml-5 [&_li]:list-disc [&_li]:pl-1 [&_strong]:font-medium [&_strong]:text-ink">
         {children}
@@ -38,7 +41,7 @@ export function PolicyShell({
         <Link href="/faq" className="font-medium text-clay underline-offset-4 hover:underline">
           See the FAQ
         </Link>{" "}
-        or message Kipper after booking.
+        or email <a href="mailto:vizushu@gmail.com" className="underline underline-offset-4">vizushu@gmail.com</a>. You do not need a reservation to ask.
       </p>
     </div>
   );

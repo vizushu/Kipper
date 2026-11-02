@@ -1,5 +1,8 @@
+import { getBookingPaymentMode } from "@/lib/payment-mode";
 import type { Metadata } from "next";
 import { PolicyShell } from "../PolicyShell";
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Cancellation policy",
@@ -8,47 +11,13 @@ export const metadata: Metadata = {
 };
 
 export default function CancellationPolicyPage() {
+  const live = getBookingPaymentMode() === "live";
   return (
-    <PolicyShell title="Cancellation policy" updated="October 13, 2026">
-      <p>
-        We keep our cancellation policy simple and fair. It applies to all
-        reservations made directly through this website for Casa Pacifica.
-      </p>
-      <h2>Standard stays (under 28 nights)</h2>
-      <ul>
-        <li>
-          <strong>Free cancellation within 48 hours of booking</strong> — as long as
-          you booked more than 14 days before check-in.
-        </li>
-        <li>
-          <strong>Full refund</strong> for cancellations made 30 or more days before
-          check-in.
-        </li>
-        <li>
-          <strong>50% refund</strong> for cancellations made 14–30 days before check-in.
-        </li>
-        <li>
-          <strong>No refund</strong> for cancellations made within 14 days of check-in.
-        </li>
-      </ul>
-      <h2>Long stays (28 nights or more)</h2>
-      <p>
-        Long stays follow a firmer schedule: the first 30 nights are non-refundable
-        once the stay begins; remaining nights are refunded if you cancel with at
-        least 30 days' notice before each unused night. Contact us before booking a
-        long stay and we'll walk through the exact terms.
-      </p>
-      <h2>How refunds work</h2>
-      <p>
-        Refunds go back to your original payment method within 5–10 business days,
-        depending on your bank. Cleaning fees are refunded whenever the stay itself
-        is refunded; they are not refunded for no-shows.
-      </p>
-      <h2>Extenuating circumstances</h2>
-      <p>
-        Life happens. If a genuine emergency affects your trip, message Kipper
-        directly — we handle these case by case and will always try to be fair.
-      </p>
+    <PolicyShell draft={false} status="Cancellation refund schedule confirmed" title="Cancellation policy" updated="November 2, 2026">
+      <p>Accommodation refunds are based on cancellation before check-in, in America/Los_Angeles time:</p>
+      <ul><li>At least 30 days: 100% accommodation refund.</li><li>15 to fewer than 30 days: 50% accommodation refund.</li><li>Under 15 days: no accommodation refund.</li></ul>
+      <p>Cleaning is waived for new direct bookings, so no cleaning fee is charged or refunded. Existing reservations keep their original accepted terms, including any refundable cleaning fee. Tax adjustments are handled separately after verification.</p>
+      <p>{live ? "Cancellation cutoffs use the 3:00 PM local check-in time. Checkout and your booking confirmation show your accepted policy version; existing reservations retain their accepted terms." : "Online booking is not open yet. The preview uses the 3:00 PM local check-in time as the cancellation cutoff; final checkout will show the accepted policy version."}</p>
     </PolicyShell>
   );
 }

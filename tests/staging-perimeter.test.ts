@@ -1,0 +1,21 @@
+import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
+import {NextRequest} from 'next/server';
+import {middleware} from '../src/middleware';
+import {createStagingSession,validStagingSession,STAGING_COOKIE,stagingConfigured} from '../src/lib/staging-session';
+const origin='https://private-test.example';
+function configured(){vi.stubEnv('STAGING_TEST_MODE','true');vi.stubEnv('STAGING_ACCESS_PASSWORD','p'.repeat(43));vi.stubEnv('STAGING_SESSION_SECRET','s'.repeat(43));vi.stubEnv('STAGING_ORIGIN',origin);}
+function req(path='/',options:ConstructorParameters<typeof NextRequest>[1]={}){return new NextRequest(origin+path,options);}
+afterEach(()=>vi.unstubAllEnvs());
+describe('private staging perimeter',()=>{
+ beforeEach(configured);
+ it('does nothing when staging flag is off',async()=>{vi.stubEnv('STAGING_TEST_MODE','false');expect((await middleware(req())).headers.get('x-middleware-next')).toBe('1');});
+ it('fails closed missing or weak configuration',async()=>{for(const key of ['STAGING_ACCESS_PASSWORD','STAGING_SESSION_SECRET','STAGING_ORIGIN']){configured();vi.stubEnv(key,'');expect(stagingConfigured()).toBe(false);expect((await middleware(req())).status).toBe(503);}});
+ it('signs bounded purpose tokens and rejects tampering, expiry and key rotation',async()=>{const now=1700000000000;const token=await createStagingSession(now);expect(await validStagingSession(token,now)).toBe(true);expect(await validStagingSession(token,now-1000)).toBe(false);expect(await validStagingSession(token,now+1800000)).toBe(false);expect(await validStagingSession(token+'x',now)).toBe(false);vi.stubEnv('STAGING_SESSION_SECRET','r'.repeat(43));expect(await validStagingSession(token,now)).toBe(false);});
+ it.each(['/','/admin','/_next/static/chunk.js','/_next/image?url=/photos/private.jpg','/api/bookings','/api/admin/outbox','/api/staging/health/','/api/staging/health-extra','/api/webhooks/stripe/','/api/webhooks/stripe%2f','/api/webhooks/%73tripe'])('protects %s without credentials',async(path)=>{const result=await middleware(req(path,{headers:{authorization:'Bearer pretend','x-middleware-subrequest':'middleware','rsc':'1'}}));expect([401,303]).toContain(result.status);expect(result.headers.get('cache-control')).toContain('no-store');expect(result.headers.get('x-robots-tag')).toContain('noindex');});
+ it('only exact POST Stripe callback bypasses session, not handler checks',async()=>{expect((await middleware(req('/api/webhooks/stripe',{method:'POST'}))).headers.get('x-middleware-next')).toBe('1');expect((await middleware(req('/api/webhooks/stripe'))).status).toBe(401);});
+ it('health is minimal and workers/manifest are never served',async()=>{expect(await (await middleware(req('/api/staging/health'))).json()).toEqual({ok:true,mode:'isolated-test'});for(const path of ['/sw.js','/manifest.webmanifest'])expect((await middleware(req(path))).status).toBe(404);expect(await (await middleware(req('/robots.txt'))).text()).toContain('Disallow: /');});
+ it('serves login without exposing app bundles or an open redirect',async()=>{const result=await middleware(req('/staging/login?next=https://attacker.example'));expect(result.status).toBe(200);expect(await result.text()).not.toContain('<script');expect(result.headers.get('content-security-policy')).toContain("form-action 'self'");});
+ it('retains booking Bearer with valid separate session and rejects cross-origin mutations',async()=>{const token=await createStagingSession();const headers={cookie:`${STAGING_COOKIE}=${token}`,authorization:'Bearer booking-capability',origin};expect((await middleware(req('/api/bookings',{method:'POST',headers}))).headers.get('x-middleware-next')).toBe('1');expect((await middleware(req('/api/bookings',{method:'POST',headers:{...headers,origin:'https://attacker.example'}}))).status).toBe(403);});
+});
+
+it('preserves same-origin native form Origin without disclosing referrers cross-origin',async()=>{configured();const result=await middleware(req('/staging/login'));expect(result.headers.get('referrer-policy')).toBe('same-origin');const token=await createStagingSession();for(const invalid of ['null','', 'https://other.example'])expect((await middleware(req('/api/bookings',{method:'POST',headers:{cookie:`${STAGING_COOKIE}=${token}`,origin:invalid}}))).status).toBe(403);});

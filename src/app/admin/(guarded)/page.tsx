@@ -4,6 +4,7 @@
 import { Badge, EmptyState } from "@/components/ui";
 import { formatCents, type Booking } from "@/lib/types";
 import { getAdminBookings } from "./admin-api";
+import CancellationReview from "./CancellationReview";
 
 export const metadata = { title: "Reservations · Admin", robots: { index: false } };
 
@@ -73,6 +74,7 @@ function Section({
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Payment</th>
                 <th className="px-4 py-3 text-right font-medium">Total</th>
+                <th className="px-4 py-3 font-medium">Read-only review</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -101,6 +103,7 @@ function Section({
                   <td className="px-4 py-3 text-right font-medium text-ink">
                     {formatCents(b.totalCents)}
                   </td>
+                  <td className="px-4 py-3"><CancellationReview bookingId={b.id} /></td>
                 </tr>
               ))}
             </tbody>

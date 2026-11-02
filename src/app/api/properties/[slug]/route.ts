@@ -8,5 +8,5 @@ export async function GET(
   const { slug } = await ctx.params;
   const property = getProperty(slug);
   if (!property) return notFound("Property not found.");
-  return json({ property });
+  return json({ property: {...property, address: "", zip: "", latitude: 0, longitude: 0} });
 }

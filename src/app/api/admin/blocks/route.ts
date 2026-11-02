@@ -14,17 +14,18 @@ const blockSchema = z.object({
 
 /** POST /api/admin/blocks — create a manual blocked range (admin). */
 export async function POST(req: NextRequest) {
-  const denied = requireAdmin(req);
+  const denied = await requireAdmin(req);
   if (denied) return denied;
   const parsed = await parseBody(req, blockSchema);
   if (!parsed.ok) return parsed.response;
   const { propertyId, from, to, reason } = parsed.data;
 
-  if (!getProperty(propertyId)) return notFound("Property not found.");
+  const property = getProperty(propertyId);
+  if (!property) return notFound("Property not found.");
   if (!isValidDateStr(from) || !isValidDateStr(to) || to <= from) {
     return apiError("INVALID_DATES", "Block range must be valid YYYY-MM-DD dates with to > from.", 400);
   }
 
-  const block = await getAdapter().createBlock({ propertyId, from, to, reason });
+  const block = await getAdapter().createBlock({ propertyId: property.id, from, to, reason });
   return json({ block }, 201);
 }

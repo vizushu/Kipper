@@ -9,6 +9,6 @@ import { json, unauthorized } from "../../_helpers";
  * decide whether to show the login screen.
  */
 export async function GET(req: NextRequest) {
-  if (!isAdminRequest(req)) return unauthorized();
+  if (!(await isAdminRequest(req))) return unauthorized();
   return json({ ok: true });
 }

@@ -1,5 +1,8 @@
+import { getBookingPaymentMode } from "@/lib/payment-mode";
 import type { Metadata } from "next";
 import { PolicyShell } from "../PolicyShell";
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Terms of stay",
@@ -8,61 +11,52 @@ export const metadata: Metadata = {
 };
 
 export default function TermsPage() {
+  const live = getBookingPaymentMode() === "live";
   return (
-    <PolicyShell title="Terms of stay" updated="October 13, 2026">
+    <PolicyShell draft={!live} title="Terms of stay" updated="November 2, 2026">
       <p>
-        These terms apply to every reservation made directly through this website
-        for Casa Pacifica, operated by Kipper Property Management ("we", "us").
-        By completing a booking, you ("the guest") agree to the following.
+        {live ? "Casa Pacifica direct bookings are operated by Renier De La Cruz. Contact vizushu@gmail.com about your stay or these terms. Payments are processed through Stripe for Casa Pacifica. Kipper concierge AI remains in development and does not independently manage your stay." : "These draft stay terms describe Casa Pacifica. New reservations and payments are not open here. Renier De La Cruz operates Casa Pacifica; contact vizushu@gmail.com for questions. Kipper concierge AI remains in development."}
       </p>
       <h2>The property</h2>
       <p>
-        You are booking the entire downstairs guest accommodation at 10840 New
-        Salem Point, San Diego, CA 92126: 3 bedrooms, 2 bathrooms, sleeping up to
-        8 guests, with private access to the backyard, heated pool, and listed
-        amenities. The upstairs level is a separate private residence and is not
-        part of your reservation.
+        You are booking the current guest accommodation in Mira Mesa, San Diego: 3 bedrooms, 2 bathrooms, sleeping up to
+        8 guests, with private access to the backyard, pool, and listed
+        amenities. Only the accommodation specified for your stay dates is included.
       </p>
       <h2>Occupancy & guests</h2>
       <ul>
-        <li>Maximum 8 guests overnight; up to 10 total on the property including daytime visitors.</li>
+        <li>Maximum 8 overnight guests, including children and infants; maximum 10 people on the property including approved daytime visitors.</li>
         <li>Only registered guests may stay overnight. Daytime visitors must be approved in advance.</li>
         <li>Children must be supervised around the pool at all times. Pool use is at your own risk — no lifeguard on duty.</li>
       </ul>
       <h2>House rules</h2>
       <ul>
-        <li>Check-in from 3:00 PM (self check-in via smart lock); check-out by 11:00 AM.</li>
+        <li>Check-in from 3:00 PM; check-out by 11:00 AM. Confirm arrival arrangements with Casa Pacifica before travel.</li>
         <li>Quiet hours 10:00 PM – 8:00 AM.</li>
         <li>No parties, events, or large gatherings. No commercial photography or filming.</li>
-        <li>No smoking, vaping, marijuana, hookah, or illegal drugs anywhere on the property. A minimum $500 smoke remediation fee may be charged if evidence of smoking is found.</li>
-        <li>Pets: one pet maximum, $50 per stay. You are responsible for any pet damage.</li>
+        <li>No smoking, vaping, marijuana, hookah, or illegal drugs anywhere on the property.</li>
+        <li>Pets: contact us before booking. Pet eligibility and any fee require confirmation; online pet bookings are not available yet.</li>
         <li>Please do not block the neighbor's driveway, and keep outdoor noise respectful, especially at night.</li>
       </ul>
       <h2>Payment</h2>
       <p>
-        The full stay total is charged at booking. Prices are in USD and include
-        applicable taxes. The cleaning fee and any pet fee are itemized before you
-        pay — there are no marketplace service fees when you book direct.
+        {live ? "Prices are in USD. Your complete stay total, including applicable taxes, is shown before payment through Stripe. The room price includes the approved allowance; there is no separate payment-method surcharge. Cleaning is waived for new direct bookings. A reservation is confirmed only after successful payment and confirmation by the booking system. Online pet bookings remain unavailable." : "New paid bookings are closed. Any separately protected checkout test uses synthetic data and sandbox payments only. The complete price must be shown before a future payment."}
       </p>
       <h2>Damage & liability</h2>
       <p>
         Please report accidental damage promptly — accidents happen, and quick
         communication helps everyone. You are responsible for damage beyond normal
-        wear caused by you, your guests, or your pet during the stay. We are not
-        liable for personal injury, loss, or theft except where required by law.
+        wear caused by you, your guests, or your pet during the stay. Please contact Renier De La Cruz at vizushu@gmail.com to discuss any concern; no automated damage charge is authorized by this website.
       </p>
       <h2>Entry</h2>
       <p>
-        We respect your privacy and will not enter the downstairs guest areas
-        during your stay except in an emergency, or with your prior agreement
-        (for example, an urgent repair).
+        Confirm arrival arrangements with Renier De La Cruz before travel. Private entry instructions are shared with confirmed guests. Automated Yale code provisioning is not connected; this site does not promise automatic access-code delivery.
       </p>
       <h2>Cancellation</h2>
       <p>
         Cancellations follow our{" "}
         <a href="/policies/cancellation" className="underline underline-offset-4">cancellation policy</a>.
-        Unauthorized visitors or rule violations may result in cancellation of the
-        reservation without refund.
+        Please contact Casa Pacifica with questions about your stay terms.
       </p>
     </PolicyShell>
   );

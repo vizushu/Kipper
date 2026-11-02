@@ -10,14 +10,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { BookingError } from "@/lib/types";
-import { isAdminRequest } from "@/lib/admin-auth";
+import { isAdminRequest, hasAdminMachineCredential, isSameOrigin } from "@/lib/admin-auth";
 
 export function json(data: unknown, status = 200): NextResponse {
-  return NextResponse.json(data, { status });
+  return NextResponse.json(data, { status, headers: {"Cache-Control": "private, no-store"} });
 }
 
 export function apiError(code: string, message: string, status = 400): NextResponse {
-  return NextResponse.json({ error: message, code }, { status });
+  return NextResponse.json({ error: message, code }, { status, headers: {"Cache-Control": "private, no-store"} });
 }
 
 export function notFound(message = "Not found"): NextResponse {
@@ -29,8 +29,13 @@ export function unauthorized(): NextResponse {
 }
 
 /** Admin guard: returns a 401 response when the request is not admin, else null. */
-export function requireAdmin(req: NextRequest): NextResponse | null {
-  return isAdminRequest(req) ? null : unauthorized();
+export async function requireAdmin(req: NextRequest): Promise<NextResponse | null> {
+  if (!(await isAdminRequest(req))) return unauthorized();
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method.toUpperCase()) &&
+      !hasAdminMachineCredential(req) && !isSameOrigin(req)) {
+    return apiError('INVALID_ORIGIN', 'Same-origin admin request required.', 403);
+  }
+  return null;
 }
 
 export function bookingErrorResponse(e: BookingError): NextResponse {
@@ -49,7 +54,7 @@ export const guestsSchema = z.object({
 });
 
 export function zodErrorResponse(e: z.ZodError): NextResponse {
-  const message = e.errors
+  const message = e.issues
     .map((x) => `${x.path.join(".") || "body"}: ${x.message}`)
     .join("; ");
   return apiError("INVALID_REQUEST", message, 400);

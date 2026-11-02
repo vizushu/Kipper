@@ -6,16 +6,18 @@ const config: Config = {
     extend: {
       colors: {
         // Warm neutral hospitality palette — paper, stone, espresso, clay.
-        paper: "#FAF8F5",
-        cream: "#F3EFE8",
-        ink: "#1C1917",
-        espresso: "#292524",
+        paper: "#F6F3EB",
+        panel: "#FFFCF6",
+        line: "#C7CDBF",
+        cream: "#E8E9DF",
+        ink: "#283D32",
+        espresso: "#283D32",
         clay: {
-          DEFAULT: "#A8552F",
-          dark: "#8A4526",
-          soft: "#F5E9DF",
+          DEFAULT: "#344D3C",
+          dark: "#283D32",
+          soft: "#E8E9DF",
         },
-        moss: "#4D5B4A",
+        moss: "#586451",
       },
       fontFamily: {
         // CSS variables are set by next/font/google in src/app/layout.tsx.

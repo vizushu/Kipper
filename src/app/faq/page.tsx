@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import FaqAccordion from "@/components/FaqAccordion";
-import { SectionHeading } from "@/components/ui";
 import { PROPERTY } from "@/data/property";
 
 export const metadata: Metadata = {
@@ -12,31 +11,27 @@ export const metadata: Metadata = {
 const SITE_FAQS = [
   {
     q: "Why should I book direct instead of Airbnb?",
-    a: "The same stay, without the markup. Marketplaces add 14%+ in guest service fees on top of the nightly rate. Booking here, that money stays out of your bill — and you get a direct line to Kipper, your host, instead of a support queue.",
+    a: "Booking directly lets you coordinate your stay with the Casa Pacifica booking contact. Compare accommodation details and dates; no best-rate guarantee is made.",
   },
   {
     q: "How do payments work?",
     a: "The full stay total is charged securely at booking through Stripe — the same payment processor used by millions of businesses. We never see or store your card details. In test mode, only Stripe test cards are accepted and no real charges are made.",
   },
   {
-    q: "How do I get my entry code?",
-    a: "Check-in is fully self-service with a smart lock. Your personal entry code is sent to your booking email before arrival — no key handoff, no waiting around.",
+    q: "How do I arrange check-in?",
+    a: "Check-in starts at 3:00 PM. Please confirm arrival arrangements with Casa Pacifica before travel.",
   },
   {
     q: "Can I get an early check-in or late checkout?",
-    a: "Often, yes — it depends on the cleaning schedule around your dates. Just ask Kipper after booking and we'll do our best.",
+    a: "Early check-in and late checkout are not guaranteed. Any request needs approval from the verified booking contact.",
   },
-  ...PROPERTY.faqs,
+  ...PROPERTY.faqs.filter(item => !/upstairs|downstairs|shared indoor|shared space/i.test(`${item.q} ${item.a}`)),
 ];
 
 export default function FaqPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <SectionHeading
-        eyebrow="FAQ"
-        title="Questions, answered"
-        lede="Everything about booking direct and staying at Casa Pacifica. Still curious? Message Kipper after booking."
-      />
+      <header><p className="casa-eyebrow mb-3">FAQ</p><h1 className="casa-page-heading">Questions, answered</h1><p className="mt-3 text-sm leading-6 text-moss">Everything about booking direct and staying at Casa Pacifica. Still curious? Consult your verified booking contact.</p></header>
       <div className="mt-8">
         <FaqAccordion faqs={SITE_FAQS} />
       </div>

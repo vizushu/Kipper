@@ -1,7 +1,7 @@
 "use client";
 /**
  * GuestSelector — steppers for adults / children / infants.
- * Overnight total (adults + children) is capped at maxGuests.
+ * Total headcount (adults + children + infants) is capped at maxGuests.
  */
 import { IconMinus, IconPlus } from "@/components/icons";
 import { cn } from "@/components/cn";
@@ -21,12 +21,12 @@ const ROWS: Array<{ key: keyof GuestCount; title: string; hint: string }> = [
 ];
 
 export default function GuestSelector({ value, onChange, maxGuests, compact }: Props) {
-  const overnight = value.adults + value.children;
+  const overnight = value.adults + value.children + value.infants;
 
   function set(key: keyof GuestCount, next: number) {
     const clamped = Math.max(key === "adults" ? 1 : 0, Math.min(16, next));
     const trial = { ...value, [key]: clamped };
-    if (key !== "infants" && trial.adults + trial.children > maxGuests) return;
+    if (trial.adults + trial.children + trial.infants > maxGuests) return;
     onChange(trial);
   }
 
@@ -34,7 +34,7 @@ export default function GuestSelector({ value, onChange, maxGuests, compact }: P
     <div className={cn(!compact && "rounded-2xl border border-stone-200 bg-white p-4")}>
       <p className="text-sm font-medium text-ink">Guests</p>
       <p className="text-xs text-stone-500">
-        Max {maxGuests} overnight · infants don't count toward the cap
+        Max {maxGuests} overnight guests, including children and infants
       </p>
       <div className="mt-2 divide-y divide-stone-100">
         {ROWS.map((row) => {
@@ -62,7 +62,7 @@ export default function GuestSelector({ value, onChange, maxGuests, compact }: P
                   type="button"
                   aria-label={`More ${row.title.toLowerCase()}`}
                   onClick={() => set(row.key, count + 1)}
-                  disabled={row.key !== "infants" && overnight >= maxGuests}
+                  disabled={overnight >= maxGuests}
                   className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-300 text-ink transition-colors hover:border-stone-400 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   <IconPlus className="h-4 w-4" />
@@ -74,17 +74,12 @@ export default function GuestSelector({ value, onChange, maxGuests, compact }: P
       </div>
       {overnight >= maxGuests && (
         <p className="mt-1 text-xs text-clay-dark">
-          Overnight guest limit reached ({maxGuests}).
+          Total headcount limit reached ({maxGuests}).
         </p>
       )}
     </div>
   );
 }
 
-export function guestSummary(g: GuestCount): string {
-  const parts: string[] = [];
-  const total = g.adults + g.children;
-  parts.push(`${total} guest${total === 1 ? "" : "s"}`);
-  if (g.infants > 0) parts.push(`${g.infants} infant${g.infants === 1 ? "" : "s"}`);
-  return parts.join(", ");
-}
+// Client consumers retain this export; server components import the pure helper directly.
+export { guestSummary } from "@/lib/guest-summary";
