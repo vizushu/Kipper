@@ -40,12 +40,17 @@ function fmtDate(iso: string): string {
 
 const CODE_MESSAGES: Record<string, string> = {
   INVALID_DATES: "Those dates don't work — please pick new dates.",
-  UNAVAILABLE: "Some of those nights just got booked. Please pick different dates.",
-  GUEST_LIMIT: "That guest count exceeds this home's total occupancy limit, including infants and visitors.",
   MIN_STAY: "This stay doesn't meet the minimum-night requirement.",
   MAX_STAY: "This stay exceeds the maximum-night limit.",
   QUOTE_EXPIRED: "Your quote expired. Recheck availability and price; a quote does not hold dates.",
 };
+
+/** These shared codes also cover unapproved accommodation and pets. Preserve the
+ * public API's precise explanation rather than inventing a booking/occupancy cause.
+ */
+export function checkoutQuoteErrorMessage(code: string | undefined, error: unknown): string {
+  return (code && CODE_MESSAGES[code]) || (error instanceof Error ? error.message : "Could not price this stay.");
+}
 
 export default function CheckoutClient() {
   return (
@@ -152,9 +157,7 @@ function CheckoutFlow() {
       if (!requestGuard.current.isCurrent(generation)) return;
       const code = (e as { code?: string }).code;
       setQuoteError({
-        message:
-          (code && CODE_MESSAGES[code]) ||
-          (e instanceof Error ? e.message : "Could not price this stay."),
+        message: checkoutQuoteErrorMessage(code, e),
         code,
       });
     } finally {
