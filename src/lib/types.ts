@@ -133,6 +133,8 @@ export interface Property {
   safetyDevices: string[];
   // Pricing configuration (defaults; admin-editable)
   pricingMode?: "flat" | "legacy_sample";
+  /** Optional inclusive room-price allowance; absent/0 is disabled. Not a payment-method fee. */
+  inclusiveNightlyAllowanceBps?: 0 | 300;
   baseNightlyCents: number;
   minNightlyCents: number;
   maxNightlyCents: number;

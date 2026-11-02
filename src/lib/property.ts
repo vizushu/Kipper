@@ -210,6 +210,7 @@ const CASA_PACIFICA: Property = {
   ],
   // Pricing configuration (defaults; admin-editable via /api/admin/*)
   pricingMode: "flat",
+  inclusiveNightlyAllowanceBps: 300, // Owner-approved inclusive room price; not a card surcharge.
   baseNightlyCents: 44900,
   minNightlyCents: 44900,
   maxNightlyCents: 44900,

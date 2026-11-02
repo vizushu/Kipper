@@ -7,7 +7,7 @@ import { acceptedCancellationTerms } from "./cancellation-review";
  * The frontend must always call POST /api/quote and render the returned
  * quote — it must never compute totals itself.
  *
- * Current Casa Pacifica policy: flat $449/night, no weekend/season uplift,
+ * Current Casa Pacifica policy: flat $449 base + 3% inclusive allowance ($462.47/night), no weekend/season uplift,
  * no automatic promotion or online pet fee. Legacy sample behavior below remains
  * solely for explicitly configured legacy/test properties, not current production:
  * Legacy sample rules:
@@ -160,7 +160,7 @@ function clamp(n: number, lo: number, hi: number): number {
  * rounded to the cent, then clamped to [min, max]. An admin rate override
  * replaces the computed value (still clamped).
  */
-export function nightlyRateCents(
+function resolvedBaseNightlyRateCents(
   property: Property,
   date: string,
   rateOverrides: Record<string, number>
@@ -178,6 +178,27 @@ export function nightlyRateCents(
     rate = Math.round(property.baseNightlyCents * weekendFactor * seasonalFactor);
   }
   return clamp(Math.round(rate), property.minNightlyCents, property.maxNightlyCents);
+}
+
+/** Apply the optional allowance exactly once, after resolving the base/override.
+ * All callers receive the inclusive room price; there is no separate fee line.
+ * Absent/zero remains disabled; Casa Pacifica explicitly configures 300 bps.
+ */
+export function nightlyRateCents(
+  property: Property,
+  date: string,
+  rateOverrides: Record<string, number>
+): number {
+  const bps = property.inclusiveNightlyAllowanceBps ?? 0;
+  if (bps !== 0 && bps !== 300) throw new Error("Invalid inclusive nightly pricing policy.");
+  const base = resolvedBaseNightlyRateCents(property, date, rateOverrides);
+  if (bps === 0) return base;
+  // Integer half-up rounding per night, not once over the stay subtotal.
+  const numerator = base * (10000 + bps) + 5000;
+  if (!Number.isSafeInteger(base) || base < 0 || !Number.isSafeInteger(numerator)) {
+    throw new Error("Invalid inclusive nightly base price.");
+  }
+  return Math.floor(numerator / 10000);
 }
 
 export function findPromo(

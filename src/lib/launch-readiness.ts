@@ -1,4 +1,6 @@
 import {z} from 'zod';
+import {nightlyRateCents} from './pricing';
+import {todayInLA} from './dates';
 import {liveEmailDeliveryConfigured} from './email-delivery';
 import {getProperty} from './property';
 import type {DataAdapter} from './db/adapter';
@@ -45,7 +47,7 @@ export async function getRuntimeLaunchReadiness(adapter:DataAdapter,now=new Date
   return {...report,configurationOnly:false,runtimeChecked:true,canAcceptLiveBookings:ready,
    inventory:{...report.inventory,instantBookingReady:ready},
    runtime:{calendarReady,alertsReady,emailReady,pricingReady,sourceLastSuccessAt:source?.lastSuccessAt??null,alertLastSuccessAt:alerts?.lastSuccessAt??null},
-   pricing:{baseNightlyCents:getProperty('casa-pacifica')?.baseNightlyCents,minNightlyCents:getProperty('casa-pacifica')?.minNightlyCents,maxNightlyCents:getProperty('casa-pacifica')?.maxNightlyCents,ownerApprovalRecorded:process.env.LIVE_PRICING_APPROVED==='true',cleaningFeeCents:settings.cleaningFeeCents,taxRatePct:settings.taxRatePct,minStayNights:settings.minStayNights,maxStayNights:settings.maxStayNights,promos:settings.promos,requiresDateRateReview:true},
+   pricing:{inclusiveNightlyAllowanceBps:property?.inclusiveNightlyAllowanceBps??0,effectiveNightlyCents:property?nightlyRateCents(property,todayInLA(),{}):null,baseNightlyCents:getProperty('casa-pacifica')?.baseNightlyCents,minNightlyCents:getProperty('casa-pacifica')?.minNightlyCents,maxNightlyCents:getProperty('casa-pacifica')?.maxNightlyCents,ownerApprovalRecorded:process.env.LIVE_PRICING_APPROVED==='true',cleaningFeeCents:settings.cleaningFeeCents,taxRatePct:settings.taxRatePct,minStayNights:settings.minStayNights,maxStayNights:settings.maxStayNights,promos:settings.promos,requiresDateRateReview:true},
    blockers:[...report.blockers,...(!pricingReady?[{code:'RUNTIME_PRICING_REVIEW_REQUIRED',owner:'owner_and_engineering',detail:'Stored pricing must match approved cleaning/tax and valid stay/promotion settings before quoting.'}]:[]),...(!emailReady?[{code:'RUNTIME_EMAIL_NOT_READY',owner:'owner_and_engineering',detail:'Approved email transport and valid sender/recipient configuration are required.'}]:[]),...(!calendarReady?[{code:'RUNTIME_CALENDAR_NOT_READY',owner:'owner_and_engineering',detail:'A current matching healthy calendar snapshot is required.'}]:[]),...(!alertsReady?[{code:'RUNTIME_ALERTS_NOT_READY',owner:'owner_and_engineering',detail:'A current verified dispatcher heartbeat with no overdue/dead alerts is required.'}]:[])],
    notice:'Point-in-time checks only. Every hold and payment rechecks inventory; iCal does not prevent simultaneous cross-platform bookings.'};
  }catch{return {...report,runtimeChecked:false,canAcceptLiveBookings:false,runtimeError:'Readiness data unavailable; do not open checkout.'};}

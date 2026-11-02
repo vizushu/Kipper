@@ -255,7 +255,7 @@ export default function AdminRatesPage() {
               </h2>
               {overrides.length === 0 ? (
                 <p className="mt-2 text-sm text-stone-500">
-                  No overrides in the next 3 months. Base rate {formatCents(PUBLIC_RATE_DEFAULTS.baseNightlyCents)}/night applies.
+                  Current flat room price {formatCents(PUBLIC_RATE_DEFAULTS.inclusiveNightlyCents)}/night includes the allowance. Date overrides do not apply while flat pricing is active.
                 </p>
               ) : (
                 <ul className="mt-3 space-y-2">

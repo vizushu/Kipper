@@ -19,7 +19,7 @@ import {
   weekdayInLA,
 } from "../src/lib/dates";
 
-const property = {...getProperty("casa-pacifica")!,pricingMode:"legacy_sample" as const,baseNightlyCents:34900,minNightlyCents:34900,maxNightlyCents:103000,petPolicy:{allowed:true,feePerStayCents:5000,maxPets:1}};
+const property = {...getProperty("casa-pacifica")!,pricingMode:"legacy_sample" as const,inclusiveNightlyAllowanceBps:0 as const,baseNightlyCents:34900,minNightlyCents:34900,maxNightlyCents:103000,petPolicy:{allowed:true,feePerStayCents:5000,maxPets:1}};
 const settings: PricingSettings = {
   ...DEFAULT_PRICING_SETTINGS,
   cleaningFeeCents:18000,
