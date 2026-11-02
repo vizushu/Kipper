@@ -1,6 +1,5 @@
 /**
- * PolicyShell — shared layout for the draft policy pages.
- * Every policy page is visibly marked as a draft under Renier's review.
+ * PolicyShell — shared policy layout with explicit draft/published status.
  */
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -11,11 +10,13 @@ export function PolicyShell({
   updated,
   children,
   draft = true,
+  status = "Published policy",
 }: {
   title: string;
   updated: string;
   children: ReactNode;
   draft?: boolean;
+  status?: string;
 }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
@@ -30,7 +31,7 @@ export function PolicyShell({
         {draft && <SampleBadge />}
       </div>
       <p className="mt-2 text-sm text-stone-500">
-        {draft ? "Draft — under Renier’s review" : "Cancellation refund schedule confirmed"} · Last updated {updated}
+        {draft ? "Draft — under Renier’s review" : status} · Last updated {updated}
       </p>
       <div className="prose-policy mt-6 space-y-4 text-[15px] leading-relaxed text-stone-600 [&_h2]:mt-8 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-medium [&_h2]:text-ink [&_li]:ml-5 [&_li]:list-disc [&_li]:pl-1 [&_strong]:font-medium [&_strong]:text-ink">
         {children}
@@ -40,7 +41,7 @@ export function PolicyShell({
         <Link href="/faq" className="font-medium text-clay underline-offset-4 hover:underline">
           See the FAQ
         </Link>{" "}
-        or message the Casa Pacifica booking contact after booking.
+        or email <a href="mailto:vizushu@gmail.com" className="underline underline-offset-4">vizushu@gmail.com</a>. You do not need a reservation to ask.
       </p>
     </div>
   );

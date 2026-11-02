@@ -19,11 +19,12 @@ describe('Kipper concierge startup positioning', () => {
     expect(property.license).toBe('STR-13982L');
     expect(readFileSync('src/components/Footer.tsx', 'utf8')).toContain('Casa Pacifica property · San Diego STRO');
   });
-  it('states the concierge development and legal-party launch gates without enabling booking', () => {
+  it('states approved operator identity and mode-aware intake without enabling booking', () => {
     const about = readFileSync('src/app/about/page.tsx', 'utf8');
     expect(about).toContain('Kipper is the concierge AI in development');
-    expect(about).toContain('Final contracting and merchant account details will be disclosed');
-    expect(about).toContain('accepts no reservations or payments');
+    expect(about).toContain('Casa Pacifica is operated by Renier De La Cruz');
+    expect(about).toContain('getBookingPaymentMode');
+    expect(about).toContain('New reservations and payments are not open here');
   });
 });
 

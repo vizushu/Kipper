@@ -1,5 +1,8 @@
+import { getBookingPaymentMode } from "@/lib/payment-mode";
 import type { Metadata } from "next";
 import { PolicyShell } from "../PolicyShell";
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: "Terms of stay",
@@ -8,10 +11,11 @@ export const metadata: Metadata = {
 };
 
 export default function TermsPage() {
+  const live = getBookingPaymentMode() === "live";
   return (
-    <PolicyShell title="Terms of stay" updated="October 13, 2026">
+    <PolicyShell draft={!live} title="Terms of stay" updated="November 2, 2026">
       <p>
-        These draft stay terms describe Casa Pacifica. No reservations or payments are accepted in this preview. Final contracting and merchant details will be disclosed before booking opens; Kipper is a concierge-AI startup, not identified here as the property manager or host.
+        {live ? "Casa Pacifica direct bookings are operated by Renier De La Cruz. Contact vizushu@gmail.com about your stay or these terms. Payments are processed through Stripe for Casa Pacifica. Kipper concierge AI remains in development and does not independently manage your stay." : "These draft stay terms describe Casa Pacifica. New reservations and payments are not open here. Renier De La Cruz operates Casa Pacifica; contact vizushu@gmail.com for questions. Kipper concierge AI remains in development."}
       </p>
       <h2>The property</h2>
       <p>
@@ -36,19 +40,17 @@ export default function TermsPage() {
       </ul>
       <h2>Payment</h2>
       <p>
-        Online booking is currently a test-only preview. No real payments are enabled. Prices are in USD and include
-        applicable taxes. The cleaning fee and any pet fee are itemized before you
-        pay — there are no marketplace service fees when you book direct.
+        {live ? "Prices are in USD. Your complete stay total, including applicable taxes, is shown before payment through Stripe. The room price includes the approved allowance; there is no separate payment-method surcharge. Cleaning is waived for new direct bookings. A reservation is confirmed only after successful payment and confirmation by the booking system. Online pet bookings remain unavailable." : "New paid bookings are closed. Any separately protected checkout test uses synthetic data and sandbox payments only. The complete price must be shown before a future payment."}
       </p>
       <h2>Damage & liability</h2>
       <p>
         Please report accidental damage promptly — accidents happen, and quick
         communication helps everyone. You are responsible for damage beyond normal
-        wear caused by you, your guests, or your pet during the stay. Final liability terms and the responsible contracting party remain under review.
+        wear caused by you, your guests, or your pet during the stay. Please contact Renier De La Cruz at vizushu@gmail.com to discuss any concern; no automated damage charge is authorized by this website.
       </p>
       <h2>Entry</h2>
       <p>
-        The homeowner or verified host must confirm the entry policy before booking opens. Kipper is not represented as having property-entry authority.
+        Confirm arrival arrangements with Renier De La Cruz before travel. Private entry instructions are shared with confirmed guests. Automated Yale code provisioning is not connected; this site does not promise automatic access-code delivery.
       </p>
       <h2>Cancellation</h2>
       <p>

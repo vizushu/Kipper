@@ -1,3 +1,4 @@
+import { getBookingPaymentMode } from "@/lib/payment-mode";
 import Link from 'next/link';
 import { getProperty } from '@/lib/property';
 import { CANCELLATION_POLICY } from '@/lib/cancellation';
@@ -5,6 +6,7 @@ import { IconChevronDown } from '@/components/icons';
 
 /** Curated public facts only. Not an AI responder, availability lookup or private stay guide. */
 export default function StayHelpGuide() {
+  const live = getBookingPaymentMode() === "live";
   const property = getProperty('casa-pacifica');
   if (!property) return null;
   const current = property.configurations?.find(config => config.id === 'casa-pacifica-3br');
@@ -13,7 +15,7 @@ export default function StayHelpGuide() {
   const labels: Record<string,string> = { Wifi: 'Wi-Fi', 'Private pool': 'swimming pool', 'EV charger (Level 2)': 'EV charging' };
   const answers = [
     { question: 'How many people can stay?', answer: <><p>The 3-bedroom accommodation is for up to {current?.maxGuests ?? property.maxGuests} overnight guests, including children and infants. A maximum of {current?.maxTotalOccupancy ?? property.maxTotalOccupancy} people may be on the property including approved daytime visitors. The 5-bedroom, 3-bath expansion is planned for March 1, 2027; its booking details are not yet approved.</p><p className="mt-2">A stay checking out March 1 can use the 3-bedroom configuration. A stay crossing the expansion date needs review; the accommodation does not change automatically mid-stay.</p><Link href="/properties/casa-pacifica">Explore accommodation dates</Link></> },
-    { question: 'Can I book or check a price now?', answer: <><p>Online reservations and payments are not open yet. Select dates on the property page to explore the accommodation, not to hold dates or confirm availability. A date-specific stay total must be verified before any future payment; the current room price is $462.47 per night before tax, with cleaning waived. No live AI or market-driven pricing is connected.</p><p className="mt-2">For questions about your dates, email the team. An email inquiry does not reserve the property.</p></> },
+    { question: 'Can I book or check a price now?', answer: <><p>{live ? "Select dates on the property page to check availability and review the complete stay total before payment. A reservation is confirmed only after successful payment and booking confirmation;" : "Online reservations and payments are not open yet. Select dates on the property page to explore the accommodation, not to hold dates or confirm availability. A date-specific stay total must be verified before any future payment;"} the current room price is $462.47 per night before tax, with cleaning waived. No live AI or market-driven pricing is connected.</p><p className="mt-2">For questions about your dates, email the team. An email inquiry does not reserve the property.</p></> },
     { question: 'What is the cancellation policy?', answer: <><p>{CANCELLATION_POLICY.text}</p><p className="mt-2">Cutoffs use the property’s local check-in time in America/Los_Angeles. Your accepted booking terms determine your exact cutoffs.</p><Link href="/policies/cancellation">Read the cancellation policy</Link></> },
     { question: 'What amenities are listed?', answer: <><p>Current verified amenities include {approvedAmenities.filter(item => available.has(item)).map(item => labels[item] ?? item.toLowerCase()).join(', ')}. Confirm charging arrangements, pool heating and accessibility needs before booking; no extra service or availability is promised.</p><Link href="/properties/casa-pacifica">View photos and all amenities</Link></> },
     { question: 'Where is the home, and when is arrival?', answer: <><p>Casa Pacifica is in {property.neighborhood}, {property.city}. The map shows the neighborhood only; the exact address is shared with confirmed guests. Listed check-in is {property.checkInTime} and checkout is {property.checkOutTime}, in the property’s local time.</p><p className="mt-2">Early arrival or late checkout needs approval. Access codes and private arrival instructions are not published in this guide.</p></> },
